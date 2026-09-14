@@ -49,14 +49,15 @@ The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
 ## Image runtime
 
-Responsive image URLs use the TanStack Start server route in
-`src/routes/images.$.ts`, exposed at `/images/...`. The Worker
-validates the source, version, and finite width candidates from the generated
-image metadata, reads the original from the current deployment through the
-`ASSETS` binding, and transforms it with the Cloudflare Images `IMAGES`
-binding. Outputs are explicit WebP at quality 80; the browser does not need
-format negotiation. Static face images use 40/80/120px candidates and face
-sprites use 360/720/1080px candidates.
+The shared image feature in `src/features/images/` contains the responsive
+image component, build-time metadata generator, and width policy. Responsive
+image URLs use the TanStack Start server route in `src/routes/images.$.ts`,
+exposed at `/images/...`. The Worker validates the source, version, and finite
+width candidates from the generated image metadata, reads the original from
+the current deployment through the `ASSETS` binding, and transforms it with
+the Cloudflare Images `IMAGES` binding. Outputs are explicit WebP at quality
+80; the browser does not need format negotiation. Static face images use
+40/80/120px candidates and face sprites use 360/720/1080px candidates.
 
 Successful variants use a versioned path/width cache key with a long immutable
 TTL. A transform error logs the failure and returns the original with an

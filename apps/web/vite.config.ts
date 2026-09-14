@@ -8,7 +8,7 @@ import tailwindcss from "@tailwindcss/vite"
 import { cloudflare } from "@cloudflare/vite-plugin"
 import babel from "@rolldown/plugin-babel"
 import { reactCompilerPreset } from "@vitejs/plugin-react"
-import { readImageMetadata } from "./tooling/image-metadata.ts"
+import { readImageMetadata } from "./src/features/images/metadata.build.ts"
 
 function portfolioImageMetadata() {
   const virtualId = "virtual:portfolio-images"

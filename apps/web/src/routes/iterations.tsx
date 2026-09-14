@@ -4,8 +4,8 @@ import type { CSSProperties, ReactNode } from "react"
 import { SiteShell } from "../components/site-shell"
 import { CopyEmailButton } from "../components/copy-email-button"
 import { experiences, pageCopy, profile } from "../content"
-import { ResponsiveImage } from "../components/responsive-image"
-import { metadata } from "../image-metadata"
+import { ResponsiveImage } from "../features/images/responsive-image"
+import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/iterations")({
   head: () => ({

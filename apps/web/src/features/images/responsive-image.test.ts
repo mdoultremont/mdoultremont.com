@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import { ResponsiveImage } from "./components/responsive-image"
+import { ResponsiveImage } from "./responsive-image"
 
 const image = { width: 1200, height: 800, version: "abc123" }
 

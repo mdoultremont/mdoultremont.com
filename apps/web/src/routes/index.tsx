@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router"
 import { CopyEmailButton } from "../components/copy-email-button"
 import { SiteShell } from "../components/site-shell"
 import { experiences, pageCopy, profile } from "../content"
-import { ResponsiveImage } from "../components/responsive-image"
-import { metadata } from "../image-metadata"
+import { ResponsiveImage } from "../features/images/responsive-image"
+import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/")({ component: ProfessionalPage })
 

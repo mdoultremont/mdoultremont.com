@@ -1,4 +1,4 @@
-import type { ImageMetadata } from "../tooling/image-metadata"
+export type ImageMetadata = { width: number; height: number; version: string }
 
 export const responsiveWidths = [320, 480, 640, 768, 1024, 1280, 1536]
 export const staticFaceWidths = [40, 80, 120]
@@ -13,4 +13,8 @@ export function imageWidths(src: string, image: ImageMetadata) {
         : responsiveWidths
 
   return [...widths.filter((width) => width < image.width), image.width]
+}
+
+export function imageUrl(src: string, width: number, version: string) {
+  return `/images${src}?width=${width}&v=${encodeURIComponent(version)}`
 }

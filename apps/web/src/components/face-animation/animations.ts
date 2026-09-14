@@ -1,6 +1,9 @@
-import { metadata } from "../../image-metadata"
-import { faceSpriteWidths, staticFaceWidths } from "../../image-options"
-import { imageUrl } from "../responsive-image"
+import metadata from "virtual:portfolio-images"
+import {
+  faceSpriteWidths,
+  staticFaceWidths,
+} from "../../features/images/images"
+import { imageUrl } from "../../features/images/images"
 
 export type FaceSprite = {
   src: string

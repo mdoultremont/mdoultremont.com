@@ -1,10 +1,6 @@
 import type { ImgHTMLAttributes } from "react"
-import type { ImageMetadata } from "../../tooling/image-metadata"
-import { imageWidths } from "../image-options"
-
-export function imageUrl(src: string, width: number, version: string) {
-  return `/images${src}?width=${width}&v=${encodeURIComponent(version)}`
-}
+import type { ImageMetadata } from "./images"
+import { imageWidths, imageUrl } from "./images"
 
 type Props = Omit<
   ImgHTMLAttributes<HTMLImageElement>,

@@ -6,8 +6,8 @@ import { SiteShell } from "../components/site-shell"
 import { pageCopy, photographs, profile } from "../content"
 import type { Photograph } from "../content"
 import { CopyEmailButton } from "../components/copy-email-button"
-import { ResponsiveImage } from "../components/responsive-image"
-import { metadata } from "../image-metadata"
+import { ResponsiveImage } from "../features/images/responsive-image"
+import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/photography")({
   component: PhotographyPage,

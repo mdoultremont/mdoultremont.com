@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, test } from "vitest"
 
-import { readImageMetadata } from "../tooling/image-metadata"
+import { readImageMetadata } from "./metadata.build"
 
 const tinyPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -39,7 +39,7 @@ async function createFixture() {
 
 describe("portfolio image metadata", () => {
   test("reads real assets, tracks source changes, and rejects missing references", async () => {
-    const realRoot = join(import.meta.dirname, "..")
+    const realRoot = join(import.meta.dirname, "../../..")
     const realMetadata = await readImageMetadata({ root: realRoot })
     expect(realMetadata["/media/profile/matthieu-portrait.png"]).toMatchObject({
       width: expect.any(Number),

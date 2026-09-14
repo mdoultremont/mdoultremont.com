@@ -149,12 +149,15 @@ Run `npx wrangler dev --port 8791`, then POST an original image as bytes using `
 ## Selected implementation (2026-09-11)
 
 The newer implementation selects the Cloudflare Images `IMAGES` binding for
-Worker-native transforms. A TanStack Start server route (`src/routes/images.$.ts`) exposes the
-app-owned `/images/...` endpoint, validates generated metadata and versioned
-width candidates, reads originals through the current deployment's `ASSETS`
-binding, and returns explicit WebP. The endpoint caches only transformed image
-variants and falls back to the original with an uncached response when a
-transform fails. The older Wasm recommendation above remains historical.
+Worker-native transforms. The shared image feature in
+`apps/web/src/features/images/` contains the build-time metadata generator,
+responsive image component, and width policy. A TanStack Start server route
+(`apps/web/src/routes/images.$.ts`) owns the app's versioned `/images/...`
+endpoint, validates generated metadata and width candidates, reads originals
+through the current deployment's `ASSETS` binding, and returns explicit WebP.
+The endpoint caches only transformed image variants and falls back to the
+original with an uncached response when a transform fails. The older Wasm
+recommendation above remains historical.
 
 The existing Cloudflare Workers/TanStack Start deployment and CMS source paths
 remain in place. AVIF negotiation is intentionally outside this first binding
