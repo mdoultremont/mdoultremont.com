@@ -149,7 +149,7 @@ Run `npx wrangler dev --port 8791`, then POST an original image as bytes using `
 ## Selected implementation (2026-09-11)
 
 The newer implementation selects the Cloudflare Images `IMAGES` binding for
-Worker-native transforms. A custom TanStack Start server entry exposes the
+Worker-native transforms. A TanStack Start server route (`src/routes/images.$.ts`) exposes the
 app-owned `/images/...` endpoint, validates generated metadata and versioned
 width candidates, reads originals through the current deployment's `ASSETS`
 binding, and returns explicit WebP. The endpoint caches only transformed image

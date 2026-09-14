@@ -58,3 +58,22 @@ test("rejects unknown image versions and widths", async ({ page, request }) => {
   )
   expect(unknownWidth.status()).toBe(404)
 })
+
+test("the image server route handles HEAD and rejects writes", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/")
+  const source = await page
+    .locator('img[src*="/images/media/profile/"]')
+    .first()
+    .getAttribute("src")
+  expect(source).toBeTruthy()
+  const head = await request.head(source!)
+  expect(head.status()).toBe(200)
+  expect(head.headers()["content-type"]).toBe("image/webp")
+  expect(await head.body()).toHaveLength(0)
+  const post = await request.post(source!)
+  expect(post.status()).toBe(405)
+  expect(post.headers()["allow"]).toBe("GET, HEAD")
+})

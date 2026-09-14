@@ -49,7 +49,8 @@ The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
 ## Image runtime
 
-Responsive image URLs use the app-owned `/images/...` endpoint. The Worker
+Responsive image URLs use the TanStack Start server route in
+`src/routes/images.$.ts`, exposed at `/images/...`. The Worker
 validates the source, version, and finite width candidates from the generated
 image metadata, reads the original from the current deployment through the
 `ASSETS` binding, and transforms it with the Cloudflare Images `IMAGES`

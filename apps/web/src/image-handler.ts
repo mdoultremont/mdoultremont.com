@@ -15,13 +15,6 @@ export async function handleImageRequest(
   metadata: Record<string, ImageMetadata>
 ) {
   const url = new URL(request.url)
-  if (!url.pathname.startsWith(imagePathPrefix)) return undefined
-
-  if (request.method !== "GET")
-    return new Response("Method not allowed", {
-      status: 405,
-      headers: { Allow: "GET" },
-    })
 
   let source: string
   try {
