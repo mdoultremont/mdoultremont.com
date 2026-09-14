@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.54.1",
+    "@playwright/test": "^1.62.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",

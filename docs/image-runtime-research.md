@@ -1,6 +1,8 @@
 # Self-managed image transforms inside Cloudflare Workers
 
-Research date: 2026-09-08. Scope: image bytes are handled by the application/runtime; this excludes Cloudflare Images’ managed transformation engine and the `cf.image`/Images binding.
+Research date: 2026-09-08. Scope: this records the earlier investigation of
+application-managed image bytes and excludes Cloudflare Images’ managed
+transformation engine and the `cf.image`/Images binding.
 
 ## Finding
 
@@ -144,12 +146,22 @@ export default {
 
 Run `npx wrangler dev --port 8791`, then POST an original image as bytes using `curl --data-binary @photo.jpg http://localhost:8791 -o result.webp`. This probe is deliberately local-only: it has no production input limits, origin policy, orientation correction, or caching. Do not deploy it as the feature endpoint.
 
-## Proposed change to feature planning
+## Selected implementation (2026-09-11)
 
-Keep the existing Cloudflare Workers/TanStack Start deployment and CMS source paths. Replace build-time generation with a bounded image HTTP endpoint implemented using Worker-compatible Wasm libraries. Start with JPEG/PNG inputs and explicit WebP output; preserve a source fallback in markup. AVIF should remain a separately measured extension, not a release requirement until it is demonstrated within resource limits.
+The newer implementation selects the Cloudflare Images `IMAGES` binding for
+Worker-native transforms. The shared image feature in
+`apps/web/src/features/images/` contains the build-time metadata generator,
+responsive image component, and width policy. A TanStack Start server route
+(`apps/web/src/routes/images.$.ts`) owns the app's versioned `/images/...`
+endpoint, validates generated metadata and width candidates, reads originals
+through the current deployment's `ASSETS` binding, and returns explicit WebP.
+The endpoint caches only transformed image variants and falls back to the
+original with an uncached response when a transform fails. The older Wasm
+recommendation above remains historical.
 
-Before committing the implementation architecture, the first ticket should integrate one portrait end-to-end in TanStack Start and close the remaining runtime gates: Vite/Wasm bundling, EXIF orientation, colour policy, deployed CPU/memory/startup limits, cache misses and hits, and invalidation. If it fails the gates, revisit the engine or hosting rather than expanding the migration.
+The existing Cloudflare Workers/TanStack Start deployment and CMS source paths
+remain in place. AVIF negotiation is intentionally outside this first binding
+contract; the endpoint uses WebP for current browser support and predictable
+local/preview behaviour.
 
-Subsequent tickets can add gallery and lightbox coverage using the same endpoint. The endpoint should fetch only approved local media through the application's static assets, bound compressed bytes and decoded pixels, restrict widths/formats to presets, avoid upscaling, free Wasm allocations, and cache by source version plus transformation settings. For replace-in-place CMS uploads, a deployment revision in the URL is a simple initial invalidation scheme; it invalidates all variants on deployment without needing a build-time image manifest.
-
-Issue #5 still describes the previously approved build-time Sharp architecture. No issue edits or child tickets were published during this investigation. Review this proposed direction before replacing that plan.
+This implementation supersedes the earlier self-managed Wasm proposal. The historical findings above remain useful if a self-managed engine is reconsidered. See [Cloudflare’s Images binding documentation](https://developers.cloudflare.com/images/optimization/binding/) for the selected runtime.

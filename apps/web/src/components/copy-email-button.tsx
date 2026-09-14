@@ -49,7 +49,7 @@ async function copyText(text: string) {
   textArea.value = text
   textArea.style.position = "fixed"
   textArea.style.opacity = "0"
-  document.body.append(textArea)
+  document.body.appendChild(textArea)
   textArea.select()
 
   const copied = document.execCommand("copy")

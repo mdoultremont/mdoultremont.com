@@ -1,12 +1,6 @@
 import type { ImgHTMLAttributes } from "react"
-import type { ImageMetadata } from "../../tooling/image-metadata"
-
-const widths = [320, 480, 640, 768, 1024, 1280, 1536]
-
-export function imageUrl(src: string, width: number, version: string) {
-  const options = `width=${width},fit=scale-down,quality=80,format=auto,onerror=redirect`
-  return `https://mdoultremont.com/cdn-cgi/image/${options}${src}?v=${version}`
-}
+import type { ImageMetadata } from "./images"
+import { imageWidths, imageUrl } from "./images"
 
 type Props = Omit<
   ImgHTMLAttributes<HTMLImageElement>,
@@ -25,10 +19,7 @@ export function ResponsiveImage({
   sizes = "100vw",
   ...props
 }: Props) {
-  const candidates = [
-    ...widths.filter((width) => width < image.width),
-    image.width,
-  ]
+  const candidates = imageWidths(src, image)
   const srcSet = optimized
     ? candidates
         .map((width) => `${imageUrl(src, width, image.version)} ${width}w`)

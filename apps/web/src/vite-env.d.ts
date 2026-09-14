@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="@tanstack/react-start" />
 declare module "virtual:portfolio-images" {
   const metadata: Record<
     string,

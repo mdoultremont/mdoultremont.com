@@ -6,6 +6,12 @@
   "main": "@tanstack/react-start/server-entry",
   "workers_dev": false,
   "preview_urls": true,
+  "assets": {
+    "binding": "ASSETS",
+  },
+  "images": {
+    "binding": "IMAGES",
+  },
   "observability": {
     "logs": {
       "enabled": true,

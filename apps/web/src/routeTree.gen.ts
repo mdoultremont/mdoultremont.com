@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IterationsRouteImport } from './routes/iterations'
 import { Route as PersonalRouteImport } from './routes/personal'
 import { Route as PhotographyRouteImport } from './routes/photography'
+import { Route as ImagesSplatRouteImport } from './routes/images.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const PhotographyRoute = PhotographyRouteImport.update({
   path: '/photography',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImagesSplatRoute = ImagesSplatRouteImport.update({
+  id: '/images/$',
+  path: '/images/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/images/$': typeof ImagesSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/images/$': typeof ImagesSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,23 @@ export interface FileRoutesById {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/images/$': typeof ImagesSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/iterations' | '/personal' | '/photography'
+  fullPaths:
+    '/' | '/admin' | '/iterations' | '/personal' | '/photography' | '/images/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/iterations' | '/personal' | '/photography'
-  id: '__root__' | '/' | '/admin' | '/iterations' | '/personal' | '/photography'
+  to:
+    '/' | '/admin' | '/iterations' | '/personal' | '/photography' | '/images/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/iterations'
+    | '/personal'
+    | '/photography'
+    | '/images/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +95,7 @@ export interface RootRouteChildren {
   IterationsRoute: typeof IterationsRoute
   PersonalRoute: typeof PersonalRoute
   PhotographyRoute: typeof PhotographyRoute
+  ImagesSplatRoute: typeof ImagesSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PhotographyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/images/$': {
+      id: '/images/$'
+      path: '/images/$'
+      fullPath: '/images/$'
+      preLoaderRoute: typeof ImagesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +151,7 @@ const rootRouteChildren: RootRouteChildren = {
   IterationsRoute: IterationsRoute,
   PersonalRoute: PersonalRoute,
   PhotographyRoute: PhotographyRoute,
+  ImagesSplatRoute: ImagesSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

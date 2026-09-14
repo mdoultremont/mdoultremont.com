@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises"
 import { join, relative } from "node:path"
 import sizeOf from "image-size"
 
-export type ImageMetadata = { width: number; height: number; version: string }
+import type { ImageMetadata } from "./images.ts"
 type Options = { root: string }
 
 const imagePattern = /\.(?:png|jpe?g|webp)$/i
@@ -13,6 +13,7 @@ export async function readImageMetadata({ root }: Options) {
   for (const directory of [
     "public/media/profile",
     "public/media/photography",
+    "public/media/brand/face",
   ]) {
     await collect(join(root, directory), root, result)
   }
