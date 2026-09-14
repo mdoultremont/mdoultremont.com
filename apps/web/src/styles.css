@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "./components/face-animation/face-animation.css";
 
 @theme {
   --color-paper: #f8f7f4;

@@ -1,4 +1,5 @@
 import { metadata } from "../../image-metadata"
+import { faceSpriteWidths, staticFaceWidths } from "../../image-options"
 import { imageUrl } from "../responsive-image"
 
 export type FaceSprite = {
@@ -20,10 +21,11 @@ export const hoverAnimations: readonly FaceSprite[] = [
 ]
 
 export function imageCandidates(src: string, frameCount = 1) {
-  return [1, 2, 3]
+  const widths = frameCount === 1 ? staticFaceWidths : faceSpriteWidths
+  return widths
     .map(
-      (density) =>
-        `${imageUrl(src, 40 * frameCount * density, metadata[src].version)} ${density}x`
+      (width, index) =>
+        `${imageUrl(src, width, metadata[src].version)} ${index + 1}x`
     )
     .join(",")
 }

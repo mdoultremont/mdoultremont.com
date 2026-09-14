@@ -19,7 +19,7 @@ describe("responsive portfolio images", () => {
     expect(html).toContain('width="1200" height="800"')
     expect(html).toContain('alt="Matthieu"')
     expect(html).toContain(
-      "/cdn-cgi/image/width=320,fit=scale-down,quality=80,format=auto,onerror=redirect/media/profile/portrait.png?v=abc123 320w"
+      "/images/media/profile/portrait.png?width=320&amp;v=abc123 320w"
     )
     expect(html).toContain("1200w")
     expect(html).not.toContain("1280w")

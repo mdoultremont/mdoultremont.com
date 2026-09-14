@@ -46,3 +46,32 @@ Oxlint handles linting, Oxfmt handles formatting, and TypeScript runs separately
 - `/admin` opens the content editor.
 
 The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
+
+## Image runtime
+
+Responsive image URLs use the app-owned `/images/...` endpoint. The Worker
+validates the source, version, and finite width candidates from the generated
+image metadata, reads the original from the current deployment through the
+`ASSETS` binding, and transforms it with the Cloudflare Images `IMAGES`
+binding. Outputs are explicit WebP at quality 80; the browser does not need
+format negotiation. Static face images use 40/80/120px candidates and face
+sprites use 360/720/1080px candidates.
+
+Successful variants use a versioned path/width cache key with a long immutable
+TTL. A transform error logs the failure and returns the original with an
+uncached response. Binding types are generated with `pnpm exec wrangler types`
+into `worker-configuration.d.ts` after Wrangler configuration changes.
+
+The Cloudflare Vite plugin simulates the Images binding during `pnpm dev`.
+Local resizing and output format work offline; production encoder quality can
+vary from the local simulation. Preview deployments use their own bundled
+assets, including when Cloudflare Access protects the preview. No production
+image origin or `/cdn-cgi/image` zone configuration is required.
+
+Run the unmocked image delivery checks from the repository root:
+
+```bash
+PLAYWRIGHT_CHANNEL=chrome pnpm --filter @mdoultremont/portfolio exec playwright test
+```
+
+See [Cloudflare's Images binding documentation](https://developers.cloudflare.com/images/optimization/binding/).
