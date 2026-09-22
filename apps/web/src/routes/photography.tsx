@@ -87,6 +87,7 @@ function PhotographyPage() {
                     className="block w-full rounded-sm transition-opacity hover:opacity-95"
                     src={photo.src}
                     image={photographyMetadata[photo.src]}
+                    widthRole="gallery"
                     sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
                     alt={photographAlt(photo)}
                     loading="lazy"
@@ -150,6 +151,7 @@ function PhotographDialog({
         className="block h-auto w-auto max-h-[calc(100dvh-6rem)] max-w-full rounded-xl object-contain"
         src={photo.src}
         image={photographyMetadata[photo.src]}
+        widthRole="modal"
         sizes="min(75rem, 100vw)"
         alt={photographAlt(photo)}
       />
