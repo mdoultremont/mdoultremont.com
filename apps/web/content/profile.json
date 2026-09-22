@@ -8,7 +8,5 @@
   "professionalPortrait": "/media/profile/matthieu-portrait-bis.png",
   "photographyPortrait": "/media/profile/matthieu-camera.png",
   "available": true,
-  "availabilityLabel": "Available for work",
-  "professionalEyebrow": "Software developer · Brussels",
-  "professionalIntroduction": "I build thoughtful software with product-minded teams. I care about the details, the people using them, and the people building them."
+  "availabilityLabel": "Available for work"
 }

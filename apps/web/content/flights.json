@@ -7,8 +7,6 @@
     "durationSeconds": 840,
     "maxAltitudeMeters": 1830,
     "maxSpeedKph": 47,
-    "trace": "",
-    "published": true,
-    "order": 1
+    "trace": ""
   }
 ]

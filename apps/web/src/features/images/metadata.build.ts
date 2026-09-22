@@ -4,20 +4,28 @@ import { join, relative } from "node:path"
 import sizeOf from "image-size"
 
 import type { ImageMetadata } from "./images.ts"
-type Options = { root: string }
+type Options = {
+  root: string
+  directories?: string[]
+  contentFiles?: string[]
+}
 
 const imagePattern = /\.(?:png|jpe?g|webp)$/i
 
-export async function readImageMetadata({ root }: Options) {
-  const result: Record<string, ImageMetadata> = {}
-  for (const directory of [
+export async function readImageMetadata({
+  root,
+  directories = [
     "public/media/profile",
     "public/media/photography",
     "public/media/brand/face",
-  ]) {
+  ],
+  contentFiles = ["content/profile.json", "content/photography.json"],
+}: Options) {
+  const result: Record<string, ImageMetadata> = {}
+  for (const directory of directories) {
     await collect(join(root, directory), root, result)
   }
-  await validateContentReferences(root, result)
+  await validateContentReferences(root, result, contentFiles)
   return result
 }
 
@@ -54,13 +62,10 @@ async function collect(
 
 async function validateContentReferences(
   root: string,
-  metadata: Record<string, ImageMetadata>
+  metadata: Record<string, ImageMetadata>,
+  contentFiles: string[]
 ) {
-  for (const file of [
-    "content/profile.json",
-    "content/pages.json",
-    "content/photography.json",
-  ]) {
+  for (const file of contentFiles) {
     let text: string
     try {
       text = await readFile(join(root, file), "utf8")

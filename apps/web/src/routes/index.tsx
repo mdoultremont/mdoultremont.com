@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { CopyEmailButton } from "../components/copy-email-button"
 import { SiteShell } from "../components/site-shell"
-import { experiences, pageCopy, profile } from "../content"
+import { experiences, professionalCopy } from "../content/professional"
+import { profile } from "../content/shared"
 import { ResponsiveImage } from "../features/images/responsive-image"
-import metadata from "virtual:portfolio-images"
+import metadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/")({ component: ProfessionalPage })
 
@@ -16,7 +17,7 @@ const companyLogos: Record<string, string> = {
 
 function ProfessionalPage() {
   return (
-    <SiteShell contactTitle={pageCopy.nextChapterTitle}>
+    <SiteShell contactTitle={professionalCopy.contact.title}>
       <main>
         <section className="border-b border-line">
           <div className="relative isolate mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] overflow-hidden border-x border-line [background:radial-gradient(ellipse_at_90%_20%,#a2badc55,transparent_65%),radial-gradient(ellipse_at_30%_115%,#e7a98c66,transparent_75%),#f8f7f4] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[url('/media/brand/hero-grain.svg')] before:opacity-12 before:mix-blend-multiply sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-12">
@@ -31,14 +32,14 @@ function ProfessionalPage() {
                 </span>
               )}
               <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted">
-                {profile.professionalEyebrow}
+                {professionalCopy.hero.eyebrow}
               </p>
               <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.055em]">
                 {profile.firstName}
                 <span className="text-accent">.</span>
               </h1>
               <p className="mt-7 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted">
-                {profile.professionalIntroduction}
+                {professionalCopy.hero.introduction}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-5">
                 <CopyEmailButton className="inline-flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border border-[#181818] bg-linear-to-b from-[#353535] to-[#141414] px-[1.4rem] py-[0.7rem] text-[0.9rem] font-medium text-white shadow-[inset_0_1px_1px_#ffffff4d,inset_0_-1px_1px_#000,0_2px_3px_#00000024] transition-[transform,box-shadow,filter] duration-150 hover:brightness-110 active:translate-y-px active:shadow-[inset_0_2px_3px_#0006,0_1px_1px_#0002]">
@@ -68,7 +69,7 @@ function ProfessionalPage() {
         >
           <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-line px-4 py-12 sm:w-[calc(100%-4rem)] sm:px-6 lg:w-[calc(100%-6rem)] lg:px-8 lg:py-16">
             <p className="mx-auto max-w-[36ch] text-center text-[clamp(1.8rem,3.4vw,3.25rem)] leading-[1.18] font-medium tracking-[-0.035em] text-balance">
-              {pageCopy.professionalStatement}
+              {professionalCopy.statement}
             </p>
           </div>
         </section>
@@ -80,11 +81,11 @@ function ProfessionalPage() {
             <div className="grid items-center gap-6 px-4 pt-12 pb-8 sm:px-6 lg:grid-cols-12 lg:gap-0 lg:px-0 lg:pt-16 lg:pb-12">
               <div className="lg:col-span-6">
                 <h2 className="mt-4 max-w-[17ch] text-[clamp(2.25rem,4.3vw,4rem)] leading-[1.05] font-medium tracking-[-0.04em] text-balance lg:mx-8">
-                  {pageCopy.experienceTitle}
+                  {professionalCopy.experience.title}
                 </h2>
               </div>
               <p className="max-w-[48ch] border-l border-white/20 pl-6 text-[clamp(1.1rem,1.8vw,1.5rem)] leading-[1.65] text-pretty text-[#b9bcc2] lg:mx-8 lg:col-span-6">
-                {pageCopy.experienceIntroduction}
+                {professionalCopy.experience.introduction}
               </p>
             </div>
             <div className="-mx-px grid pr-px pb-px sm:grid-cols-2 xl:grid-cols-4">

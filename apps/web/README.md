@@ -15,8 +15,8 @@ the root or directly from this `apps/web` directory.
 
 Editable records live in `content/`:
 
-- `profile.json` contains shared identity, contact, and professional introduction fields.
-- `pages.json` contains editable headings and introductory copy.
+- `profile.json` contains shared identity and contact fields.
+- `professional.json`, `photography-page.json`, and `personal.json` contain page-specific sections and copy.
 - `experiences.json` contains ordered professional timeline entries.
 - `photography.json` contains ordered photo metadata.
 - `places.json` contains travel locations.
@@ -28,6 +28,9 @@ repository-root `.pages.yml` exposes these records and uploads in Pages CMS.
 
 The `/admin` route redirects to the hosted Pages CMS editor for this repository.
 CMS edits become ordinary Git commits, which can trigger a new deployment.
+
+Each page loads and validates its own records through the matching Zod-backed
+module in `src/content/`. JSON array position is the display order.
 
 ## Checks
 

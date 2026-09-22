@@ -1,4 +1,4 @@
-import metadata from "virtual:portfolio-images"
+import metadata from "virtual:brand-images"
 import {
   faceSpriteWidths,
   staticFaceWidths,
