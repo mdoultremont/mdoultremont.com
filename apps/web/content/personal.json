@@ -1,0 +1,18 @@
+{
+  "hero": {
+    "eyebrow": "Away from the keyboard",
+    "title": "Dad. Cook. Beginner pilot.",
+    "introduction": "This side is still rough around the edges, which feels appropriate. It will grow through stories, trips and flight traces."
+  },
+  "timeline": {
+    "eyebrow": "Flight log, visits and life",
+    "title": "A timeline beyond work.",
+    "introduction": "One chronological place for the flights, journeys and milestones I want to remember."
+  },
+  "family": {
+    "title": "Family first.",
+    "introduction": "The personal description will live here once the words feel like Matthieu, not a résumé with softer lighting."
+  },
+  "flightTitle": "Learning to read the sky.",
+  "cookingTitle": "Cooking for people is a love language."
+}

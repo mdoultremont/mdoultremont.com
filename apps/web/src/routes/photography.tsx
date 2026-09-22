@@ -3,11 +3,13 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { useHotkey } from "@tanstack/react-hotkeys"
 import { SiteShell } from "../components/site-shell"
-import { pageCopy, photographs, profile } from "../content"
-import type { Photograph } from "../content"
+import { photographs, photographyCopy } from "../content/photography"
+import type { Photograph } from "../content/photography"
+import { profile } from "../content/shared"
 import { CopyEmailButton } from "../components/copy-email-button"
 import { ResponsiveImage } from "../features/images/responsive-image"
-import metadata from "virtual:portfolio-images"
+import photographyMetadata from "virtual:photography-images"
+import profileMetadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/photography")({
   component: PhotographyPage,
@@ -36,14 +38,14 @@ function PhotographyPage() {
             <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-12 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-2 lg:items-stretch lg:gap-8">
               <div className="px-4 py-12 sm:px-6 sm:py-16 lg:py-24 lg:pl-8 lg:pr-0">
                 <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
-                  {pageCopy.photographyEyebrow}
+                  {photographyCopy.hero.eyebrow}
                 </p>
                 <h1 className="mt-4 max-w-[9ch] text-[clamp(4rem,9vw,9rem)] leading-[0.9] font-medium tracking-[-0.065em]">
-                  {pageCopy.photographyTitle}
+                  {photographyCopy.hero.title}
                   <span className="text-accent">.</span>
                 </h1>
                 <p className="mt-8 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
-                  {pageCopy.photographyIntroduction}
+                  {photographyCopy.hero.introduction}
                 </p>
                 <div className="mt-10 flex flex-wrap items-center gap-5">
                   <CopyEmailButton className="inline-flex min-h-11 items-center justify-center rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-[#333]">
@@ -61,7 +63,7 @@ function PhotographyPage() {
                 <ResponsiveImage
                   className="mx-auto block w-full max-w-sm object-contain object-bottom lg:absolute lg:bottom-0 lg:left-1/2 lg:h-full lg:w-auto lg:max-w-full lg:-translate-x-1/2"
                   src={profile.photographyPortrait}
-                  image={metadata[profile.photographyPortrait]}
+                  image={profileMetadata[profile.photographyPortrait]}
                   alt="Matthieu holding an instant camera"
                 />
               </div>
@@ -78,21 +80,24 @@ function PhotographyPage() {
                   className="mb-8 inline-block w-full cursor-zoom-in break-inside-avoid bg-transparent text-left"
                   key={photo.src}
                   type="button"
-                  aria-label={`View photograph ${index + 1}: ${photo.location} ${photo.year}`}
+                  aria-label={`View photograph ${index + 1}${photographCaption(photo) ? `: ${photographCaption(photo)}` : ""}`}
                   onClick={() => setSelectedIndex(index)}
                 >
                   <ResponsiveImage
                     className="block w-full rounded-sm transition-opacity hover:opacity-95"
                     src={photo.src}
-                    image={metadata[photo.src]}
+                    image={photographyMetadata[photo.src]}
+                    widthRole="gallery"
                     sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
-                    alt={`Photograph taken in ${photo.location}, ${photo.year}`}
+                    alt={photographAlt(photo)}
                     loading="lazy"
                     decoding="async"
                   />
-                  <span className="block py-3 text-sm text-muted">
-                    {photo.location} {photo.year}
-                  </span>
+                  {photographCaption(photo) && (
+                    <span className="block py-3 text-sm text-muted">
+                      {photographCaption(photo)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -145,9 +150,10 @@ function PhotographDialog({
       <ResponsiveImage
         className="block h-auto w-auto max-h-[calc(100dvh-6rem)] max-w-full rounded-xl object-contain"
         src={photo.src}
-        image={metadata[photo.src]}
+        image={photographyMetadata[photo.src]}
+        widthRole="modal"
         sizes="min(75rem, 100vw)"
-        alt={`Photograph taken in ${photo.location}, ${photo.year}`}
+        alt={photographAlt(photo)}
       />
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 pt-3 text-paper">
         <button
@@ -160,7 +166,8 @@ function PhotographDialog({
           Previous
         </button>
         <Dialog.Title className="min-w-0 truncate text-center text-sm font-medium">
-          {photo.location} {photo.year} · {index + 1} of {photographs.length}
+          {photographCaption(photo) && `${photographCaption(photo)} · `}
+          {index + 1} of {photographs.length}
         </Dialog.Title>
         <button
           className="min-h-11 rounded-full px-3 py-2 text-sm hover:bg-white/10"
@@ -174,4 +181,13 @@ function PhotographDialog({
       </div>
     </Dialog.Popup>
   )
+}
+
+function photographCaption(photo: Photograph) {
+  return [photo.location, photo.year].filter(Boolean).join(", ")
+}
+
+function photographAlt(photo: Photograph) {
+  const caption = photographCaption(photo)
+  return caption ? `Photograph taken in ${caption}` : "Photograph by Matthieu"
 }

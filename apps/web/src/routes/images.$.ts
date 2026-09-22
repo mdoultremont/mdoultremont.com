@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { env } from "cloudflare:workers"
-import { imageWidths } from "../features/images/images"
+import { imageRequestWidths } from "../features/images/images"
 import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/images/$")({
@@ -47,7 +47,7 @@ async function handleImageRequest(request: Request) {
   )
     return new Response("Invalid image width", { status: 400 })
 
-  const allowedWidths = imageWidths(source, image)
+  const allowedWidths = imageRequestWidths(source, image)
   if (!allowedWidths.includes(width))
     return new Response("Image width not found", { status: 404 })
 
