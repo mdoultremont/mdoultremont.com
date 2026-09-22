@@ -50,7 +50,12 @@ const config = defineConfig({
     portfolioImageMetadata(),
     cloudflare({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      prerender: {
+        enabled: true,
+        crawlLinks: false,
+      },
+    }),
     viteReact(),
     babel({
       presets: [reactCompilerPreset()],
