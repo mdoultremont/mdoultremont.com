@@ -1,6 +1,7 @@
 import { Dialog } from "@base-ui/react/dialog"
 import { createFileRoute } from "@tanstack/react-router"
 import { useRef, useState } from "react"
+import type { SyntheticEvent } from "react"
 import { useHotkey } from "@tanstack/react-hotkeys"
 import { SiteShell } from "../components/site-shell"
 import { photographs, photographyCopy } from "../content/photography"
@@ -10,6 +11,9 @@ import { CopyEmailButton } from "../components/copy-email-button"
 import { ResponsiveImage } from "../features/images/responsive-image"
 import photographyMetadata from "virtual:photography-images"
 import profileMetadata from "virtual:profile-images"
+
+const galleryFallback =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='%23e8e6e0'/%3E%3C/svg%3E"
 
 export const Route = createFileRoute("/photography")({
   component: PhotographyPage,
@@ -84,7 +88,7 @@ function PhotographyPage() {
                   onClick={() => setSelectedIndex(index)}
                 >
                   <ResponsiveImage
-                    className="block w-full rounded-sm transition-opacity hover:opacity-95"
+                    className="block w-full rounded-sm bg-[#e8e6e0] transition-opacity hover:opacity-95"
                     src={photo.src}
                     image={photographyMetadata[photo.src]}
                     widthRole="gallery"
@@ -92,6 +96,7 @@ function PhotographyPage() {
                     alt={photographAlt(photo)}
                     loading="lazy"
                     decoding="async"
+                    onError={handleGalleryImageError}
                   />
                   {photographCaption(photo) && (
                     <span className="block py-3 text-sm text-muted">
@@ -181,6 +186,15 @@ function PhotographDialog({
       </div>
     </Dialog.Popup>
   )
+}
+
+function handleGalleryImageError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget
+  if (image.dataset.fallbackApplied) return
+  image.dataset.fallbackApplied = "true"
+  image.removeAttribute("srcset")
+  image.alt = "Photograph unavailable"
+  image.src = galleryFallback
 }
 
 function photographCaption(photo: Photograph) {
