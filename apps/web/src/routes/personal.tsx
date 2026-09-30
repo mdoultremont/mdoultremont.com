@@ -2,8 +2,8 @@ import { Switch } from "@base-ui/react/switch"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { SiteShell } from "../components/site-shell"
-import { flights, lifeEvents, pageCopy, places } from "../content"
-import type { Flight } from "../content"
+import { flights, lifeEvents, personalCopy, places } from "../content/personal"
+import type { Flight } from "../content/personal"
 
 export const Route = createFileRoute("/personal")({
   component: PersonalPage,
@@ -35,14 +35,14 @@ function PersonalPage() {
           <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] items-end gap-10 border-x border-line px-4 py-16 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-20 lg:w-[calc(100%-6rem)] lg:grid-cols-[1fr_minmax(17rem,0.5fr)] lg:gap-24 lg:px-8 lg:py-24">
             <div>
               <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
-                {pageCopy.personalEyebrow}
+                {personalCopy.hero.eyebrow}
               </p>
               <h1 className="mt-4 max-w-[9ch] text-[clamp(4rem,9vw,9rem)] leading-[0.9] font-medium tracking-[-0.065em]">
-                {pageCopy.personalTitle}
+                {personalCopy.hero.title}
               </h1>
             </div>
             <p className="text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
-              {pageCopy.personalIntroduction}
+              {personalCopy.hero.introduction}
             </p>
           </div>
         </section>
@@ -51,13 +51,13 @@ function PersonalPage() {
             <header className="flex flex-col items-start justify-between gap-8 border-b border-line pb-8 sm:flex-row sm:items-end">
               <div>
                 <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
-                  {pageCopy.personalTimelineEyebrow}
+                  {personalCopy.timeline.eyebrow}
                 </p>
                 <h2 className="mt-4 text-[clamp(2.5rem,5vw,5.8rem)] leading-[0.9] font-medium tracking-[-0.065em]">
-                  {pageCopy.personalTimelineTitle}
+                  {personalCopy.timeline.title}
                 </h2>
                 <p className="mt-5 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
-                  {pageCopy.personalTimelineIntroduction}
+                  {personalCopy.timeline.introduction}
                 </p>
               </div>
               <div className="inline-flex items-center gap-3 text-xs font-semibold text-muted">

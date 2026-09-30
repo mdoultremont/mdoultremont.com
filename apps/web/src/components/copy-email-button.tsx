@@ -1,6 +1,6 @@
 import { Toast } from "@base-ui/react/toast"
 import type { ReactNode } from "react"
-import { profile } from "../content"
+import { profile } from "../content/shared"
 
 type CopyEmailButtonProps = {
   children: ReactNode

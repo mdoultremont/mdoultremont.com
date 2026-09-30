@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { env } from "cloudflare:workers"
-import { imageWidths } from "../features/images/images"
+import { imageRequestWidths } from "../features/images/images"
 import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/images/$")({
@@ -18,6 +17,8 @@ export const Route = createFileRoute("/images/$")({
 
 const imagePathPrefix = "/images/"
 const cacheMaxAge = 31_536_000
+const placeholderSvg =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#e8e6e0"/></svg>'
 
 async function handleImageRequest(request: Request) {
   const url = new URL(request.url)
@@ -47,30 +48,40 @@ async function handleImageRequest(request: Request) {
   )
     return new Response("Invalid image width", { status: 400 })
 
-  const allowedWidths = imageWidths(source, image)
+  const allowedWidths = imageRequestWidths(source, image)
   if (!allowedWidths.includes(width))
     return new Response("Image width not found", { status: 404 })
 
-  const cacheKey = imageCacheKey(url, source, width, version)
-  const cached = await readCache(cacheKey)
-  if (cached) return cached
-
-  const original = await env.ASSETS.fetch(new URL(source, url))
-  if (!original.ok || !original.body)
-    return new Response("Image source unavailable", { status: 404 })
-
-  const fallback = original.clone()
+  const sourceUrl = new URL(source, url)
+  sourceUrl.searchParams.set("v", version)
   try {
-    const transformed = await env.IMAGES.input(original.body)
-      .transform({ width: Math.min(width, image.width) })
-      .output({ format: "image/webp", quality: 80 })
-    const response = transformed.response({
-      headers: {
-        "Cache-Control": `public, max-age=${cacheMaxAge}, immutable`,
+    const transformed = await fetch(sourceUrl, {
+      cf: {
+        image: {
+          width: Math.min(width, image.width),
+          fit: "scale-down",
+          format: "webp",
+          quality: 80,
+        },
+        cacheTtl: cacheMaxAge,
       },
     })
-    await writeCache(cacheKey, response)
-    return response
+    if (transformed.ok) {
+      const headers = new Headers(transformed.headers)
+      headers.set("Cache-Control", `public, max-age=${cacheMaxAge}, immutable`)
+      return new Response(transformed.body, {
+        status: transformed.status,
+        statusText: transformed.statusText,
+        headers,
+      })
+    }
+
+    console.error("Image transform failed", {
+      source,
+      width,
+      version,
+      status: transformed.status,
+    })
   } catch (error) {
     console.error("Image transform failed", {
       source,
@@ -78,48 +89,12 @@ async function handleImageRequest(request: Request) {
       version,
       error: error instanceof Error ? error.message : String(error),
     })
-    const headers = new Headers(fallback.headers)
-    headers.set("Cache-Control", "no-store")
-    return new Response(fallback.body, {
-      status: fallback.status,
-      statusText: fallback.statusText,
-      headers,
-    })
   }
-}
 
-function imageCacheKey(
-  requestUrl: URL,
-  source: string,
-  width: number,
-  version: string
-) {
-  const key = new URL(`https://${requestUrl.host.toLowerCase()}${source}`)
-  key.pathname = `${imagePathPrefix.slice(0, -1)}${source}`
-  key.searchParams.set("width", String(width))
-  key.searchParams.set("v", version)
-  return new Request(key)
-}
-
-async function readCache(key: Request) {
-  if (!("caches" in globalThis)) return undefined
-  try {
-    return await imageCache().match(key)
-  } catch (error) {
-    console.warn("Image cache read failed", error)
-    return undefined
-  }
-}
-
-async function writeCache(key: Request, response: Response) {
-  if (!("caches" in globalThis)) return
-  try {
-    await imageCache().put(key, response.clone())
-  } catch (error) {
-    console.warn("Image cache write failed", error)
-  }
-}
-
-function imageCache() {
-  return (globalThis.caches as CacheStorage & { default: Cache }).default
+  return new Response(placeholderSvg, {
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "image/svg+xml",
+    },
+  })
 }

@@ -1,5 +1,5 @@
 import type { ImgHTMLAttributes } from "react"
-import type { ImageMetadata } from "./images"
+import type { ImageMetadata, ImageWidthRole } from "./images"
 import { imageWidths, imageUrl } from "./images"
 
 type Props = Omit<
@@ -9,6 +9,7 @@ type Props = Omit<
   src: string
   image: ImageMetadata
   optimized?: boolean
+  widthRole?: ImageWidthRole
   sizes?: string
 }
 
@@ -16,10 +17,11 @@ export function ResponsiveImage({
   src,
   image,
   optimized = true,
+  widthRole = "default",
   sizes = "100vw",
   ...props
 }: Props) {
-  const candidates = imageWidths(src, image)
+  const candidates = imageWidths(src, image, widthRole)
   const srcSet = optimized
     ? candidates
         .map((width) => `${imageUrl(src, width, image.version)} ${width}w`)

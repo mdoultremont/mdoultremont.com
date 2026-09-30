@@ -32,7 +32,6 @@ async function createFixture() {
     join(root, "content/profile.json"),
     JSON.stringify({ image: "/media/profile/avatar.png" })
   )
-  await writeFile(join(root, "content/pages.json"), JSON.stringify({}))
   await writeFile(join(root, "content/photography.json"), JSON.stringify([]))
   return root
 }

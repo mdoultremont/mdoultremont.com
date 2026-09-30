@@ -4,35 +4,27 @@
     "role": "Software developer",
     "startDate": "2025-08-01",
     "endDate": "",
-    "summary": "Building product with a large, distributed engineering team.",
-    "published": true,
-    "order": 1
+    "summary": "Building product with a large, distributed engineering team."
   },
   {
     "company": "Cycle",
     "role": "Software developer",
     "startDate": "2024-10-01",
     "endDate": "2025-08-01",
-    "summary": "Worked closely with product in a fast-moving software company.",
-    "published": true,
-    "order": 2
+    "summary": "Worked closely with product in a fast-moving software company."
   },
   {
     "company": "Kiosk",
     "role": "Software developer",
     "startDate": "2023-09-01",
     "endDate": "2024-09-01",
-    "summary": "Turned early product ideas into software people could use.",
-    "published": true,
-    "order": 3
+    "summary": "Turned early product ideas into software people could use."
   },
   {
     "company": "Smovin",
     "role": "Software developer",
     "startDate": "2018-04-01",
     "endDate": "2023-06-01",
-    "summary": "Grew as an engineer while shipping a property-management product.",
-    "published": true,
-    "order": 4
+    "summary": "Grew as an engineer while shipping a property-management product."
   }
 ]

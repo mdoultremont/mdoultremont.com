@@ -1,0 +1,16 @@
+{
+  "hero": {
+    "eyebrow": "Software developer · Brussels",
+    "introduction": "I build thoughtful software with product-minded teams. I care about the details, the people using them, and the people building them."
+  },
+  "statement": "Software is my profession. Photography trains my eye. Flying keeps the ego in check.",
+  "experience": {
+    "eyebrow": "Selected experience",
+    "title": "Places that shaped how I work.",
+    "introduction": "I care about the details, the people using them, and the people building them."
+  },
+  "contact": {
+    "eyebrow": "The next chapter",
+    "title": "Looking for a team that cares about craft and ships."
+  }
+}

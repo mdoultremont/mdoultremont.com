@@ -1,7 +1,7 @@
 import { Toast } from "@base-ui/react/toast"
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
-import { profile } from "../content"
+import { profile } from "../content/shared"
 import { CopyEmailButton } from "./copy-email-button"
 import { FaceAnimation } from "./face-animation"
 

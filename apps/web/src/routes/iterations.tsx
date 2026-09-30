@@ -3,9 +3,10 @@ import { useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 import { SiteShell } from "../components/site-shell"
 import { CopyEmailButton } from "../components/copy-email-button"
-import { experiences, pageCopy, profile } from "../content"
+import { experiences, professionalCopy } from "../content/professional"
+import { profile } from "../content/shared"
 import { ResponsiveImage } from "../features/images/responsive-image"
-import metadata from "virtual:portfolio-images"
+import metadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/iterations")({
   head: () => ({
@@ -331,14 +332,14 @@ function IterationsPage() {
             <div className="p-[clamp(1.5rem,3vw,3rem)]">
               <AvailabilitySample mode={availability} />
               <p className="mt-8 text-[0.8rem] leading-6 font-medium text-muted">
-                {profile.professionalEyebrow}
+                {professionalCopy.hero.eyebrow}
               </p>
               <h2 className="mt-4 text-[clamp(3.5rem,7.5vw,7.5rem)] leading-none font-medium tracking-[-0.055em]">
                 {profile.firstName}
                 <span className="text-accent">.</span>
               </h2>
               <p className="mt-6 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted">
-                {profile.professionalIntroduction}
+                {professionalCopy.hero.introduction}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-5">
                 <ButtonSample mode={button} />
@@ -390,7 +391,7 @@ function IterationsPage() {
               <p
                 className={`text-[clamp(1.8rem,3.4vw,3.25rem)] leading-[1.2] font-medium tracking-[-0.035em] text-balance ${statement === 0 ? "mx-auto max-w-[36ch] text-center" : "max-w-[30ch]"}`}
               >
-                {pageCopy.professionalStatement}
+                {professionalCopy.statement}
               </p>
             )}
           </div>
@@ -438,7 +439,7 @@ function IterationsPage() {
               <h2
                 className={`max-w-[18ch] text-[clamp(2.25rem,4vw,4rem)] leading-[1.08] font-medium tracking-[-0.04em] text-balance ${heading === 2 ? "max-w-[26ch]" : ""}`}
               >
-                {pageCopy.experienceTitle}
+                {professionalCopy.experience.title}
               </h2>
               {heading !== 2 && (
                 <p
@@ -446,7 +447,7 @@ function IterationsPage() {
                 >
                   {heading === 0
                     ? "I care about the details, the people using them, and the people building them."
-                    : pageCopy.experienceIntroduction}
+                    : professionalCopy.experience.introduction}
                 </p>
               )}
             </div>
