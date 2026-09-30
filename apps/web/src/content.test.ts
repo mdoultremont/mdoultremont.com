@@ -1,15 +1,72 @@
 import { describe, expect, test } from "vitest"
-import experiences from "../content/experiences.json"
-import flights from "../content/flights.json"
-import lifeEvents from "../content/life-events.json"
-import personalPage from "../content/personal.json"
-import photographyPage from "../content/photography-page.json"
-import photographs from "../content/photography.json"
-import places from "../content/places.json"
-import professionalPage from "../content/professional.json"
 import { createPersonalContent } from "./content/personal"
 import { createPhotographyContent } from "./content/photography"
 import { createProfessionalContent } from "./content/professional"
+
+const professionalPage = {
+  hero: { eyebrow: "Work", introduction: "A short introduction." },
+  statement: "A professional statement.",
+  experience: {
+    eyebrow: "Experience",
+    title: "Selected work",
+    introduction: "A short experience introduction.",
+  },
+  contact: { eyebrow: "Contact", title: "Get in touch" },
+}
+
+const experiences = [
+  {
+    company: "First company",
+    role: "Engineer",
+    startDate: "2024-08-01",
+    endDate: "",
+    summary: "Built useful things.",
+  },
+  {
+    company: "Second company",
+    role: "Designer",
+    startDate: "2023-10-01",
+    endDate: "2024-08-01",
+    summary: "Designed useful things.",
+  },
+]
+
+const photographyPage = {
+  hero: {
+    eyebrow: "Photography",
+    title: "Through my lens",
+    introduction: "A short photography introduction.",
+  },
+}
+
+const personalPage = {
+  hero: {
+    eyebrow: "Personal",
+    title: "Life outside work",
+    introduction: "A short personal introduction.",
+  },
+  timeline: {
+    eyebrow: "Timeline",
+    title: "A life in progress",
+    introduction: "A short timeline introduction.",
+  },
+  family: { title: "Family", introduction: "A short family introduction." },
+  flightTitle: "Flights",
+  cookingTitle: "Cooking",
+}
+
+const flights = [
+  {
+    name: "Test flight",
+    flownAt: "2024-05-01",
+    launchName: "Test launch",
+    distanceMeters: 1000,
+    durationSeconds: 120,
+    maxAltitudeMeters: 100,
+    maxSpeedKph: 50,
+    trace: "",
+  },
+]
 
 describe("portfolio content", () => {
   test("keeps collection items in their JSON array order", () => {
@@ -30,8 +87,8 @@ describe("portfolio content", () => {
     })
 
     expect(content.experiences.slice(0, 2)).toMatchObject([
-      { company: "Atlassian", period: "Aug 2025 – Present" },
-      { company: "Cycle", period: "Oct 2024 – Aug 2025" },
+      { company: "First company", period: "Aug 2024 – Present" },
+      { company: "Second company", period: "Oct 2023 – Aug 2024" },
     ])
   })
 
@@ -72,8 +129,8 @@ describe("portfolio content", () => {
     const content = createPersonalContent({
       page: personalPage,
       flights,
-      places,
-      lifeEvents,
+      places: [],
+      lifeEvents: [],
     })
 
     expect(content.flights).toHaveLength(1)
@@ -84,9 +141,12 @@ describe("portfolio content", () => {
   test("loads every photograph in the media collection", () => {
     const content = createPhotographyContent({
       page: photographyPage,
-      photographs,
+      photographs: [
+        { src: "/media/photography/one.jpg", year: 2024 },
+        { src: "/media/photography/two.jpg" },
+      ],
     })
 
-    expect(content.photographs).toHaveLength(84)
+    expect(content.photographs).toHaveLength(2)
   })
 })

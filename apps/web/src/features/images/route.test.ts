@@ -83,9 +83,9 @@ describe("image server route", () => {
     expect(response.status).toBe(200)
     expect(response.headers.get("content-type")).toBe("image/svg+xml")
     expect(response.headers.get("cache-control")).toBe("no-store")
-    expect(new TextDecoder().decode(await response.arrayBuffer())).toContain(
-      "#e8e6e0"
-    )
+    const body = new TextDecoder().decode(await response.arrayBuffer())
+    expect(body).toContain("#e8e6e0")
+    expect(body).toContain('width="1" height="1"')
   })
 
   test("returns a placeholder when transformation throws", async () => {

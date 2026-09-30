@@ -18,7 +18,7 @@ export const Route = createFileRoute("/images/$")({
 const imagePathPrefix = "/images/"
 const cacheMaxAge = 31_536_000
 const placeholderSvg =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#e8e6e0"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#e8e6e0"/></svg>'
 
 async function handleImageRequest(request: Request) {
   const url = new URL(request.url)

@@ -144,22 +144,15 @@ function PhotographDialog({
   return (
     <Dialog.Popup
       ref={popupRef}
-      className="relative w-fit max-w-[min(75rem,100%)] outline-none"
+      className="relative flex w-[min(75rem,calc(100vw-2rem))] max-w-full flex-col outline-none"
     >
       <Dialog.Close
-        className="absolute top-4 right-4 min-h-11 cursor-pointer rounded-full border border-[#555] bg-charcoal px-4 py-2 text-xs font-semibold text-paper"
+        className="absolute top-4 right-4 z-10 min-h-11 cursor-pointer rounded-full border border-[#555] bg-charcoal px-4 py-2 text-xs font-semibold text-paper"
         aria-label="Close photograph"
       >
         Close
       </Dialog.Close>
-      <ResponsiveImage
-        className="block h-auto w-auto max-h-[calc(100dvh-6rem)] max-w-full rounded-xl object-contain"
-        src={photo.src}
-        image={photographyMetadata[photo.src]}
-        widthRole="modal"
-        sizes="min(75rem, 100vw)"
-        alt={photographAlt(photo)}
-      />
+      <ModalPhotograph key={photo.src} photo={photo} />
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 pt-3 text-paper">
         <button
           className="min-h-11 rounded-full px-3 py-2 text-sm hover:bg-white/10"
@@ -185,6 +178,70 @@ function PhotographDialog({
         </button>
       </div>
     </Dialog.Popup>
+  )
+}
+
+function ModalPhotograph({ photo }: { photo: Photograph }) {
+  const [retryCount, setRetryCount] = useState(0)
+  const [imageState, setImageState] = useState<"loading" | "loaded" | "error">(
+    "loading"
+  )
+  const image = photographyMetadata[photo.src]
+  const requestKey = `${photo.src}:${retryCount}`
+
+  return (
+    <div
+      className="relative flex max-h-[calc(100dvh-8rem)] w-full items-center justify-center overflow-hidden rounded-xl bg-charcoal/60"
+      style={{ aspectRatio: `${image.width} / ${image.height}` }}
+    >
+      {imageState === "loading" && (
+        <output className="absolute inset-0 z-1 grid place-items-center text-sm text-paper/75">
+          Loading photograph…
+        </output>
+      )}
+      {imageState === "error" && (
+        <div
+          className="absolute inset-0 z-1 flex flex-col items-center justify-center gap-3 text-center text-sm text-paper"
+          role="alert"
+        >
+          <p>Photograph unavailable.</p>
+          <button
+            className="rounded-full border border-paper/50 px-4 py-2 font-semibold hover:bg-white/10"
+            type="button"
+            onClick={() => {
+              setImageState("loading")
+              setRetryCount((count) => count + 1)
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      <ResponsiveImage
+        key={requestKey}
+        className={`absolute inset-0 block h-full w-full object-contain ${imageState === "error" ? "invisible" : ""}`}
+        src={photo.src}
+        image={image}
+        widthRole="modal"
+        sizes="min(75rem, 100vw)"
+        alt={photographAlt(photo)}
+        loading="eager"
+        onLoad={(event) => {
+          if (event.currentTarget.dataset.requestKey !== requestKey) return
+          setImageState(
+            event.currentTarget.naturalWidth === 1 &&
+              event.currentTarget.naturalHeight === 1
+              ? "error"
+              : "loaded"
+          )
+        }}
+        onError={(event) => {
+          if (event.currentTarget.dataset.requestKey !== requestKey) return
+          setImageState("error")
+        }}
+        data-request-key={requestKey}
+      />
+    </div>
   )
 }
 
