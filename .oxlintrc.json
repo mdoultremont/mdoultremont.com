@@ -27,6 +27,7 @@
     "**/dist/**",
     "**/node_modules/**",
     "apps/web/src/routeTree.gen.ts",
+    "apps/web/content/**",
     "coverage/**"
   ],
   "rules": {
