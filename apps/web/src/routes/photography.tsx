@@ -174,7 +174,7 @@ function PhotographDialog({
         {index + 1} / {photographs.length}
       </output>
       <button
-        className="absolute top-1/2 left-3 z-10 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:left-6"
+        className="absolute bottom-16 left-3 top-auto z-10 grid size-12 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:left-6"
         type="button"
         onClick={() => onNavigate(-1)}
         aria-label="Previous photograph"
@@ -197,7 +197,7 @@ function PhotographDialog({
         {photographCaption(photo) || "Photograph"}
       </Dialog.Title>
       <button
-        className="absolute top-1/2 right-3 z-10 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:right-6"
+        className="absolute bottom-16 right-3 top-auto z-10 grid size-12 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:right-6"
         type="button"
         onClick={() => onNavigate(1)}
         aria-label="Next photograph"
