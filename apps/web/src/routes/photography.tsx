@@ -237,7 +237,6 @@ function PhotographDialog({
               <path d="m6 6 12 12M18 6 6 18" />
             </svg>
           </Dialog.Close>
-          <span className="my-2 w-px bg-paper/25" aria-hidden="true" />
           <button
             className="grid size-11 place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
             type="button"
