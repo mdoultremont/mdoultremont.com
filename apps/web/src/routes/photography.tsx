@@ -165,6 +165,14 @@ function PhotographDialog({
       <div className="absolute inset-x-16 top-16 bottom-16 flex items-center justify-center sm:inset-x-20">
         <ModalPhotograph key={photo.src} photo={photo} />
       </div>
+      <output
+        className="absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-charcoal/80 px-3 py-2 text-sm font-medium tabular-nums text-paper"
+        aria-label={`Photograph ${index + 1} of ${photographs.length}`}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {index + 1} / {photographs.length}
+      </output>
       <button
         className="absolute top-1/2 left-3 z-10 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:left-6"
         type="button"
@@ -186,8 +194,7 @@ function PhotographDialog({
         </svg>
       </button>
       <Dialog.Title className="absolute right-16 bottom-5 left-16 truncate text-center text-sm font-medium text-paper sm:right-20 sm:left-20">
-        {photographCaption(photo) && `${photographCaption(photo)} · `}
-        {index + 1} of {photographs.length}
+        {photographCaption(photo) || "Photograph"}
       </Dialog.Title>
       <button
         className="absolute top-1/2 right-3 z-10 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:right-6"
