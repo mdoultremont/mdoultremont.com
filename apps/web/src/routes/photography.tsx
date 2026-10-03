@@ -147,7 +147,7 @@ function PhotographDialog({
       className="fixed inset-0 h-dvh w-screen outline-none"
     >
       <Dialog.Close
-        className="absolute top-4 right-4 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+        className="absolute top-4 right-4 z-10 hidden size-11 cursor-pointer place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:grid"
         aria-label="Close photograph"
       >
         <svg
@@ -162,7 +162,7 @@ function PhotographDialog({
           <path d="m6 6 12 12M18 6 6 18" />
         </svg>
       </Dialog.Close>
-      <div className="absolute inset-x-3 top-16 bottom-16 flex items-center justify-center sm:inset-x-20">
+      <div className="absolute inset-x-3 top-16 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] flex items-center justify-center sm:inset-x-20 sm:bottom-16">
         <ModalPhotograph key={photo.src} photo={photo} />
       </div>
       <output
@@ -174,7 +174,7 @@ function PhotographDialog({
         {index + 1} / {photographs.length}
       </output>
       <button
-        className="absolute bottom-16 left-3 top-auto z-10 grid size-12 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:left-6"
+        className="absolute right-auto bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 top-auto z-10 hidden size-11 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:grid sm:size-12 sm:-translate-y-1/2 sm:left-6"
         type="button"
         onClick={() => onNavigate(-1)}
         aria-label="Previous photograph"
@@ -193,11 +193,13 @@ function PhotographDialog({
           <path d="m15 18-6-6 6-6" />
         </svg>
       </button>
-      <Dialog.Title className="absolute right-16 bottom-5 left-16 truncate text-center text-sm font-medium text-paper sm:right-20 sm:left-20">
-        {photographCaption(photo) || "Photograph"}
+      <Dialog.Title className="absolute right-[10.75rem] bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-10 line-clamp-2 text-left text-sm leading-5 font-medium text-paper sm:right-20 sm:bottom-5 sm:left-20 sm:line-clamp-none sm:truncate sm:text-center">
+        {photographCaption(photo) || (
+          <span className="sr-only">Photograph</span>
+        )}
       </Dialog.Title>
       <button
-        className="absolute bottom-16 right-3 top-auto z-10 grid size-12 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:right-6"
+        className="absolute right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-auto top-auto z-10 hidden size-11 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:grid sm:size-12 sm:-translate-y-1/2 sm:right-6"
         type="button"
         onClick={() => onNavigate(1)}
         aria-label="Next photograph"
@@ -216,6 +218,64 @@ function PhotographDialog({
           <path d="m9 18 6-6-6-6" />
         </svg>
       </button>
+      <div className="absolute right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex gap-1.5 sm:hidden">
+        <Dialog.Close
+          className="grid size-11 cursor-pointer place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+          aria-label="Close photograph"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </Dialog.Close>
+        <button
+          className="grid size-11 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+          type="button"
+          onClick={() => onNavigate(-1)}
+          aria-label="Previous photograph"
+          aria-keyshortcuts="ArrowLeft"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <button
+          className="grid size-11 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+          type="button"
+          onClick={() => onNavigate(1)}
+          aria-label="Next photograph"
+          aria-keyshortcuts="ArrowRight"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
     </Dialog.Popup>
   )
 }
