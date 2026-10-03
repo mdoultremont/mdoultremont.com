@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import {
   beginLikesBaseline,
   likesBaselineStatus,
-} from "../backend/entrypoints/likes-baseline.server"
+} from "../../../backend/entrypoints/likes-baseline.server"
 
 export const Route = createFileRoute("/api/music/baseline")({
   server: {

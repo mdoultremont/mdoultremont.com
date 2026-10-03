@@ -12,25 +12,25 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IterationsRouteImport } from './routes/iterations'
-import { Route as MusicRouteImport } from './routes/music'
+import { Route as MusicRouteRouteImport } from './routes/music/route'
 import { Route as PersonalRouteImport } from './routes/personal'
 import { Route as PhotographyRouteImport } from './routes/photography'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
-import { Route as ApiAuthGithubRouteImport } from './routes/api.auth.github'
-import { Route as ApiAuthLogoutRouteImport } from './routes/api.auth.logout'
-import { Route as ApiMusicBaselineRouteImport } from './routes/api.music.baseline'
-import { Route as ApiMusicDestinationsRouteImport } from './routes/api.music.destinations'
-import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api.music.review-playlist'
-import { Route as ApiMusicRunsRouteImport } from './routes/api.music.runs'
-import { Route as ApiSpotifyCallbackRouteImport } from './routes/api.spotify.callback'
-import { Route as ApiSpotifyConnectRouteImport } from './routes/api.spotify.connect'
-import { Route as ApiSpotifyDisconnectRouteImport } from './routes/api.spotify.disconnect'
-import { Route as ApiSpotifyLikedTracksRouteImport } from './routes/api.spotify.liked-tracks'
-import { Route as ApiSpotifyPlaylistsRouteImport } from './routes/api.spotify.playlists'
-import { Route as ApiSpotifyStatusRouteImport } from './routes/api.spotify.status'
-import { Route as ApiAuthGithubCallbackRouteImport } from './routes/api.auth.github.callback'
-import { Route as ApiMusicBaselineRetryRouteImport } from './routes/api.music.baseline.retry'
-import { Route as ApiMusicDestinationsCreateRouteImport } from './routes/api.music.destinations.create'
+import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiMusicBaselineRouteImport } from './routes/api/music/baseline'
+import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
+import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api/music/review-playlist'
+import { Route as ApiMusicRunsRouteImport } from './routes/api/music/runs'
+import { Route as ApiSpotifyCallbackRouteImport } from './routes/api/spotify/callback'
+import { Route as ApiSpotifyConnectRouteImport } from './routes/api/spotify/connect'
+import { Route as ApiSpotifyDisconnectRouteImport } from './routes/api/spotify/disconnect'
+import { Route as ApiSpotifyLikedTracksRouteImport } from './routes/api/spotify/liked-tracks'
+import { Route as ApiSpotifyPlaylistsRouteImport } from './routes/api/spotify/playlists'
+import { Route as ApiSpotifyStatusRouteImport } from './routes/api/spotify/status'
+import { Route as ApiAuthGithubCallbackRouteImport } from './routes/api/auth/github/callback'
+import { Route as ApiMusicBaselineRetryRouteImport } from './routes/api/music/baseline/retry'
+import { Route as ApiMusicDestinationsCreateRouteImport } from './routes/api/music/destinations/create'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -47,7 +47,7 @@ const IterationsRoute = IterationsRouteImport.update({
   path: '/iterations',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MusicRoute = MusicRouteImport.update({
+const MusicRouteRoute = MusicRouteRouteImport.update({
   id: '/music',
   path: '/music',
   getParentRoute: () => rootRouteImport,
@@ -146,9 +146,9 @@ const ApiMusicDestinationsCreateRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/music': typeof MusicRouteRoute
   '/admin': typeof AdminRoute
   '/iterations': typeof IterationsRoute
-  '/music': typeof MusicRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
   '/images/$': typeof ImagesSplatRoute
@@ -170,9 +170,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/music': typeof MusicRouteRoute
   '/admin': typeof AdminRoute
   '/iterations': typeof IterationsRoute
-  '/music': typeof MusicRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
   '/images/$': typeof ImagesSplatRoute
@@ -195,9 +195,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/music': typeof MusicRouteRoute
   '/admin': typeof AdminRoute
   '/iterations': typeof IterationsRoute
-  '/music': typeof MusicRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
   '/images/$': typeof ImagesSplatRoute
@@ -221,9 +221,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/music'
     | '/admin'
     | '/iterations'
-    | '/music'
     | '/personal'
     | '/photography'
     | '/images/$'
@@ -245,9 +245,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/music'
     | '/admin'
     | '/iterations'
-    | '/music'
     | '/personal'
     | '/photography'
     | '/images/$'
@@ -269,9 +269,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/music'
     | '/admin'
     | '/iterations'
-    | '/music'
     | '/personal'
     | '/photography'
     | '/images/$'
@@ -294,9 +294,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MusicRouteRoute: typeof MusicRouteRoute
   AdminRoute: typeof AdminRoute
   IterationsRoute: typeof IterationsRoute
-  MusicRoute: typeof MusicRoute
   PersonalRoute: typeof PersonalRoute
   PhotographyRoute: typeof PhotographyRoute
   ImagesSplatRoute: typeof ImagesSplatRoute
@@ -341,7 +341,7 @@ declare module '@tanstack/react-router' {
       id: '/music'
       path: '/music'
       fullPath: '/music'
-      preLoaderRoute: typeof MusicRouteImport
+      preLoaderRoute: typeof MusicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personal': {
@@ -509,9 +509,9 @@ const ApiMusicDestinationsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MusicRouteRoute: MusicRouteRoute,
   AdminRoute: AdminRoute,
   IterationsRoute: IterationsRoute,
-  MusicRoute: MusicRoute,
   PersonalRoute: PersonalRoute,
   PhotographyRoute: PhotographyRoute,
   ImagesSplatRoute: ImagesSplatRoute,

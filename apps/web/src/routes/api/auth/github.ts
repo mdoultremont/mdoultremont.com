@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { completeGitHubSignIn } from "../backend/entrypoints/app-auth.server"
+import { beginGitHubSignIn } from "../../../backend/entrypoints/app-auth.server"
 
-export const Route = createFileRoute("/api/auth/github/callback")({
+export const Route = createFileRoute("/api/auth/github")({
   server: {
     handlers: {
-      GET: ({ request }) => completeGitHubSignIn(request),
+      GET: ({ request }) => beginGitHubSignIn(request),
       ANY: () =>
         new Response("Method not allowed", {
           status: 405,
