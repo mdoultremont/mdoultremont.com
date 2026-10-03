@@ -54,6 +54,8 @@ const config = defineConfig({
       prerender: {
         enabled: true,
         crawlLinks: false,
+        filter: (page) =>
+          !page.path.startsWith("/music") && !page.path.startsWith("/api/"),
       },
     }),
     viteReact(),

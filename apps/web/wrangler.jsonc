@@ -3,11 +3,36 @@
   "name": "mdoultremont-me",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "./src/server.ts",
   "workers_dev": false,
   "preview_urls": true,
   "assets": {
     "binding": "ASSETS",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mdoultremont-music",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "triggers": { "crons": ["0 * * * *"] },
+  "queues": {
+    "producers": [
+      {
+        "binding": "MUSIC_BASELINE_QUEUE",
+        "queue": "mdoultremont-music-baseline",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "mdoultremont-music-baseline",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 10,
+      },
+    ],
   },
   "images": {
     "binding": "IMAGES",
