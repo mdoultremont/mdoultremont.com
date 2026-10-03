@@ -162,7 +162,7 @@ function PhotographDialog({
           <path d="m6 6 12 12M18 6 6 18" />
         </svg>
       </Dialog.Close>
-      <div className="absolute inset-x-16 top-16 bottom-16 flex items-center justify-center sm:inset-x-20">
+      <div className="absolute inset-x-3 top-16 bottom-16 flex items-center justify-center sm:inset-x-20">
         <ModalPhotograph key={photo.src} photo={photo} />
       </div>
       <output
