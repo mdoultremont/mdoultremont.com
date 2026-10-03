@@ -111,8 +111,8 @@ function PhotographyPage() {
       </SiteShell>
       {selectedPhoto && selectedIndex !== null && (
         <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-100 bg-[#111111d9] backdrop-blur-lg" />
-          <Dialog.Viewport className="fixed inset-0 z-101 grid min-h-dvh place-items-center p-4">
+          <Dialog.Backdrop className="fixed inset-0 z-100 bg-[#111111ed]" />
+          <Dialog.Viewport className="fixed inset-0 z-101 min-h-dvh overflow-hidden">
             <PhotographDialog
               photo={selectedPhoto}
               index={selectedIndex}
@@ -144,38 +144,140 @@ function PhotographDialog({
   return (
     <Dialog.Popup
       ref={popupRef}
-      className="relative flex w-[min(75rem,calc(100vw-2rem))] max-w-full flex-col outline-none"
+      className="fixed inset-0 h-dvh w-screen outline-none"
     >
       <Dialog.Close
-        className="absolute top-4 right-4 z-10 min-h-11 cursor-pointer rounded-full border border-[#555] bg-charcoal px-4 py-2 text-xs font-semibold text-paper"
+        className="absolute top-4 right-4 z-10 hidden size-11 cursor-pointer place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:grid"
         aria-label="Close photograph"
       >
-        Close
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          className="size-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
       </Dialog.Close>
-      <ModalPhotograph key={photo.src} photo={photo} />
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 pt-3 text-paper">
-        <button
-          className="min-h-11 rounded-full px-3 py-2 text-sm hover:bg-white/10"
-          type="button"
-          onClick={() => onNavigate(-1)}
-          aria-label="Previous photograph"
-          aria-keyshortcuts="ArrowLeft"
+      <div className="absolute inset-x-3 top-16 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] flex items-center justify-center sm:inset-x-20 sm:bottom-16">
+        <ModalPhotograph key={photo.src} photo={photo} />
+      </div>
+      <output
+        className="absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-charcoal/80 px-3 py-2 text-sm font-medium tabular-nums text-paper"
+        aria-label={`Photograph ${index + 1} of ${photographs.length}`}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {index + 1} / {photographs.length}
+      </output>
+      <button
+        className="absolute right-auto bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 top-auto z-10 hidden size-11 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:grid sm:size-12 sm:-translate-y-1/2 sm:left-6"
+        type="button"
+        onClick={() => onNavigate(-1)}
+        aria-label="Previous photograph"
+        aria-keyshortcuts="ArrowLeft"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          className="size-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          Previous
-        </button>
-        <Dialog.Title className="min-w-0 truncate text-center text-sm font-medium">
-          {photographCaption(photo) && `${photographCaption(photo)} · `}
-          {index + 1} of {photographs.length}
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <button
+        className="absolute right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-auto top-auto z-10 hidden size-11 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:grid sm:size-12 sm:-translate-y-1/2 sm:right-6"
+        type="button"
+        onClick={() => onNavigate(1)}
+        aria-label="Next photograph"
+        aria-keyshortcuts="ArrowRight"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          className="size-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+      <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex items-center gap-3 sm:contents">
+        <Dialog.Title className="min-w-0 flex-1 line-clamp-2 text-left text-sm leading-5 font-medium text-paper sm:absolute sm:right-20 sm:bottom-5 sm:left-20 sm:z-10 sm:line-clamp-none sm:truncate sm:text-center">
+          {photographCaption(photo) || (
+            <span className="sr-only">Photograph</span>
+          )}
         </Dialog.Title>
-        <button
-          className="min-h-11 rounded-full px-3 py-2 text-sm hover:bg-white/10"
-          type="button"
-          onClick={() => onNavigate(1)}
-          aria-label="Next photograph"
-          aria-keyshortcuts="ArrowRight"
-        >
-          Next
-        </button>
+        <fieldset className="inline-flex min-w-0 shrink-0 items-center overflow-hidden rounded-full bg-charcoal/80 p-0 sm:hidden">
+          <legend className="sr-only">Photograph controls</legend>
+          <Dialog.Close
+            className="grid size-11 cursor-pointer place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            aria-label="Close photograph"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </Dialog.Close>
+          <button
+            className="grid size-11 place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            type="button"
+            onClick={() => onNavigate(-1)}
+            aria-label="Previous photograph"
+            aria-keyshortcuts="ArrowLeft"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            className="grid size-11 place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            type="button"
+            onClick={() => onNavigate(1)}
+            aria-label="Next photograph"
+            aria-keyshortcuts="ArrowRight"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </fieldset>
       </div>
     </Dialog.Popup>
   )
@@ -190,10 +292,7 @@ function ModalPhotograph({ photo }: { photo: Photograph }) {
   const requestKey = `${photo.src}:${retryCount}`
 
   return (
-    <div
-      className="relative flex max-h-[calc(100dvh-8rem)] w-full items-center justify-center overflow-hidden rounded-xl bg-charcoal/60"
-      style={{ aspectRatio: `${image.width} / ${image.height}` }}
-    >
+    <div className="relative flex h-full w-full items-center justify-center">
       {imageState === "loading" && (
         <output className="absolute inset-0 z-1 grid place-items-center text-sm text-paper/75">
           Loading photograph…
