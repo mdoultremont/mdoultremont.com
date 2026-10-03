@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `music_runs_active_owner_idx` ON `music_runs` (`owner_id`) WHERE "music_runs"."status" IN ('queued', 'running');

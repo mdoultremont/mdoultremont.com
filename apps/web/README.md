@@ -50,6 +50,63 @@ Oxlint handles linting, Oxfmt handles formatting, and TypeScript runs separately
 
 The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
+## Private music connection
+
+The `/music` route uses GitHub for app sign-in and Spotify for music access. Apply
+the local D1 migrations before signing in:
+
+```bash
+pnpm --filter @mdoultremont/portfolio db:migrate:local
+```
+
+Register a GitHub OAuth app callback at
+`http://127.0.0.1:3000/api/auth/github/callback` for local use or
+`https://mdoultremont.com/api/auth/github/callback` in production. Open the
+local app at `http://127.0.0.1:3000/music` so both OAuth callbacks use the same
+browser cookie host. Configure the numeric GitHub account ID of the only
+permitted owner:
+
+```text
+GITHUB_CLIENT_ID=<GitHub OAuth app client ID>
+GITHUB_CLIENT_SECRET=<GitHub OAuth app client secret>
+GITHUB_OWNER_ID=<numeric GitHub account ID>
+GITHUB_REDIRECT_URI=http://127.0.0.1:3000/api/auth/github/callback
+```
+
+Create a Spotify app with Web API access, and register the exact callback URL
+`http://127.0.0.1:3000/api/spotify/callback` for local use or
+`https://mdoultremont.com/api/spotify/callback` in production. Spotify
+[allows HTTP loopback IP addresses](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
+for local OAuth callbacks. In development mode, the Spotify app owner needs
+Premium and each authorized account must be on the app's
+[allowlist](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
+
+Set these values in an untracked `apps/web/.dev.vars` for local development and
+as Worker secrets for deployment, alongside the GitHub values above:
+
+```text
+SPOTIFY_CLIENT_ID=<Spotify app client ID>
+SPOTIFY_CLIENT_SECRET=<Spotify app client secret>
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
+SPOTIFY_TOKEN_ENCRYPTION_KEY=<base64 encoding of 32 random bytes>
+```
+
+Generate the encryption key with `openssl rand -base64 32`. Keep that key
+stable while the Spotify connection exists; changing it makes the stored
+refresh token unreadable and requires reconnecting. The server stores only an
+encrypted refresh token, account identifiers, display name, scopes, and
+connection status. Disconnect deletes this connection record and its dependent
+music configuration while leaving GitHub sign-in intact. Connecting does not
+process existing Liked Songs.
+
+## Music runs
+
+The private `/music` control area includes hourly scheduling, asynchronous
+catch-up/full/reclassification runs, and recent progress. The classifier launch
+gate is closed: runs currently make no Jev calls or playlist additions.
+See [music automation operation](../../docs/music-automation.md) for recovery,
+migrations, evaluation requirements, and the current limitations.
+
 ## Image runtime
 
 The shared image feature in `src/features/images/` contains the responsive

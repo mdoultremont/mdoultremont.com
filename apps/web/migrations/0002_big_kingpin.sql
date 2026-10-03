@@ -1,0 +1,1 @@
+ALTER TABLE `spotify_connections` ADD `spotify_user_id` text NOT NULL;
