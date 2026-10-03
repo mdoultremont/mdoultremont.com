@@ -193,11 +193,6 @@ function PhotographDialog({
           <path d="m15 18-6-6 6-6" />
         </svg>
       </button>
-      <Dialog.Title className="absolute right-[10.75rem] bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-10 line-clamp-2 text-left text-sm leading-5 font-medium text-paper sm:right-20 sm:bottom-5 sm:left-20 sm:line-clamp-none sm:truncate sm:text-center">
-        {photographCaption(photo) || (
-          <span className="sr-only">Photograph</span>
-        )}
-      </Dialog.Title>
       <button
         className="absolute right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-auto top-auto z-10 hidden size-11 translate-y-0 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:top-1/2 sm:bottom-auto sm:grid sm:size-12 sm:-translate-y-1/2 sm:right-6"
         type="button"
@@ -218,63 +213,72 @@ function PhotographDialog({
           <path d="m9 18 6-6-6-6" />
         </svg>
       </button>
-      <div className="absolute right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex gap-1.5 sm:hidden">
-        <Dialog.Close
-          className="grid size-11 cursor-pointer place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
-          aria-label="Close photograph"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
+      <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex items-center gap-3 sm:contents">
+        <Dialog.Title className="min-w-0 flex-1 line-clamp-2 text-left text-sm leading-5 font-medium text-paper sm:absolute sm:right-20 sm:bottom-5 sm:left-20 sm:z-10 sm:line-clamp-none sm:truncate sm:text-center">
+          {photographCaption(photo) || (
+            <span className="sr-only">Photograph</span>
+          )}
+        </Dialog.Title>
+        <fieldset className="inline-flex min-w-0 shrink-0 items-center overflow-hidden rounded-full bg-charcoal/80 p-0 sm:hidden">
+          <legend className="sr-only">Photograph controls</legend>
+          <Dialog.Close
+            className="grid size-11 cursor-pointer place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            aria-label="Close photograph"
           >
-            <path d="m6 6 12 12M18 6 6 18" />
-          </svg>
-        </Dialog.Close>
-        <button
-          className="grid size-11 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
-          type="button"
-          onClick={() => onNavigate(-1)}
-          aria-label="Previous photograph"
-          aria-keyshortcuts="ArrowLeft"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </Dialog.Close>
+          <span className="my-2 w-px bg-paper/25" aria-hidden="true" />
+          <button
+            className="grid size-11 place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            type="button"
+            onClick={() => onNavigate(-1)}
+            aria-label="Previous photograph"
+            aria-keyshortcuts="ArrowLeft"
           >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <button
-          className="grid size-11 place-items-center rounded-full bg-charcoal/80 text-paper transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
-          type="button"
-          onClick={() => onNavigate(1)}
-          aria-label="Next photograph"
-          aria-keyshortcuts="ArrowRight"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            className="grid size-11 place-items-center text-paper transition-colors hover:bg-charcoal focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+            type="button"
+            onClick={() => onNavigate(1)}
+            aria-label="Next photograph"
+            aria-keyshortcuts="ArrowRight"
           >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </fieldset>
       </div>
     </Dialog.Popup>
   )
