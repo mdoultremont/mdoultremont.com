@@ -107,6 +107,21 @@ describe("playlist synchronization", () => {
     expect([...state.members.get("electronic")!]).toEqual([])
   })
 
+  test("does not classify into enabled playlists without a saved description", async () => {
+    const state = setup()
+    state.ports.destinations = async () => [
+      { playlistId: "electronic", description: "   ", enabled: true },
+    ]
+    state.ports.classify = async (_input, destinations) => {
+      expect(destinations).toEqual([])
+      return []
+    }
+    await state.run("full")
+    expect(state.classifyCalls).toBe(0)
+    expect([...state.members.get("review")!]).toEqual(["spotify-a"])
+    expect([...state.members.get("electronic")!]).toEqual([])
+  })
+
   test("catch-up respects manual removals while a full run restores them using saved decisions", async () => {
     const state = setup()
     await state.run("full")

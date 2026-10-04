@@ -150,6 +150,47 @@ describe("destination configuration", () => {
     ])
   })
 
+  test("keeps an added playlist disabled until a meaningful description is saved", async () => {
+    const { run } = setup()
+    const added = await run(
+      saveDestination({
+        ownerId: "owner",
+        playlistId: "jazz",
+        description: "  ",
+        enabled: false,
+        now: 10,
+      })
+    )
+    expect(added).toMatchObject({ description: "", enabled: false })
+    await expect(
+      run(
+        saveDestination({
+          ownerId: "owner",
+          playlistId: "jazz",
+          description: "  ",
+          enabled: true,
+          now: 11,
+        })
+      )
+    ).rejects.toMatchObject({
+      _tag: "DestinationInputError",
+      message: expect.stringContaining("track description"),
+    })
+    const configured = await run(
+      saveDestination({
+        ownerId: "owner",
+        playlistId: "jazz",
+        description: "  Mellow acoustic songs  ",
+        enabled: true,
+        now: 12,
+      })
+    )
+    expect(configured).toMatchObject({
+      description: "Mellow acoustic songs",
+      enabled: true,
+    })
+  })
+
   test("rejects inaccessible playlists and ambiguous review routing", async () => {
     const { run, store } = setup()
     await expect(
@@ -246,5 +287,23 @@ describe("destination configuration", () => {
     })
     expect(createPrivate).toHaveBeenCalledWith("owner", "Focus")
     expect((await run(readDestinations("owner"))).destinations).toEqual([])
+  })
+
+  test("creates a private playlist with no description as unconfigured", async () => {
+    const { run, createPrivate } = setup()
+    const result = await run(
+      createDestination({
+        ownerId: "owner",
+        name: "  Focus  ",
+        description: "",
+        now: 10,
+      })
+    )
+    expect(createPrivate).toHaveBeenCalledWith("owner", "Focus")
+    expect(result.destination).toMatchObject({
+      playlistId: "created",
+      description: "",
+      enabled: false,
+    })
   })
 })

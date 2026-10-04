@@ -64,7 +64,8 @@ export function syncCurrentLikes(input: {
         ports.reviewPlaylistId(),
       ])
       const destinations = allDestinations.filter(
-        (destination) => destination.enabled
+        (destination) =>
+          destination.enabled && Boolean(destination.description.trim())
       )
       if (
         !reviewPlaylistId ||

@@ -125,7 +125,7 @@ export function saveDestination(input: {
   return Effect.gen(function* () {
     const playlistId = yield* validate(() => validPlaylistId(input.playlistId))
     const description = yield* validate(() =>
-      validDescription(input.description)
+      validDescription(input.description, input.enabled)
     )
     const playlists = yield* OwnedPlaylists
     yield* playlists.get(input.ownerId, playlistId)
@@ -157,7 +157,7 @@ export function createDestination(input: {
   return Effect.gen(function* () {
     const name = yield* validate(() => validName(input.name))
     const description = yield* validate(() =>
-      validDescription(input.description)
+      validDescription(input.description, false)
     )
     const playlists = yield* OwnedPlaylists
     const playlist = yield* playlists.createPrivate(input.ownerId, name)
@@ -165,7 +165,7 @@ export function createDestination(input: {
     const destination: Destination = {
       playlistId: playlist.id,
       description,
-      enabled: true,
+      enabled: Boolean(description),
       createdAt: input.now,
       updatedAt: input.now,
     }
@@ -225,11 +225,11 @@ function validPlaylistId(value: string) {
   return id
 }
 
-function validDescription(value: string) {
+function validDescription(value: string, required: boolean) {
   const description = value.trim()
-  if (!description || description.length > 2000)
+  if ((required && !description) || description.length > 2000)
     throw new DestinationInputError(
-      "Enter a classification description of 1–2000 characters"
+      "Add a track description of up to 2000 characters before enabling this playlist"
     )
   return description
 }
