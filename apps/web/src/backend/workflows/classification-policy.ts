@@ -1,4 +1,4 @@
-import type { ClassificationDecision } from "../modules/cc0-classifier"
+import type { ClassificationDecision } from "@/backend/modules/cc0-classifier"
 
 export function choosePlaylistTargets(input: {
   readonly probabilities: readonly ClassificationDecision[]

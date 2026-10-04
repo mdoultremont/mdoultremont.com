@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import type { ClassificationDecision } from "../modules/cc0-classifier"
+import type { ClassificationDecision } from "@/backend/modules/cc0-classifier"
 import { choosePlaylistTargets } from "./classification-policy"
 
 export type SyncMode = "catchup" | "full" | "reclassify"

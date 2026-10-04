@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { Route } from "../../routes/images.$"
+import { Route } from "@/routes/images.$"
 
 const bindings = vi.hoisted(() => ({
   fetch: vi.fn<() => Promise<Response>>(),

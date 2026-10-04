@@ -1,4 +1,4 @@
-import type { BaselineRun } from "../workflows/likes-baseline"
+import type { BaselineRun } from "@/backend/workflows/likes-baseline"
 
 export interface BaselineHttpServices {
   readonly owner: (request: Request) => Promise<{ readonly id: string } | null>

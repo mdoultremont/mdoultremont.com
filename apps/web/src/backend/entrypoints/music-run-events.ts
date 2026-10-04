@@ -1,6 +1,6 @@
-import { RunTrackError } from "../workflows/music-runs"
+import { RunTrackError } from "@/backend/workflows/music-runs"
 import { Effect } from "effect"
-import { musicRunRuntime } from "../modules/music-run-runtime"
+import { musicRunRuntime } from "@/backend/modules/music-run-runtime"
 import { consumeLikesBaselineBatch } from "./likes-baseline-queue"
 
 export function isMusicRunMessage(

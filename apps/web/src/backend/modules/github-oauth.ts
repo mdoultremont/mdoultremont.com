@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import type { GitHubIdentity } from "../workflows/app-auth"
+import type { GitHubIdentity } from "@/backend/workflows/app-auth"
 
 export class GitHubOAuthError extends Error {
   readonly _tag = "GitHubOAuthError"

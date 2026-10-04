@@ -1,11 +1,11 @@
 import { Effect } from "effect"
-import { likesBaselineLayer } from "../modules/likes-baseline-runtime"
-import { SpotifyError } from "../modules/spotify"
+import { likesBaselineLayer } from "@/backend/modules/likes-baseline-runtime"
+import { SpotifyError } from "@/backend/modules/spotify"
 import {
   BaselineError,
   BaselineStore,
   processLikesBaselinePage,
-} from "../workflows/likes-baseline"
+} from "@/backend/workflows/likes-baseline"
 
 export interface LikesBaselineMessage {
   readonly kind: "likes-baseline"

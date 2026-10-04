@@ -3,7 +3,7 @@ import {
   BaselineError,
   BaselineStore,
   type BaselineRun,
-} from "../workflows/likes-baseline"
+} from "@/backend/workflows/likes-baseline"
 
 type RunRow = Omit<BaselineRun, "status"> & { status: BaselineRun["status"] }
 

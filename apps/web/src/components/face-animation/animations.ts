@@ -1,9 +1,6 @@
 import metadata from "virtual:brand-images"
-import {
-  faceSpriteWidths,
-  staticFaceWidths,
-} from "../../features/images/images"
-import { imageUrl } from "../../features/images/images"
+import { faceSpriteWidths, staticFaceWidths } from "@/features/images/images"
+import { imageUrl } from "@/features/images/images"
 
 export type FaceSprite = {
   src: string

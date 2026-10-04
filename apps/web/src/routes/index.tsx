@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { CopyEmailButton } from "../components/copy-email-button"
-import { SiteShell } from "../components/site-shell"
-import { experiences, professionalCopy } from "../content/professional"
-import { profile } from "../content/shared"
-import { ResponsiveImage } from "../features/images/responsive-image"
+import { CopyEmailButton } from "@/components/copy-email-button"
+import { SiteShell } from "@/components/site-shell"
+import { experiences, professionalCopy } from "@/content/professional"
+import { profile } from "@/content/shared"
+import { ResponsiveImage } from "@/features/images/responsive-image"
 import metadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/")({ component: ProfessionalPage })

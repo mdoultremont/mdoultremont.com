@@ -1,12 +1,12 @@
 import { Effect, Layer } from "effect"
 import { and, eq, gt, lt } from "drizzle-orm"
-import { appOwners, appSessions } from "../primitives/db/schema"
-import { createDatabase } from "../primitives/db/client"
+import { appOwners, appSessions } from "@/backend/primitives/db/schema"
+import { createDatabase } from "@/backend/primitives/db/client"
 import {
   AppAuthStore,
   AuthPersistenceError,
   type OwnerSession,
-} from "../workflows/app-auth"
+} from "@/backend/workflows/app-auth"
 
 export function appAuthStoreLayer(binding: D1Database) {
   const database = createDatabase(binding)

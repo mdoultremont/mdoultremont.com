@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
-import { currentOwner } from "../../backend/entrypoints/app-auth.server"
-import { SpotifyConnectionPanel } from "../../components/spotify-connection-panel"
-import { DestinationPanel } from "../../components/destination-panel"
-import { MusicRunsPanel } from "../../components/music-runs-panel"
-import { BaselineStatusPanel } from "../../components/baseline-status-panel"
+import { currentOwner } from "@/backend/entrypoints/app-auth.server"
+import { SpotifyConnectionPanel } from "@/components/spotify-connection-panel"
+import { DestinationPanel } from "@/components/destination-panel"
+import { MusicRunsPanel } from "@/components/music-runs-panel"
+import { BaselineStatusPanel } from "@/components/baseline-status-panel"
 
 const loadCurrentOwner = createServerFn({ method: "GET" }).handler(() =>
   currentOwner(getRequest())

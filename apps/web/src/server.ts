@@ -2,7 +2,7 @@ import handler, { createServerEntry } from "@tanstack/react-start/server-entry"
 import {
   consumeMusicBatch,
   scheduledMusic,
-} from "./backend/entrypoints/music-run-events"
+} from "@/backend/entrypoints/music-run-events"
 
 const server = createServerEntry({
   fetch(request) {

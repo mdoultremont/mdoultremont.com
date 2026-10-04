@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers"
 import { Effect } from "effect"
-import { appAuthStoreLayer } from "../modules/app-auth-store"
-import { exchangeCodeForIdentity } from "../modules/github-oauth"
+import { appAuthStoreLayer } from "@/backend/modules/app-auth-store"
+import { exchangeCodeForIdentity } from "@/backend/modules/github-oauth"
 import {
   completeOwnerSignIn,
   endOwnerSession,
@@ -9,7 +9,7 @@ import {
   OwnerAccessDenied,
   requireOwnerSession,
   type GitHubIdentity,
-} from "../workflows/app-auth"
+} from "@/backend/workflows/app-auth"
 
 const sessionCookie = "music_session"
 const stateCookie = "github_oauth_state"

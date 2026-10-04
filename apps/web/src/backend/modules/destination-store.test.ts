@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite"
 import { Effect } from "effect"
 import { describe, expect, test } from "vitest"
 import { destinationStoreLayer } from "./destination-store"
-import { DestinationStore } from "../workflows/destinations"
+import { DestinationStore } from "@/backend/workflows/destinations"
 
 function setup() {
   const sqlite = new DatabaseSync(":memory:")

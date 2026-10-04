@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { musicRunsHttp } from "../../../backend/entrypoints/music-runs.server"
+import { musicRunsHttp } from "@/backend/entrypoints/music-runs.server"
 
 export const Route = createFileRoute("/api/music/runs")({
   server: {

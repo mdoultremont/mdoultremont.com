@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import type {
   SpotifyConnectionStatus,
   SpotifyPlaylist,
-} from "../backend/modules/spotify"
+} from "@/backend/modules/spotify"
 
 type LoadState =
   | { kind: "loading" }

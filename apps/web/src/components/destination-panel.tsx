@@ -1,7 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react"
-import type { KeyboardEvent } from "react"
-import type { SpotifyPlaylist } from "../backend/modules/spotify"
-import type { DestinationConfiguration } from "../backend/workflows/destinations"
+import { Combobox } from "@base-ui/react/combobox"
+import { useEffect, useId, useState } from "react"
+import type { SpotifyPlaylist } from "@/backend/modules/spotify"
+import type { DestinationConfiguration } from "@/backend/workflows/destinations"
 
 type ViewState =
   | { readonly kind: "loading" }
@@ -24,7 +24,6 @@ export function DestinationPanel({
   const [selectedPlaylist, setSelectedPlaylist] =
     useState<SpotifyPlaylist | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [activeOption, setActiveOption] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingDescription, setEditingDescription] = useState("")
   const [reviewId, setReviewId] = useState("")
@@ -277,16 +276,13 @@ export function DestinationPanel({
           value={playlistQuery}
           selected={selectedPlaylist}
           open={menuOpen}
-          activeOption={activeOption}
           disabled={busy}
           onValueChange={(value) => {
             setPlaylistQuery(value)
             setSelectedPlaylist(null)
             setMenuOpen(true)
-            setActiveOption(0)
           }}
           onOpenChange={setMenuOpen}
-          onActiveOptionChange={setActiveOption}
           onSelect={(playlist) => {
             setSelectedPlaylist(playlist)
             setPlaylistQuery(playlist.name)
@@ -385,11 +381,9 @@ function PlaylistCombobox({
   value,
   selected,
   open,
-  activeOption,
   disabled,
   onValueChange,
   onOpenChange,
-  onActiveOptionChange,
   onSelect,
   onCreate,
 }: {
@@ -397,118 +391,109 @@ function PlaylistCombobox({
   readonly value: string
   readonly selected: SpotifyPlaylist | null
   readonly open: boolean
-  readonly activeOption: number
   readonly disabled: boolean
   readonly onValueChange: (value: string) => void
   readonly onOpenChange: (open: boolean) => void
-  readonly onActiveOptionChange: (index: number) => void
   readonly onSelect: (playlist: SpotifyPlaylist) => void
   readonly onCreate: (name: string) => void
 }) {
   const generatedId = useId()
   const inputId = `${generatedId}-input`
-  const listId = `${generatedId}-list`
-  const inputRef = useRef<HTMLInputElement>(null)
   const query = value.trim().toLocaleLowerCase()
   const matches = playlists.filter((playlist) =>
     playlist.name.toLocaleLowerCase().includes(query)
   )
   const canCreate = Boolean(value.trim()) && matches.length === 0
-  const optionCount = matches.length + Number(canCreate)
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault()
-      onOpenChange(true)
-      onActiveOptionChange(Math.min(activeOption + 1, optionCount - 1))
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault()
-      onOpenChange(true)
-      onActiveOptionChange(Math.max(activeOption - 1, 0))
-    } else if (event.key === "Enter" && open && optionCount > 0) {
-      event.preventDefault()
-      if (activeOption >= matches.length) onCreate(value.trim())
-      else if (matches[activeOption]) onSelect(matches[activeOption])
-    } else if (event.key === "Escape") {
-      onOpenChange(false)
-    }
-  }
+  const options: PlaylistOption[] = matches.map((playlist) => ({
+    kind: "playlist",
+    playlist,
+    label: playlist.name,
+  }))
+  if (canCreate)
+    options.push({
+      kind: "create",
+      name: value.trim(),
+      label: `Create “${value.trim()}”`,
+    })
+  const selectedOption: PlaylistOption | null = selected
+    ? { kind: "playlist", playlist: selected, label: selected.name }
+    : null
 
   return (
-    <div className="relative mt-3">
-      <label className="block text-sm" htmlFor={inputId}>
-        Search Spotify playlists
-      </label>
-      <input
-        ref={inputRef}
-        id={inputId}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-activedescendant={
-          open && optionCount > 0
-            ? `${listId}-option-${activeOption}`
-            : undefined
-        }
-        className="mt-1 w-full rounded-lg border border-ink/20 bg-white p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-        autoComplete="off"
-        disabled={disabled}
-        value={value}
-        placeholder="Type a playlist name"
-        onFocus={() => onOpenChange(true)}
-        onBlur={() => window.setTimeout(() => onOpenChange(false), 120)}
-        onChange={(event) => onValueChange(event.target.value)}
-        onKeyDown={onKeyDown}
-      />
-      {open ? (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label="Spotify playlists"
-          className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-ink/20 bg-white py-1 shadow-lg"
-        >
-          {matches.map((playlist, index) => (
-            <li
-              id={`${listId}-option-${index}`}
-              role="option"
-              aria-selected={selected?.id === playlist.id}
-              className={`cursor-pointer px-3 py-2 text-sm hover:bg-ink/5 ${activeOption === index ? "bg-ink/5" : ""}`}
-              key={playlist.id}
-              onMouseDown={(event) => event.preventDefault()}
-              onMouseEnter={() => onActiveOptionChange(index)}
-              onClick={() => onSelect(playlist)}
-            >
-              {playlist.name}
-            </li>
-          ))}
-          {canCreate ? (
-            <li
-              id={`${listId}-option-${matches.length}`}
-              role="option"
-              aria-selected={activeOption === matches.length}
-              className={`cursor-pointer px-3 py-2 text-sm hover:bg-ink/5 ${activeOption === matches.length ? "bg-ink/5" : ""}`}
-              onMouseDown={(event) => event.preventDefault()}
-              onMouseEnter={() => onActiveOptionChange(matches.length)}
-              onClick={() => onCreate(value.trim())}
-            >
-              Create “{value.trim()}”
-            </li>
-          ) : matches.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-ink/60" role="presentation">
-              No matching playlists
-            </li>
-          ) : null}
-        </ul>
-      ) : null}
-      {selected ? (
-        <p className="sr-only" aria-live="polite">
-          {selected.name} selected
-        </p>
-      ) : null}
-    </div>
+    <Combobox.Root<PlaylistOption>
+      autoComplete="list"
+      disabled={disabled}
+      filter={null}
+      inputValue={value}
+      isItemEqualToValue={(option, candidate) => {
+        if (option.kind === "create" && candidate.kind === "create")
+          return option.name === candidate.name
+        if (option.kind === "playlist" && candidate.kind === "playlist")
+          return option.playlist.id === candidate.playlist.id
+        return false
+      }}
+      itemToStringLabel={(option) => option.label}
+      items={options}
+      onInputValueChange={(nextValue, details) => {
+        if (details.reason === "input-change") onValueChange(nextValue)
+      }}
+      onOpenChange={onOpenChange}
+      open={open}
+      value={selectedOption}
+    >
+      <div className="relative mt-3">
+        <label className="block text-sm" htmlFor={inputId}>
+          Search Spotify playlists
+        </label>
+        <Combobox.Input
+          id={inputId}
+          className="mt-1 w-full rounded-lg border border-ink/20 bg-white p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          placeholder="Type a playlist name"
+        />
+        <Combobox.Portal>
+          <Combobox.Positioner className="z-10 outline-none" sideOffset={4}>
+            <Combobox.Popup className="max-h-60 w-[var(--anchor-width)] overflow-auto rounded-lg border border-ink/20 bg-white py-1 shadow-lg">
+              <Combobox.Empty className="px-3 py-2 text-sm text-ink/60">
+                No matching playlists
+              </Combobox.Empty>
+              <Combobox.List>
+                {(option: PlaylistOption) => (
+                  <Combobox.Item
+                    key={
+                      option.kind === "create"
+                        ? `create-${option.name}`
+                        : option.playlist.id
+                    }
+                    value={option}
+                    className="cursor-pointer px-3 py-2 text-sm outline-none hover:bg-ink/5 data-highlighted:bg-ink/5"
+                    onClick={() => {
+                      if (option.kind === "create") onCreate(option.name)
+                      else onSelect(option.playlist)
+                    }}
+                  >
+                    {option.label}
+                  </Combobox.Item>
+                )}
+              </Combobox.List>
+            </Combobox.Popup>
+          </Combobox.Positioner>
+        </Combobox.Portal>
+      </div>
+    </Combobox.Root>
   )
 }
+
+type PlaylistOption =
+  | {
+      readonly kind: "playlist"
+      readonly playlist: SpotifyPlaylist
+      readonly label: string
+    }
+  | {
+      readonly kind: "create"
+      readonly name: string
+      readonly label: string
+    }
 
 async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init)

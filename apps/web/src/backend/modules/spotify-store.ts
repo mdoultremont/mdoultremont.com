@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm"
-import { createDatabase } from "../primitives/db/client"
-import { spotifyConnections } from "../primitives/db/schema"
+import { createDatabase } from "@/backend/primitives/db/client"
+import { spotifyConnections } from "@/backend/primitives/db/schema"
 import type { SpotifyConnection, SpotifyConnectionStore } from "./spotify"
 
 export function createSpotifyConnectionStore(

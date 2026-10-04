@@ -1,9 +1,9 @@
 import { env } from "cloudflare:workers"
 import { Effect, Layer } from "effect"
 import { requireCurrentOwner } from "./app-auth.server"
-import { destinationStoreLayer } from "../modules/destination-store"
-import { createSpotifyModule, SpotifyError } from "../modules/spotify"
-import { createSpotifyConnectionStore } from "../modules/spotify-store"
+import { destinationStoreLayer } from "@/backend/modules/destination-store"
+import { createSpotifyModule, SpotifyError } from "@/backend/modules/spotify"
+import { createSpotifyConnectionStore } from "@/backend/modules/spotify-store"
 import {
   createDestination,
   CreatedPlaylistConfigurationError,
@@ -16,7 +16,7 @@ import {
   removeDestination,
   saveDestination,
   setReviewPlaylist,
-} from "../workflows/destinations"
+} from "@/backend/workflows/destinations"
 
 function layers() {
   const spotify = createSpotifyModule({

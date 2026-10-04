@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { createLikesBaselineHttp } from "./likes-baseline-http"
-import type { BaselineRun } from "../workflows/likes-baseline"
+import type { BaselineRun } from "@/backend/workflows/likes-baseline"
 
 const run: BaselineRun = {
   id: "run-1",

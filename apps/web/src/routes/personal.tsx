@@ -1,9 +1,9 @@
 import { Switch } from "@base-ui/react/switch"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
-import { SiteShell } from "../components/site-shell"
-import { flights, lifeEvents, personalCopy, places } from "../content/personal"
-import type { Flight } from "../content/personal"
+import { SiteShell } from "@/components/site-shell"
+import { flights, lifeEvents, personalCopy, places } from "@/content/personal"
+import type { Flight } from "@/content/personal"
 
 export const Route = createFileRoute("/personal")({
   component: PersonalPage,

@@ -7,7 +7,7 @@ import {
   BaselineError,
   BaselineQueue,
   BaselineSpotify,
-} from "../workflows/likes-baseline"
+} from "@/backend/workflows/likes-baseline"
 
 export function likesBaselineLayer(bindings: Cloudflare.Env) {
   const spotify = createSpotifyModule({

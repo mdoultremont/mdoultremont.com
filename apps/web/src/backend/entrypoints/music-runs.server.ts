@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers"
 import { requireCurrentOwner } from "./app-auth.server"
-import { musicRunRuntime } from "../modules/music-run-runtime"
+import { musicRunRuntime } from "@/backend/modules/music-run-runtime"
 
 export async function musicRunsHttp(request: Request): Promise<Response> {
   let owner: Awaited<ReturnType<typeof requireCurrentOwner>>

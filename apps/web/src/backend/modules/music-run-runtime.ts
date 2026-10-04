@@ -10,8 +10,8 @@ import {
 import { createSpotifyModule, SpotifyError } from "./spotify"
 import { createSpotifyConnectionStore } from "./spotify-store"
 import { createMusicRunStore } from "./music-run-store"
-import { processMusicRun, RunTrackError } from "../workflows/music-runs"
-import { syncCurrentLikes } from "../workflows/playlist-sync"
+import { processMusicRun, RunTrackError } from "@/backend/workflows/music-runs"
+import { syncCurrentLikes } from "@/backend/workflows/playlist-sync"
 
 /** Fail closed until a checked-in, owner-labeled evaluation establishes a useful decision policy. */
 export const liveMusicPolicy: {

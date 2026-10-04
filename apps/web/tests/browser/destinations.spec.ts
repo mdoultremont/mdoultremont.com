@@ -118,7 +118,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   const picker = panel.getByRole("combobox", {
     name: "Search Spotify playlists",
   })
-  const suggestions = panel.getByRole("listbox", { name: "Spotify playlists" })
+  const suggestions = page.getByRole("listbox")
   await picker.fill("Jazz")
   await suggestions.getByRole("option", { name: "Jazz" }).click()
   await panel.getByRole("button", { name: "Add playlist" }).click()
@@ -143,7 +143,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   ).toBeVisible()
   await picker.press("ArrowDown")
   await picker.press("Enter")
-  await expect(panel.getByText("Focus mix")).toBeVisible()
+  await expect(panel.getByRole("list").getByText("Focus mix")).toBeVisible()
   await expect(
     panel.getByRole("heading", { name: "Tracks needing review" })
   ).toBeVisible()

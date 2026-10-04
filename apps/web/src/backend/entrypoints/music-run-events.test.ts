@@ -1,4 +1,4 @@
-import { RunTrackError } from "../workflows/music-runs"
+import { RunTrackError } from "@/backend/workflows/music-runs"
 import { Effect } from "effect"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import { consumeMusicBatch, scheduledMusic } from "./music-run-events"

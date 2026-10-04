@@ -1,13 +1,16 @@
 import { and, eq } from "drizzle-orm"
 import { Effect, Layer } from "effect"
-import { createDatabase } from "../primitives/db/client"
-import { musicDestinations, musicSettings } from "../primitives/db/schema"
+import { createDatabase } from "@/backend/primitives/db/client"
+import {
+  musicDestinations,
+  musicSettings,
+} from "@/backend/primitives/db/schema"
 import {
   DestinationConflict,
   DestinationPersistenceError,
   DestinationStore,
   type Destination,
-} from "../workflows/destinations"
+} from "@/backend/workflows/destinations"
 
 export function destinationStoreLayer(binding: D1Database) {
   const database = createDatabase(binding)

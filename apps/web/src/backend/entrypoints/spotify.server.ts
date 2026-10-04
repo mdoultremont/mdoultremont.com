@@ -5,14 +5,14 @@ import {
   createSpotifyModule,
   SpotifyError,
   spotifyScopes,
-} from "../modules/spotify"
-import { createSpotifyConnectionStore } from "../modules/spotify-store"
+} from "@/backend/modules/spotify"
+import { createSpotifyConnectionStore } from "@/backend/modules/spotify-store"
 import {
   createSpotifyOAuthState,
   verifySpotifyOAuthState,
-} from "../modules/spotify-oauth-state"
-import { likesBaselineLayer } from "../modules/likes-baseline-runtime"
-import { startLikesBaseline } from "../workflows/likes-baseline"
+} from "@/backend/modules/spotify-oauth-state"
+import { likesBaselineLayer } from "@/backend/modules/likes-baseline-runtime"
+import { startLikesBaseline } from "@/backend/workflows/likes-baseline"
 
 const stateCookie = "spotify_oauth_state"
 const sessionCookie = "music_session"
