@@ -84,9 +84,7 @@
       "indexes": {
         "app_sessions_expires_at_idx": {
           "name": "app_sessions_expires_at_idx",
-          "columns": [
-            "expires_at"
-          ],
+          "columns": ["expires_at"],
           "isUnique": false
         }
       },
@@ -95,12 +93,8 @@
           "name": "app_sessions_github_id_app_owners_github_id_fk",
           "tableFrom": "app_sessions",
           "tableTo": "app_owners",
-          "columnsFrom": [
-            "github_id"
-          ],
-          "columnsTo": [
-            "github_id"
-          ],
+          "columnsFrom": ["github_id"],
+          "columnsTo": ["github_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -218,17 +212,12 @@
       "indexes": {
         "music_baseline_runs_account_idx": {
           "name": "music_baseline_runs_account_idx",
-          "columns": [
-            "owner_id",
-            "account_id"
-          ],
+          "columns": ["owner_id", "account_id"],
           "isUnique": true
         },
         "music_baseline_runs_status_idx": {
           "name": "music_baseline_runs_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         }
       },
@@ -237,12 +226,8 @@
           "name": "music_baseline_runs_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_baseline_runs",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -275,22 +260,15 @@
           "name": "music_baseline_tracks_run_id_music_baseline_runs_id_fk",
           "tableFrom": "music_baseline_tracks",
           "tableTo": "music_baseline_runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_baseline_tracks_run_id_spotify_track_id_pk": {
-          "columns": [
-            "run_id",
-            "spotify_track_id"
-          ],
+          "columns": ["run_id", "spotify_track_id"],
           "name": "music_baseline_tracks_run_id_spotify_track_id_pk"
         }
       },
@@ -328,22 +306,15 @@
           "name": "music_decisions_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_decisions",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_decisions_owner_id_track_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "track_id"],
           "name": "music_decisions_owner_id_track_id_pk"
         }
       },
@@ -381,23 +352,15 @@
           "name": "music_deliveries_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_deliveries",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_deliveries_owner_id_track_id_playlist_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id",
-            "playlist_id"
-          ],
+          "columns": ["owner_id", "track_id", "playlist_id"],
           "name": "music_deliveries_owner_id_track_id_playlist_id_pk"
         }
       },
@@ -457,22 +420,15 @@
           "name": "music_destinations_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_destinations",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_destinations_owner_id_playlist_id_pk": {
-          "columns": [
-            "owner_id",
-            "playlist_id"
-          ],
+          "columns": ["owner_id", "playlist_id"],
           "name": "music_destinations_owner_id_playlist_id_pk"
         }
       },
@@ -524,12 +480,8 @@
           "name": "music_discovery_checkpoints_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_discovery_checkpoints",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -537,12 +489,8 @@
           "name": "music_discovery_checkpoints_baseline_run_id_music_baseline_runs_id_fk",
           "tableFrom": "music_discovery_checkpoints",
           "tableTo": "music_baseline_runs",
-          "columnsFrom": [
-            "baseline_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baseline_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -613,22 +561,15 @@
           "name": "music_run_tracks_run_id_music_runs_id_fk",
           "tableFrom": "music_run_tracks",
           "tableTo": "music_runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_run_tracks_run_id_track_id_pk": {
-          "columns": [
-            "run_id",
-            "track_id"
-          ],
+          "columns": ["run_id", "track_id"],
           "name": "music_run_tracks_run_id_track_id_pk"
         }
       },
@@ -765,9 +706,7 @@
       "indexes": {
         "music_runs_active_owner_idx": {
           "name": "music_runs_active_owner_idx",
-          "columns": [
-            "owner_id"
-          ],
+          "columns": ["owner_id"],
           "isUnique": true,
           "where": "\"music_runs\".\"status\" IN ('queued', 'running')"
         }
@@ -777,12 +716,8 @@
           "name": "music_runs_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_runs",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -830,12 +765,8 @@
           "name": "music_settings_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_settings",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -911,12 +842,8 @@
           "name": "spotify_connections_owner_id_app_owners_github_id_fk",
           "tableFrom": "spotify_connections",
           "tableTo": "app_owners",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "github_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["github_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
