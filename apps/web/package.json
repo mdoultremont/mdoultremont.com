@@ -9,7 +9,7 @@
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply mdoultremont-music --local",
+    "db:migrate:local": "wrangler d1 migrations apply mdoultremont-data --local",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

@@ -12,7 +12,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "mdoultremont-music",
+      "database_name": "mdoultremont-data",
+      "database_id": "482954d4-e4c9-4f9e-89a5-ece06e26b041",
       "migrations_dir": "migrations",
     },
   ],
@@ -20,13 +21,13 @@
   "queues": {
     "producers": [
       {
-        "binding": "MUSIC_QUEUE",
-        "queue": "mdoultremont-music-baseline",
+        "binding": "JOBS",
+        "queue": "mdoultremont-jobs",
       },
     ],
     "consumers": [
       {
-        "queue": "mdoultremont-music-baseline",
+        "queue": "mdoultremont-jobs",
         "max_batch_size": 1,
         "max_concurrency": 1,
         "max_batch_timeout": 1,

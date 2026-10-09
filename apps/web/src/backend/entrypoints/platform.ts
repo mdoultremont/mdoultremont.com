@@ -11,6 +11,6 @@ import { JobQueue } from "@/backend/primitives/job-queue"
 export const platformLayer = (bindings: Cloudflare.Env) =>
   Layer.mergeAll(
     Database.layer(bindings.DB),
-    JobQueue.layer(bindings.MUSIC_QUEUE),
+    JobQueue.layer(bindings.JOBS),
     ConfigProvider.layer(ConfigProvider.fromUnknown(bindings))
   )

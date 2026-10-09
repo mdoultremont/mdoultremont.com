@@ -39,8 +39,8 @@ Four steps, each re-runnable on its own:
 
 ## Queue and cron
 
-All steps share one Cloudflare queue (binding `MUSIC_QUEUE`, queue
-`mdoultremont-music-baseline`), with consumer concurrency one. Each message
+All steps share the site's job queue (binding `JOBS`, queue
+`mdoultremont-jobs`), with consumer concurrency one. Each message
 names its step (`music.ingestion`, `music.enrichment`, `music.classification`,
 `music.delivery`) and processes one batch, queuing the next while work remains.
 After a batch, the pipeline queues the next step when it has work.
@@ -62,12 +62,12 @@ Worker variables and secrets: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
 `SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/web/README.md` for
 how to obtain each. A missing variable returns 503 from the routes that need it.
 
-Bindings: D1 `DB` (`mdoultremont-music`), queue `MUSIC_QUEUE`, and the hourly
+Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, and the hourly
 cron. Apply migrations before first use:
 
 ```sh
 pnpm --filter @mdoultremont/portfolio db:migrate:local
-pnpm --filter @mdoultremont/portfolio exec wrangler d1 migrations apply mdoultremont-music --remote
+pnpm --filter @mdoultremont/portfolio exec wrangler d1 migrations apply mdoultremont-data --remote
 ```
 
 Disconnecting Spotify deletes the connection and, through foreign keys, every
