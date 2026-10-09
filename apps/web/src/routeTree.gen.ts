@@ -19,6 +19,7 @@ import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
+import { Route as ApiMusicEnrichmentRouteImport } from './routes/api/music/enrichment'
 import { Route as ApiMusicIngestionRouteImport } from './routes/api/music/ingestion'
 import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api/music/review-playlist'
 import { Route as ApiSpotifyCallbackRouteImport } from './routes/api/spotify/callback'
@@ -78,6 +79,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
 const ApiMusicDestinationsRoute = ApiMusicDestinationsRouteImport.update({
   id: '/api/music/destinations',
   path: '/api/music/destinations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMusicEnrichmentRoute = ApiMusicEnrichmentRouteImport.update({
+  id: '/api/music/enrichment',
+  path: '/api/music/enrichment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMusicIngestionRoute = ApiMusicIngestionRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/destinations'
+    | '/api/music/enrichment'
     | '/api/music/ingestion'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/destinations'
+    | '/api/music/enrichment'
     | '/api/music/ingestion'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/destinations'
+    | '/api/music/enrichment'
     | '/api/music/ingestion'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   ApiAuthGithubRoute: typeof ApiAuthGithubRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiMusicDestinationsRoute: typeof ApiMusicDestinationsRouteWithChildren
+  ApiMusicEnrichmentRoute: typeof ApiMusicEnrichmentRoute
   ApiMusicIngestionRoute: typeof ApiMusicIngestionRoute
   ApiMusicReviewPlaylistRoute: typeof ApiMusicReviewPlaylistRoute
   ApiSpotifyCallbackRoute: typeof ApiSpotifyCallbackRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/api/music/destinations'
       fullPath: '/api/music/destinations'
       preLoaderRoute: typeof ApiMusicDestinationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/music/enrichment': {
+      id: '/api/music/enrichment'
+      path: '/api/music/enrichment'
+      fullPath: '/api/music/enrichment'
+      preLoaderRoute: typeof ApiMusicEnrichmentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/music/ingestion': {
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthGithubRoute: ApiAuthGithubRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiMusicDestinationsRoute: ApiMusicDestinationsRouteWithChildren,
+  ApiMusicEnrichmentRoute: ApiMusicEnrichmentRoute,
   ApiMusicIngestionRoute: ApiMusicIngestionRoute,
   ApiMusicReviewPlaylistRoute: ApiMusicReviewPlaylistRoute,
   ApiSpotifyCallbackRoute: ApiSpotifyCallbackRoute,
@@ -480,12 +501,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

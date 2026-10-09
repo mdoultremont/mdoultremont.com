@@ -128,6 +128,34 @@ export const musicIngestions = sqliteTable(
   ]
 )
 
+/**
+ * Recording data per ISRC, shared by every liked track with that ISRC so it
+ * is fetched once. Only CC0 MusicBrainz core fields and AcousticBrainz
+ * analysis are stored.
+ */
+export const musicRecordings = sqliteTable(
+  "music_recordings",
+  {
+    isrc: text("isrc").primaryKey(),
+    status: text("status", {
+      enum: ["found", "not_found", "ambiguous", "failed"],
+    }).notNull(),
+    recordingId: text("recording_id"),
+    title: text("title"),
+    artistCredit: text("artist_credit"),
+    durationMs: integer("duration_ms"),
+    acoustic: text("acoustic", { mode: "json" }).$type<{
+      readonly bpm: number | null
+      readonly danceability: number | null
+      readonly mood: Readonly<Record<string, number>>
+      readonly genre: Readonly<Record<string, number>>
+    }>(),
+    error: text("error"),
+    fetchedAt: integer("fetched_at").notNull(),
+  },
+  (table) => [index("music_recordings_status_idx").on(table.status)]
+)
+
 export const musicDecisions = sqliteTable(
   "music_decisions",
   {

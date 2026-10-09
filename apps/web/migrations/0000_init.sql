@@ -77,6 +77,19 @@ CREATE TABLE `music_liked_tracks` (
 );
 --> statement-breakpoint
 CREATE INDEX `music_liked_tracks_isrc_idx` ON `music_liked_tracks` (`isrc`);--> statement-breakpoint
+CREATE TABLE `music_recordings` (
+	`isrc` text PRIMARY KEY NOT NULL,
+	`status` text NOT NULL,
+	`recording_id` text,
+	`title` text,
+	`artist_credit` text,
+	`duration_ms` integer,
+	`acoustic` text,
+	`error` text,
+	`fetched_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `music_recordings_status_idx` ON `music_recordings` (`status`);--> statement-breakpoint
 CREATE TABLE `music_settings` (
 	`owner_id` text PRIMARY KEY NOT NULL,
 	`review_playlist_id` text,

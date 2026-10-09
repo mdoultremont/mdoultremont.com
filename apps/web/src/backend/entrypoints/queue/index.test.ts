@@ -1,10 +1,8 @@
 import { assert, describe, expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import { vi } from "vitest"
-import {
-  InvalidLikesPage,
-  MusicIngestion,
-} from "@/backend/features/music/ingestion"
+import { InvalidLikesPage } from "@/backend/features/music/ingestion"
+import { MusicPipeline } from "@/backend/features/music/pipeline"
 import {
   RateLimited,
   ReconnectNeeded,
@@ -24,15 +22,15 @@ function message(body: unknown, attempts = 1) {
   }
 }
 
-function withIngestion(processNext: MusicIngestion["Service"]["processNext"]) {
-  const fail = vi.fn<MusicIngestion["Service"]["fail"]>(() => Effect.void)
-  const layer = Layer.succeed(MusicIngestion, {
-    processNext,
-    fail,
-  } as unknown as MusicIngestion["Service"])
+function withPipeline(handle: MusicPipeline["Service"]["handle"]) {
+  const giveUp = vi.fn<MusicPipeline["Service"]["giveUp"]>(() => Effect.void)
+  const layer = Layer.succeed(MusicPipeline, {
+    handle,
+    giveUp,
+  } as unknown as MusicPipeline["Service"])
   return {
-    fail,
-    run: <A, E>(effect: Effect.Effect<A, E, MusicIngestion>) =>
+    giveUp,
+    run: <A, E>(effect: Effect.Effect<A, E, MusicPipeline>) =>
       Effect.provide(effect, layer),
   }
 }
@@ -41,7 +39,7 @@ const ingestionMessage = { kind: "music.ingestion", ingestionId: "ing-1" }
 
 describe("queue consumer", () => {
   it.effect("acks a processed page", () => {
-    const { run } = withIngestion(() => Effect.void)
+    const { run } = withPipeline(() => Effect.void)
     const received = message(ingestionMessage)
     return run(
       Effect.gen(function* () {
@@ -52,7 +50,7 @@ describe("queue consumer", () => {
   })
 
   it.effect("drops unknown messages", () => {
-    const { run } = withIngestion(() => Effect.die("not called"))
+    const { run } = withPipeline(() => Effect.die("not called"))
     const received = message({ kind: "likes-baseline", runId: "old" })
     return run(
       Effect.gen(function* () {
@@ -63,7 +61,7 @@ describe("queue consumer", () => {
   })
 
   it.effect("retries a rate limit after Spotify's delay", () => {
-    const { run, fail } = withIngestion(() =>
+    const { run, giveUp } = withPipeline(() =>
       Effect.fail(spotifyError(new RateLimited({ retryAfterSeconds: 42 })))
     )
     const received = message(ingestionMessage)
@@ -71,30 +69,30 @@ describe("queue consumer", () => {
       Effect.gen(function* () {
         yield* handleMessage(received)
         expect(received.retry).toHaveBeenCalledWith({ delaySeconds: 42 })
-        expect(fail).not.toHaveBeenCalled()
+        expect(giveUp).not.toHaveBeenCalled()
       })
     )
   })
 
-  it.effect("fails the ingestion when retrying cannot help", () => {
-    const { run, fail } = withIngestion(() =>
+  it.effect("gives up when retrying cannot help", () => {
+    const { run, giveUp } = withPipeline(() =>
       Effect.fail(spotifyError(new ReconnectNeeded()))
     )
     const received = message(ingestionMessage)
     return run(
       Effect.gen(function* () {
         yield* handleMessage(received)
-        expect(fail).toHaveBeenCalledWith(
-          "ing-1",
-          "Spotify needs to be reconnected"
+        expect(giveUp).toHaveBeenCalledWith(
+          ingestionMessage,
+          spotifyError(new ReconnectNeeded())
         )
         expect(received.ack).toHaveBeenCalledOnce()
       })
     )
   })
 
-  it.effect("fails the ingestion when Spotify returns an unusable page", () => {
-    const { run, fail } = withIngestion(() =>
+  it.effect("gives up on an unusable Spotify page", () => {
+    const { run, giveUp } = withPipeline(() =>
       Effect.fail(
         new InvalidLikesPage({ message: "Spotify returned a bad page" })
       )
@@ -103,7 +101,7 @@ describe("queue consumer", () => {
     return run(
       Effect.gen(function* () {
         yield* handleMessage(invalid)
-        assert.strictEqual(fail.mock.calls.length, 1)
+        assert.strictEqual(giveUp.mock.calls.length, 1)
         expect(invalid.retry).not.toHaveBeenCalled()
       })
     )

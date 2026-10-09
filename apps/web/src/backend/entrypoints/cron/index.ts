@@ -1,5 +1,5 @@
 import { Config, Effect, Layer } from "effect"
-import { MusicIngestion } from "@/backend/features/music/ingestion"
+import { MusicPipeline } from "@/backend/features/music/pipeline"
 import { platformLayer } from "../platform"
 
 /** Hourly trigger from wrangler.jsonc. Keeps the owner's music pipeline moving. */
@@ -10,11 +10,11 @@ export function runScheduled(
   return Effect.runPromise(
     Effect.gen(function* () {
       const ownerId = yield* Config.NonEmptyString("GITHUB_OWNER_ID")
-      const ingestion = yield* MusicIngestion
-      yield* ingestion.scheduled(ownerId)
+      const pipeline = yield* MusicPipeline
+      yield* pipeline.scheduled(ownerId)
     }).pipe(
       Effect.provide(
-        MusicIngestion.layer.pipe(Layer.provide(platformLayer(bindings)))
+        MusicPipeline.layer.pipe(Layer.provide(platformLayer(bindings)))
       ),
       Effect.catchCause((cause) =>
         Effect.logError("Scheduled music upkeep failed", cause)

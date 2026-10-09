@@ -1,50 +1,42 @@
 import { Effect, Layer, Schema } from "effect"
 import {
-  type IngestionError,
-  IngestionMessage,
-  MusicIngestion,
-} from "@/backend/features/music/ingestion"
+  isRetryable,
+  MusicPipeline,
+  type PipelineError,
+  PipelineMessage,
+} from "@/backend/features/music/pipeline"
 import { platformLayer } from "../platform"
-
-/** Every message the queue carries. Add one schema per pipeline step. */
-const QueueMessage = Schema.Union([IngestionMessage])
 
 /** Matches the consumer's `max_retries` in wrangler.jsonc. */
 const maxAttempts = 10
 
-const retryable = (error: IngestionError) =>
-  error._tag === "SpotifyError"
-    ? error.retryable
-    : error._tag !== "InvalidLikesPage"
-
-const retryDelaySeconds = (error: IngestionError, attempts: number) =>
-  (error._tag === "SpotifyError" ? error.retryAfterSeconds : undefined) ??
+const retryDelaySeconds = (error: PipelineError, attempts: number) =>
+  ("retryAfterSeconds" in error ? error.retryAfterSeconds : undefined) ??
   Math.min(300, 2 ** attempts)
 
 /**
  * Handles one message: success acks it, a retryable failure retries it with
- * backoff, and anything else marks the work as failed so the UI can offer to
- * start again. Unknown messages are dropped.
+ * backoff, and anything else is handed back to the pipeline to record, then
+ * acked. Unknown messages are dropped.
  */
 export const handleMessage = (message: Message<unknown>) =>
   Effect.gen(function* () {
-    const decoded = Schema.decodeUnknownOption(QueueMessage)(message.body)
+    const decoded = Schema.decodeUnknownOption(PipelineMessage)(message.body)
     if (decoded._tag === "None") {
       yield* Effect.logWarning("Dropping unknown queue message", message.body)
       return message.ack()
     }
-    const ingestion = yield* MusicIngestion
-    const { ingestionId } = decoded.value
-    yield* ingestion.processNext(ingestionId).pipe(
+    const pipeline = yield* MusicPipeline
+    yield* pipeline.handle(decoded.value).pipe(
       Effect.andThen(Effect.sync(() => message.ack())),
       Effect.catch((error) =>
-        retryable(error) && message.attempts < maxAttempts
+        isRetryable(error) && message.attempts < maxAttempts
           ? Effect.sync(() =>
               message.retry({
                 delaySeconds: retryDelaySeconds(error, message.attempts),
               })
             )
-          : ingestion.fail(ingestionId, error.message).pipe(
+          : pipeline.giveUp(decoded.value, error).pipe(
               Effect.andThen(Effect.sync(() => message.ack())),
               // If even recording the failure fails, let the queue try again.
               Effect.catch(() =>
@@ -63,7 +55,7 @@ export function consumeQueue(
   return Effect.runPromise(
     Effect.forEach(batch.messages, handleMessage, { discard: true }).pipe(
       Effect.provide(
-        MusicIngestion.layer.pipe(Layer.provide(platformLayer(bindings)))
+        MusicPipeline.layer.pipe(Layer.provide(platformLayer(bindings)))
       ),
       // Missing configuration or another defect retries the whole batch.
       Effect.catchCause((cause) =>

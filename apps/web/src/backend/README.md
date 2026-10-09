@@ -131,9 +131,10 @@ it.effect("does something", () =>
 
 ## Migration status
 
-Migrated: `primitives/*`, `modules/spotify`, `features/music/destinations`,
-`features/music/ingestion`, and the HTTP, queue, and cron entrypoints.
+Migrated: `primitives/*`, `modules/{spotify,musicbrainz,acousticbrainz}`,
+`features/music/{destinations,ingestion,enrichment,pipeline}`, and the HTTP,
+queue, and cron entrypoints.
 
-Still in the previous layout: auth (`workflows/app-auth`), the CC0 sources and
-classifier (`modules/cc0-*`), and the classification policy. They move with
-the enrichment, classification, and delivery steps.
+Still in the previous layout: auth (`workflows/app-auth`), the Jev classifier
+(`modules/cc0-classifier`), and the classification policy. They move with the
+classification and delivery steps.
