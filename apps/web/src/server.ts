@@ -1,8 +1,6 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry"
-import {
-  consumeMusicBatch,
-  scheduledMusic,
-} from "@/backend/entrypoints/music-run-events"
+import { runScheduled } from "@/backend/entrypoints/cron"
+import { consumeQueue } from "@/backend/entrypoints/queue"
 
 const server = createServerEntry({
   fetch(request) {
@@ -12,6 +10,6 @@ const server = createServerEntry({
 
 export default {
   ...server,
-  queue: consumeMusicBatch,
-  scheduled: scheduledMusic,
+  queue: consumeQueue,
+  scheduled: runScheduled,
 }

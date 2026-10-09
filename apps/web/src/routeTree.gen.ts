@@ -18,10 +18,9 @@ import { Route as PhotographyRouteImport } from './routes/photography'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
-import { Route as ApiMusicBaselineRouteImport } from './routes/api/music/baseline'
 import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
+import { Route as ApiMusicIngestionRouteImport } from './routes/api/music/ingestion'
 import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api/music/review-playlist'
-import { Route as ApiMusicRunsRouteImport } from './routes/api/music/runs'
 import { Route as ApiSpotifyCallbackRouteImport } from './routes/api/spotify/callback'
 import { Route as ApiSpotifyConnectRouteImport } from './routes/api/spotify/connect'
 import { Route as ApiSpotifyDisconnectRouteImport } from './routes/api/spotify/disconnect'
@@ -29,7 +28,6 @@ import { Route as ApiSpotifyLikedTracksRouteImport } from './routes/api/spotify/
 import { Route as ApiSpotifyPlaylistsRouteImport } from './routes/api/spotify/playlists'
 import { Route as ApiSpotifyStatusRouteImport } from './routes/api/spotify/status'
 import { Route as ApiAuthGithubCallbackRouteImport } from './routes/api/auth/github/callback'
-import { Route as ApiMusicBaselineRetryRouteImport } from './routes/api/music/baseline/retry'
 import { Route as ApiMusicDestinationsCreateRouteImport } from './routes/api/music/destinations/create'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,24 +75,19 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMusicBaselineRoute = ApiMusicBaselineRouteImport.update({
-  id: '/api/music/baseline',
-  path: '/api/music/baseline',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiMusicDestinationsRoute = ApiMusicDestinationsRouteImport.update({
   id: '/api/music/destinations',
   path: '/api/music/destinations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMusicIngestionRoute = ApiMusicIngestionRouteImport.update({
+  id: '/api/music/ingestion',
+  path: '/api/music/ingestion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMusicReviewPlaylistRoute = ApiMusicReviewPlaylistRouteImport.update({
   id: '/api/music/review-playlist',
   path: '/api/music/review-playlist',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicRunsRoute = ApiMusicRunsRouteImport.update({
-  id: '/api/music/runs',
-  path: '/api/music/runs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSpotifyCallbackRoute = ApiSpotifyCallbackRouteImport.update({
@@ -132,11 +125,6 @@ const ApiAuthGithubCallbackRoute = ApiAuthGithubCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => ApiAuthGithubRoute,
 } as any)
-const ApiMusicBaselineRetryRoute = ApiMusicBaselineRetryRouteImport.update({
-  id: '/retry',
-  path: '/retry',
-  getParentRoute: () => ApiMusicBaselineRoute,
-} as any)
 const ApiMusicDestinationsCreateRoute =
   ApiMusicDestinationsCreateRouteImport.update({
     id: '/create',
@@ -154,10 +142,9 @@ export interface FileRoutesByFullPath {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/music/baseline': typeof ApiMusicBaselineRouteWithChildren
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
-  '/api/music/runs': typeof ApiMusicRunsRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
   '/api/spotify/disconnect': typeof ApiSpotifyDisconnectRoute
@@ -165,7 +152,6 @@ export interface FileRoutesByFullPath {
   '/api/spotify/playlists': typeof ApiSpotifyPlaylistsRoute
   '/api/spotify/status': typeof ApiSpotifyStatusRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
-  '/api/music/baseline/retry': typeof ApiMusicBaselineRetryRoute
   '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
 }
 export interface FileRoutesByTo {
@@ -178,10 +164,9 @@ export interface FileRoutesByTo {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/music/baseline': typeof ApiMusicBaselineRouteWithChildren
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
-  '/api/music/runs': typeof ApiMusicRunsRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
   '/api/spotify/disconnect': typeof ApiSpotifyDisconnectRoute
@@ -189,7 +174,6 @@ export interface FileRoutesByTo {
   '/api/spotify/playlists': typeof ApiSpotifyPlaylistsRoute
   '/api/spotify/status': typeof ApiSpotifyStatusRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
-  '/api/music/baseline/retry': typeof ApiMusicBaselineRetryRoute
   '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
 }
 export interface FileRoutesById {
@@ -203,10 +187,9 @@ export interface FileRoutesById {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/music/baseline': typeof ApiMusicBaselineRouteWithChildren
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
+  '/api/music/ingestion': typeof ApiMusicIngestionRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
-  '/api/music/runs': typeof ApiMusicRunsRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
   '/api/spotify/disconnect': typeof ApiSpotifyDisconnectRoute
@@ -214,7 +197,6 @@ export interface FileRoutesById {
   '/api/spotify/playlists': typeof ApiSpotifyPlaylistsRoute
   '/api/spotify/status': typeof ApiSpotifyStatusRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
-  '/api/music/baseline/retry': typeof ApiMusicBaselineRetryRoute
   '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
 }
 export interface FileRouteTypes {
@@ -229,10 +211,9 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
-    | '/api/music/baseline'
     | '/api/music/destinations'
+    | '/api/music/ingestion'
     | '/api/music/review-playlist'
-    | '/api/music/runs'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
     | '/api/spotify/disconnect'
@@ -240,7 +221,6 @@ export interface FileRouteTypes {
     | '/api/spotify/playlists'
     | '/api/spotify/status'
     | '/api/auth/github/callback'
-    | '/api/music/baseline/retry'
     | '/api/music/destinations/create'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -253,10 +233,9 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
-    | '/api/music/baseline'
     | '/api/music/destinations'
+    | '/api/music/ingestion'
     | '/api/music/review-playlist'
-    | '/api/music/runs'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
     | '/api/spotify/disconnect'
@@ -264,7 +243,6 @@ export interface FileRouteTypes {
     | '/api/spotify/playlists'
     | '/api/spotify/status'
     | '/api/auth/github/callback'
-    | '/api/music/baseline/retry'
     | '/api/music/destinations/create'
   id:
     | '__root__'
@@ -277,10 +255,9 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
-    | '/api/music/baseline'
     | '/api/music/destinations'
+    | '/api/music/ingestion'
     | '/api/music/review-playlist'
-    | '/api/music/runs'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
     | '/api/spotify/disconnect'
@@ -288,7 +265,6 @@ export interface FileRouteTypes {
     | '/api/spotify/playlists'
     | '/api/spotify/status'
     | '/api/auth/github/callback'
-    | '/api/music/baseline/retry'
     | '/api/music/destinations/create'
   fileRoutesById: FileRoutesById
 }
@@ -302,10 +278,9 @@ export interface RootRouteChildren {
   ImagesSplatRoute: typeof ImagesSplatRoute
   ApiAuthGithubRoute: typeof ApiAuthGithubRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
-  ApiMusicBaselineRoute: typeof ApiMusicBaselineRouteWithChildren
   ApiMusicDestinationsRoute: typeof ApiMusicDestinationsRouteWithChildren
+  ApiMusicIngestionRoute: typeof ApiMusicIngestionRoute
   ApiMusicReviewPlaylistRoute: typeof ApiMusicReviewPlaylistRoute
-  ApiMusicRunsRoute: typeof ApiMusicRunsRoute
   ApiSpotifyCallbackRoute: typeof ApiSpotifyCallbackRoute
   ApiSpotifyConnectRoute: typeof ApiSpotifyConnectRoute
   ApiSpotifyDisconnectRoute: typeof ApiSpotifyDisconnectRoute
@@ -379,13 +354,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/music/baseline': {
-      id: '/api/music/baseline'
-      path: '/api/music/baseline'
-      fullPath: '/api/music/baseline'
-      preLoaderRoute: typeof ApiMusicBaselineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/music/destinations': {
       id: '/api/music/destinations'
       path: '/api/music/destinations'
@@ -393,18 +361,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMusicDestinationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/music/ingestion': {
+      id: '/api/music/ingestion'
+      path: '/api/music/ingestion'
+      fullPath: '/api/music/ingestion'
+      preLoaderRoute: typeof ApiMusicIngestionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/music/review-playlist': {
       id: '/api/music/review-playlist'
       path: '/api/music/review-playlist'
       fullPath: '/api/music/review-playlist'
       preLoaderRoute: typeof ApiMusicReviewPlaylistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/runs': {
-      id: '/api/music/runs'
-      path: '/api/music/runs'
-      fullPath: '/api/music/runs'
-      preLoaderRoute: typeof ApiMusicRunsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/spotify/callback': {
@@ -456,13 +424,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthGithubCallbackRouteImport
       parentRoute: typeof ApiAuthGithubRoute
     }
-    '/api/music/baseline/retry': {
-      id: '/api/music/baseline/retry'
-      path: '/retry'
-      fullPath: '/api/music/baseline/retry'
-      preLoaderRoute: typeof ApiMusicBaselineRetryRouteImport
-      parentRoute: typeof ApiMusicBaselineRoute
-    }
     '/api/music/destinations/create': {
       id: '/api/music/destinations/create'
       path: '/create'
@@ -485,17 +446,6 @@ const ApiAuthGithubRouteWithChildren = ApiAuthGithubRoute._addFileChildren(
   ApiAuthGithubRouteChildren,
 )
 
-interface ApiMusicBaselineRouteChildren {
-  ApiMusicBaselineRetryRoute: typeof ApiMusicBaselineRetryRoute
-}
-
-const ApiMusicBaselineRouteChildren: ApiMusicBaselineRouteChildren = {
-  ApiMusicBaselineRetryRoute: ApiMusicBaselineRetryRoute,
-}
-
-const ApiMusicBaselineRouteWithChildren =
-  ApiMusicBaselineRoute._addFileChildren(ApiMusicBaselineRouteChildren)
-
 interface ApiMusicDestinationsRouteChildren {
   ApiMusicDestinationsCreateRoute: typeof ApiMusicDestinationsCreateRoute
 }
@@ -517,10 +467,9 @@ const rootRouteChildren: RootRouteChildren = {
   ImagesSplatRoute: ImagesSplatRoute,
   ApiAuthGithubRoute: ApiAuthGithubRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
-  ApiMusicBaselineRoute: ApiMusicBaselineRouteWithChildren,
   ApiMusicDestinationsRoute: ApiMusicDestinationsRouteWithChildren,
+  ApiMusicIngestionRoute: ApiMusicIngestionRoute,
   ApiMusicReviewPlaylistRoute: ApiMusicReviewPlaylistRoute,
-  ApiMusicRunsRoute: ApiMusicRunsRoute,
   ApiSpotifyCallbackRoute: ApiSpotifyCallbackRoute,
   ApiSpotifyConnectRoute: ApiSpotifyConnectRoute,
   ApiSpotifyDisconnectRoute: ApiSpotifyDisconnectRoute,

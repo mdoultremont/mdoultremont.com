@@ -6,8 +6,7 @@ import {
   type SpotifyError,
   verifySpotifyOAuthState,
 } from "@/backend/modules/spotify"
-import { likesBaselineLayer } from "@/backend/modules/likes-baseline-runtime"
-import { startLikesBaseline } from "@/backend/workflows/likes-baseline"
+import { MusicIngestion } from "@/backend/features/music/ingestion"
 import { platformLayer } from "../platform"
 import {
   json,
@@ -111,17 +110,18 @@ export const completeSpotifyConnection = (request: Request) => {
       const spotify = yield* Spotify
       const connection = yield* spotify.connect(owner.id, code)
       if (connection.status !== "connected") return redirect("connected")
-      // The connection is saved even if the first inventory cannot be queued;
-      // the music page offers a retry.
-      const baselineQueued = yield* startLikesBaseline(
-        owner.id,
-        connection.accountId
+      // The connection is saved even if the first ingestion cannot be queued;
+      // the music page offers to start it again.
+      const ingestionQueued = yield* MusicIngestion.use((ingestion) =>
+        ingestion.start(owner.id, "full")
       ).pipe(
-        Effect.provide(likesBaselineLayer(env)),
+        Effect.provide(
+          MusicIngestion.layer.pipe(Layer.provide(platformLayer(env)))
+        ),
         Effect.as(true),
         Effect.orElseSucceed(() => false)
       )
-      return redirect(baselineQueued ? "connected" : "baseline_failed")
+      return redirect(ingestionQueued ? "connected" : "ingestion_failed")
     }).pipe(
       Effect.provide(spotifyLayer()),
       Effect.catchReason("SpotifyError", "AccessDenied", () =>

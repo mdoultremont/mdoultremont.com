@@ -33,11 +33,10 @@ also be verified before launch. No evaluation labels were invented here.
 
 ## Configuration and deployment
 
-The existing Worker needs D1 and the `MUSIC_BASELINE_QUEUE` binding. The same
-queue dispatches baseline and music-run messages by their `kind`; consumers
-process one page or at most five tracks per invocation. Consumer concurrency
-is one, and continuation messages are delayed two seconds to preserve the
-MusicBrainz request spacing across deliveries. Configure the hourly cron
+The Worker needs D1 and the `MUSIC_QUEUE` binding, which points at the
+existing `mdoultremont-music-baseline` queue. Each message carries a `kind`
+naming the pipeline step it belongs to; ingestion handles one Spotify page per
+message. Consumer concurrency is one. Configure the hourly cron
 `0 * * * *` and apply all migrations before using the control area:
 
 ```sh

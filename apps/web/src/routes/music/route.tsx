@@ -3,10 +3,9 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
 import { currentOwner } from "@/backend/entrypoints/app-auth.server"
-import { SpotifyConnectionPanel } from "@/components/spotify-connection-panel"
-import { DestinationPanel } from "@/components/destination-panel"
-import { MusicRunsPanel } from "@/components/music-runs-panel"
-import { BaselineStatusPanel } from "@/components/baseline-status-panel"
+import { DestinationPanel } from "@/components/music/destination-panel"
+import { IngestionPanel } from "@/components/music/ingestion-panel"
+import { SpotifyConnectionPanel } from "@/components/music/spotify-connection-panel"
 
 const loadCurrentOwner = createServerFn({ method: "GET" }).handler(() =>
   currentOwner(getRequest())
@@ -66,9 +65,8 @@ function MusicControlPage() {
               music automation.
             </p>
             <SpotifyConnectionPanel csrfToken={owner.csrfToken} />
+            <IngestionPanel csrfToken={owner.csrfToken} />
             <DestinationPanel csrfToken={owner.csrfToken} />
-            <BaselineStatusPanel csrfToken={owner.csrfToken} />
-            <MusicRunsPanel csrfToken={owner.csrfToken} />
             <button
               className="mt-8 rounded-full border border-ink/20 px-5 py-3 text-sm font-medium text-ink transition hover:bg-ink/5 disabled:opacity-50"
               disabled={signingOut}

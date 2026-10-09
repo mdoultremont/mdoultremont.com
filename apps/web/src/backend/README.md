@@ -131,10 +131,9 @@ it.effect("does something", () =>
 
 ## Migration status
 
-These are migrated to this structure: `primitives/*`, `modules/spotify`,
-`features/music/destinations`, and `entrypoints/http/{destinations,spotify}.server.ts`.
+Migrated: `primitives/*`, `modules/spotify`, `features/music/destinations`,
+`features/music/ingestion`, and the HTTP, queue, and cron entrypoints.
 
-Still in the previous layout: auth (`workflows/app-auth`), the likes
-baseline, music runs, and the CC0 classifier. Until they move,
-`entrypoints/platform.ts` exposes `legacySpotify()` so they can reach the new
-Spotify module.
+Still in the previous layout: auth (`workflows/app-auth`), the CC0 sources and
+classifier (`modules/cc0-*`), and the classification policy. They move with
+the enrichment, classification, and delivery steps.

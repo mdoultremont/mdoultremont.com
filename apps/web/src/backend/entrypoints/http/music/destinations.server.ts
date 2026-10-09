@@ -4,7 +4,7 @@ import {
   Destinations,
   type DestinationsError,
 } from "@/backend/features/music/destinations"
-import { platformLayer } from "../platform"
+import { platformLayer } from "../../platform"
 import {
   decodeBody,
   json,
@@ -13,7 +13,7 @@ import {
   requireOwner,
   respond,
   spotifyErrorResponse,
-} from "./http"
+} from "../http"
 
 /**
  * Signs in the owner, verifies mutations, runs the handler with the
