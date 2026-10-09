@@ -7,8 +7,8 @@ import {
   classifyWithJev,
   ClassifierProviderError,
 } from "./cc0-classifier"
-import { createSpotifyModule, SpotifyError } from "./spotify"
-import { createSpotifyConnectionStore } from "./spotify-store"
+import { SpotifyError } from "./spotify"
+import { legacySpotify } from "@/backend/entrypoints/platform"
 import { createMusicRunStore } from "./music-run-store"
 import { processMusicRun, RunTrackError } from "@/backend/workflows/music-runs"
 import { syncCurrentLikes } from "@/backend/workflows/playlist-sync"
@@ -31,13 +31,7 @@ export function musicRunRuntime(bindings: Cloudflare.Env) {
     writesEnabled: liveMusicPolicy.destinationAddsEnabled,
   })
   const sources = createCc0Sources({})
-  const spotify = createSpotifyModule({
-    store: createSpotifyConnectionStore(bindings.DB),
-    clientId: bindings.SPOTIFY_CLIENT_ID,
-    clientSecret: bindings.SPOTIFY_CLIENT_SECRET,
-    redirectUri: bindings.SPOTIFY_REDIRECT_URI,
-    encryptionKey: bindings.SPOTIFY_TOKEN_ENCRYPTION_KEY,
-  })
+  const spotify = legacySpotify(bindings)
   const enqueue = async (runId: string) => {
     await bindings.MUSIC_BASELINE_QUEUE.send(
       { kind: "music-run", runId },
@@ -175,9 +169,7 @@ export function toRunTrackError(cause: unknown): RunTrackError {
   if (cause instanceof SpotifyError)
     return new RunTrackError(
       cause.message,
-      cause.code === "temporary" ||
-        cause.code === "rate_limited" ||
-        cause.code === "invalid_response",
+      cause.retryable,
       cause.retryAfterSeconds,
       { cause }
     )

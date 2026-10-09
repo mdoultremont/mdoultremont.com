@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, ne, sql } from "drizzle-orm"
-import { createDatabase } from "@/backend/primitives/db/client"
+import { createDatabase } from "@/backend/primitives/database"
 import {
   musicDestinations,
   musicRuns,
@@ -10,7 +10,7 @@ import {
   musicBaselineRuns,
   musicDecisions,
   musicDeliveries,
-} from "@/backend/primitives/db/schema"
+} from "@/backend/primitives/database/schema"
 import type { MusicRun, RunTrack } from "@/backend/workflows/music-runs"
 import type {
   SavedClassification,

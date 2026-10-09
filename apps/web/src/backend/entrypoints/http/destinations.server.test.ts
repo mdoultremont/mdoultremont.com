@@ -4,7 +4,7 @@ const auth = vi.hoisted(() => ({
   requireCurrentOwner: vi.fn<() => Promise<{ id: string }>>(),
 }))
 vi.mock("cloudflare:workers", () => ({ env: {} }))
-vi.mock("./app-auth.server", () => ({
+vi.mock("../app-auth.server", () => ({
   requireCurrentOwner: auth.requireCurrentOwner,
 }))
 

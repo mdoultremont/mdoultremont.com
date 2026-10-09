@@ -1,6 +1,5 @@
 import { Effect, Layer } from "effect"
-import { createSpotifyModule } from "./spotify"
-import { createSpotifyConnectionStore } from "./spotify-store"
+import { legacySpotify } from "@/backend/entrypoints/platform"
 import { likesBaselineStoreLayer } from "./likes-baseline-store"
 import {
   BaselineClock,
@@ -10,13 +9,7 @@ import {
 } from "@/backend/workflows/likes-baseline"
 
 export function likesBaselineLayer(bindings: Cloudflare.Env) {
-  const spotify = createSpotifyModule({
-    store: createSpotifyConnectionStore(bindings.DB),
-    clientId: bindings.SPOTIFY_CLIENT_ID,
-    clientSecret: bindings.SPOTIFY_CLIENT_SECRET,
-    redirectUri: bindings.SPOTIFY_REDIRECT_URI,
-    encryptionKey: bindings.SPOTIFY_TOKEN_ENCRYPTION_KEY,
-  })
+  const spotify = legacySpotify(bindings)
   return Layer.mergeAll(
     likesBaselineStoreLayer(bindings.DB),
     Layer.succeed(BaselineSpotify, {

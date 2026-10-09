@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect"
 import { and, eq, gt, lt } from "drizzle-orm"
-import { appOwners, appSessions } from "@/backend/primitives/db/schema"
-import { createDatabase } from "@/backend/primitives/db/client"
+import { appOwners, appSessions } from "@/backend/primitives/database/schema"
+import { createDatabase } from "@/backend/primitives/database"
 import {
   AppAuthStore,
   AuthPersistenceError,

@@ -1,9 +1,10 @@
 import { env } from "cloudflare:workers"
-import { Effect } from "effect"
+import { Effect, Layer, Option } from "effect"
 import { requireCurrentOwner } from "./app-auth.server"
 import { createLikesBaselineHttp } from "./likes-baseline-http"
 import { likesBaselineLayer } from "@/backend/modules/likes-baseline-runtime"
-import { createSpotifyConnectionStore } from "@/backend/modules/spotify-store"
+import { SpotifyConnections } from "@/backend/modules/spotify"
+import { platformLayer } from "./platform"
 import {
   BaselineStore,
   retryLikesBaseline,
@@ -12,10 +13,18 @@ import {
 
 function services() {
   const layer = likesBaselineLayer(env)
-  const spotify = createSpotifyConnectionStore(env.DB)
+  const connections = SpotifyConnections.layer.pipe(
+    Layer.provide(platformLayer(env))
+  )
   return createLikesBaselineHttp({
     owner: (request) => requireCurrentOwner(request).catch(() => null),
-    connection: (ownerId) => spotify.get(ownerId),
+    connection: (ownerId) =>
+      Effect.runPromise(
+        SpotifyConnections.use((store) => store.get(ownerId)).pipe(
+          Effect.map(Option.getOrNull),
+          Effect.provide(connections)
+        )
+      ),
     latest: (ownerId, accountId) =>
       Effect.runPromise(
         Effect.provide(

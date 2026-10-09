@@ -1,9 +1,23 @@
+import { Clock, Effect } from "effect"
+
 const lifetimeSeconds = 600
 
-export async function createSpotifyOAuthState(
-  sessionToken: string,
-  now = Date.now()
-): Promise<string> {
+/** Signed, expiring OAuth `state` bound to the app session that started the flow. */
+export const createSpotifyOAuthState = Effect.fn("createSpotifyOAuthState")(
+  function* (sessionToken: string) {
+    const now = yield* Clock.currentTimeMillis
+    return yield* Effect.promise(() => signState(sessionToken, now))
+  }
+)
+
+export const verifySpotifyOAuthState = Effect.fn("verifySpotifyOAuthState")(
+  function* (state: string, sessionToken: string) {
+    const now = yield* Clock.currentTimeMillis
+    return yield* Effect.promise(() => verifyState(state, sessionToken, now))
+  }
+)
+
+async function signState(sessionToken: string, now: number): Promise<string> {
   const nonce = encode(crypto.getRandomValues(new Uint8Array(24)))
   const payload = `${nonce}.${Math.floor(now / 1000) + lifetimeSeconds}`
   const signature = await crypto.subtle.sign(
@@ -14,10 +28,10 @@ export async function createSpotifyOAuthState(
   return `${payload}.${encode(new Uint8Array(signature))}`
 }
 
-export async function verifySpotifyOAuthState(
+async function verifyState(
   state: string,
   sessionToken: string,
-  now = Date.now()
+  now: number
 ): Promise<boolean> {
   const parts = state.split(".")
   if (parts.length !== 3 || !/^[A-Za-z0-9_-]+$/u.test(parts[0] ?? ""))

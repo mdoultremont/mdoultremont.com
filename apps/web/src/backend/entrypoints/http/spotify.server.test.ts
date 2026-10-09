@@ -8,12 +8,12 @@ import {
 
 const mocks = vi.hoisted(() => ({
   owner: vi.fn<(request: Request) => Promise<{ id: string }>>(),
-  storeFactory: vi.fn<() => object>(),
+  prepare: vi.fn<() => void>(),
 }))
 
 vi.mock("cloudflare:workers", () => ({
   env: {
-    DB: {},
+    DB: { prepare: mocks.prepare },
     SPOTIFY_CLIENT_ID: "client",
     SPOTIFY_CLIENT_SECRET: "secret",
     SPOTIFY_REDIRECT_URI: "https://example.com/api/spotify/callback",
@@ -22,10 +22,7 @@ vi.mock("cloudflare:workers", () => ({
     ),
   },
 }))
-vi.mock("./app-auth.server", () => ({ requireCurrentOwner: mocks.owner }))
-vi.mock("../modules/spotify-store", () => ({
-  createSpotifyConnectionStore: mocks.storeFactory,
-}))
+vi.mock("../app-auth.server", () => ({ requireCurrentOwner: mocks.owner }))
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -65,7 +62,7 @@ describe("Spotify private entrypoint", () => {
         )
       ).status
     ).toBe(401)
-    expect(mocks.storeFactory).not.toHaveBeenCalled()
+    expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
   test("binds OAuth callback to the same session and state cookie", async () => {
@@ -97,7 +94,7 @@ describe("Spotify private entrypoint", () => {
       })
     )
     expect(wrongCookie.headers.get("Location")).toContain("spotify=failed")
-    expect(mocks.storeFactory).not.toHaveBeenCalled()
+    expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
   test("checks origin and CSRF token before disconnect", async () => {
@@ -110,6 +107,6 @@ describe("Spotify private entrypoint", () => {
       },
     })
     expect((await disconnectSpotify(request)).status).toBe(403)
-    expect(mocks.storeFactory).not.toHaveBeenCalled()
+    expect(mocks.prepare).not.toHaveBeenCalled()
   })
 })

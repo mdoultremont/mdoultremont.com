@@ -46,8 +46,8 @@ export async function consumeLikesBaselineBatch(
       const cause = error instanceof BaselineError ? error.cause : null
       const spotify = cause instanceof SpotifyError ? cause : null
       const permanent =
-        spotify?.code === "reconnect_needed" ||
-        spotify?.code === "not_connected" ||
+        spotify?.reason._tag === "ReconnectNeeded" ||
+        spotify?.reason._tag === "NotConnected" ||
         (error instanceof BaselineError && error.code === "invalid_page")
       if (permanent || message.attempts >= 10) {
         const explanation =
