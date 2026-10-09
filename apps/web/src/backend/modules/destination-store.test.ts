@@ -19,7 +19,9 @@ function setup() {
     .prepare("INSERT INTO app_owners VALUES (?, ?, ?, ?, ?)")
     .run("owner", "owner", null, null, 1)
   sqlite
-    .prepare("INSERT INTO spotify_connections VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .prepare(
+      "INSERT INTO spotify_connections (owner_id, account_id, display_name, encrypted_refresh_token, scopes, connected_at, needs_reconnect, spotify_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
     .run("owner", "account", null, "encrypted", "scopes", 1, 0, "spotify-user")
 
   const binding = {
