@@ -13,5 +13,9 @@
   actions must verify the configured GitHub owner on every request.
 - Edit content records under `content/`. Update the repository-root
   `.pages.yml` when their schema or media paths change.
+- Generate D1 migrations with `pnpm db:generate`. Production applies them
+  automatically before each deploy, while the previous Worker still runs, so
+  every migration must stay compatible with the code deployed before it (see
+  `docs/deploy-to-cloudflare.md`).
 - Generate `src/routeTree.gen.ts` with TanStack Router tooling.
 - Run `pnpm check` and `pnpm build` from the repository root.

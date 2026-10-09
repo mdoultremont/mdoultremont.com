@@ -63,11 +63,11 @@ Worker variables and secrets: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
 how to obtain each. A missing variable returns 503 from the routes that need it.
 
 Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, and the hourly
-cron. Apply migrations before first use:
+cron. Production deploys apply migrations automatically (see
+[deploying](deploy-to-cloudflare.md)); locally, run:
 
 ```sh
 pnpm --filter @mdoultremont/portfolio db:migrate:local
-pnpm --filter @mdoultremont/portfolio exec wrangler d1 migrations apply mdoultremont-data --remote
 ```
 
 Disconnecting Spotify deletes the connection and, through foreign keys, every
