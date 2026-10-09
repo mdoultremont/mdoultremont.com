@@ -64,7 +64,9 @@ export const musicSettings = sqliteTable("music_settings", {
     .primaryKey()
     .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
   reviewPlaylistId: text("review_playlist_id"),
-  automationEnabled: integer("automation_enabled", { mode: "boolean" })
+  /** The owner's statement that destinations are set up and classification may run. */
+  ready: integer("ready", { mode: "boolean" }).notNull().default(false),
+  automaticDelivery: integer("automatic_delivery", { mode: "boolean" })
     .notNull()
     .default(false),
   updatedAt: integer("updated_at").notNull(),
@@ -156,6 +158,7 @@ export const musicRecordings = sqliteTable(
   (table) => [index("music_recordings_status_idx").on(table.status)]
 )
 
+/** The latest classification of one liked track. Reclassification replaces it. */
 export const musicDecisions = sqliteTable(
   "music_decisions",
   {
@@ -163,7 +166,22 @@ export const musicDecisions = sqliteTable(
       .notNull()
       .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
     trackId: text("track_id").notNull(),
-    decision: text("decision").notNull(),
+    /** Destination playlists the track belongs to; empty when it goes to review. */
+    destinationIds: text("destination_ids", { mode: "json" })
+      .$type<readonly string[]>()
+      .notNull(),
+    review: integer("review", { mode: "boolean" }).notNull(),
+    reason: text("reason", {
+      enum: ["classified", "no_recording_data"],
+    }).notNull(),
+    /** Yes-probability per destination playlist ID, as returned by the classifier. */
+    probabilities: text("probabilities", { mode: "json" })
+      .$type<Readonly<Record<string, number>>>()
+      .notNull(),
+    model: text("model"),
+    /** Identifies the destinations and threshold the decision was made against. */
+    fingerprint: text("fingerprint").notNull(),
+    classifiedAt: integer("classified_at").notNull(),
   },
   (table) => [primaryKey({ columns: [table.ownerId, table.trackId] })]
 )

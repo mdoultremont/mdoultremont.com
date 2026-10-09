@@ -35,6 +35,11 @@ export class DestinationStore extends Context.Service<
       ownerId: string,
       playlistId: string
     ) => Effect.Effect<void, DestinationPersistenceError>
+    readonly setReady: (
+      ownerId: string,
+      ready: boolean,
+      now: number
+    ) => Effect.Effect<void, DestinationPersistenceError>
     readonly setReview: (
       ownerId: string,
       playlistId: string | null,
@@ -87,6 +92,7 @@ export class DestinationStore extends Context.Service<
                 })
               ),
               reviewPlaylistId: settings?.reviewPlaylistId ?? null,
+              ready: settings?.ready ?? false,
             }))
           ),
 
@@ -116,6 +122,17 @@ export class DestinationStore extends Context.Service<
             Effect.flatMap((result) => changedOrConflict(result.meta.changes))
           )
         },
+
+        setReady: (ownerId, ready, now) =>
+          query((db) =>
+            db
+              .insert(musicSettings)
+              .values({ ownerId, ready, updatedAt: now })
+              .onConflictDoUpdate({
+                target: musicSettings.ownerId,
+                set: { ready, updatedAt: now },
+              })
+          ).pipe(Effect.asVoid),
 
         remove: (ownerId, playlistId) =>
           query((db) =>

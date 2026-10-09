@@ -11,6 +11,8 @@ export interface Destination {
 export interface DestinationConfiguration {
   readonly destinations: readonly Destination[]
   readonly reviewPlaylistId: string | null
+  /** The owner's statement that this setup is complete and classification may run. */
+  readonly ready: boolean
 }
 
 export interface OwnedPlaylist {
@@ -37,6 +39,11 @@ export class DestinationPersistenceError extends Data.TaggedError(
     return "Could not save the playlist configuration"
   }
 }
+
+/** Ready needs a review playlist and at least one enabled destination with a description. */
+export class SetupIncomplete extends Data.TaggedError("SetupIncomplete")<{
+  readonly message: string
+}> {}
 
 /** The playlist exists but cannot be used: not owned, not found, or rejected by Spotify. */
 export class PlaylistNotUsable extends Data.TaggedError("PlaylistNotUsable")<{

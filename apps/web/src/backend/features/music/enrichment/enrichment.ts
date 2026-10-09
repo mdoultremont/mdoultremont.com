@@ -34,20 +34,18 @@ export class MusicEnrichment extends Context.Service<
   MusicEnrichment,
   {
     /** Queues a lookup batch. Safe to call often: a batch with no work ends at once. */
-    readonly request: () => Effect.Effect<void, JobQueueError>
+    readonly request: (ownerId: string) => Effect.Effect<void, JobQueueError>
     /** Looks up one batch of ISRCs and queues the next while work remains. */
-    readonly processNext: () => Effect.Effect<
-      { readonly looked: number },
-      EnrichmentError
-    >
+    readonly processNext: (
+      ownerId: string
+    ) => Effect.Effect<{ readonly looked: number }, EnrichmentError>
     readonly status: (
       ownerId: string
     ) => Effect.Effect<EnrichmentStatus, EnrichmentPersistenceError>
     /** Looks up not-found, ambiguous, and failed ISRCs again. */
-    readonly retryUnresolved: () => Effect.Effect<
-      number,
-      EnrichmentPersistenceError | JobQueueError
-    >
+    readonly retryUnresolved: (
+      ownerId: string
+    ) => Effect.Effect<number, EnrichmentPersistenceError | JobQueueError>
   }
 >()("backend/features/music/MusicEnrichment") {
   static readonly layerNoDeps = Layer.effect(
@@ -58,10 +56,11 @@ export class MusicEnrichment extends Context.Service<
       const acousticBrainz = yield* AcousticBrainz
       const queue = yield* JobQueue
 
-      const request = () =>
-        queue.send(EnrichmentMessage.make({ kind: "music.enrichment" }), {
-          delaySeconds: continuationDelaySeconds,
-        })
+      const request = (ownerId: string) =>
+        queue.send(
+          EnrichmentMessage.make({ kind: "music.enrichment", ownerId }),
+          { delaySeconds: continuationDelaySeconds }
+        )
 
       /**
        * Retryable provider failures stop the batch and propagate, so the
@@ -116,14 +115,14 @@ export class MusicEnrichment extends Context.Service<
         })
       })
 
-      const processNext = Effect.fn("MusicEnrichment.processNext")(
-        function* () {
-          const isrcs = yield* store.pendingIsrcs(batchSize)
-          for (const isrc of isrcs) yield* enrich(isrc)
-          if (isrcs.length === batchSize) yield* request()
-          return { looked: isrcs.length }
-        }
-      )
+      const processNext = Effect.fn("MusicEnrichment.processNext")(function* (
+        ownerId: string
+      ) {
+        const isrcs = yield* store.pendingIsrcs(batchSize)
+        for (const isrc of isrcs) yield* enrich(isrc)
+        if (isrcs.length === batchSize) yield* request(ownerId)
+        return { looked: isrcs.length }
+      })
 
       const status = Effect.fn("MusicEnrichment.status")(function* (
         ownerId: string
@@ -132,9 +131,9 @@ export class MusicEnrichment extends Context.Service<
       })
 
       const retryUnresolved = Effect.fn("MusicEnrichment.retryUnresolved")(
-        function* () {
+        function* (ownerId: string) {
           const cleared = yield* store.clearUnresolved()
-          if (cleared > 0) yield* request()
+          if (cleared > 0) yield* request(ownerId)
           return cleared
         }
       )

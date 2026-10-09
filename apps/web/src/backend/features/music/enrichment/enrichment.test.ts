@@ -95,7 +95,7 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        yield* enrichment.processNext()
+        yield* enrichment.processNext("owner")
         expect(t.recordingRow("USAAA2600001")).toMatchObject({
           status: "found",
           recording_id: "mb-1",
@@ -119,8 +119,8 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        yield* enrichment.processNext()
-        yield* enrichment.processNext()
+        yield* enrichment.processNext("owner")
+        yield* enrichment.processNext("owner")
         expect(t.recordingsByIsrc).toHaveBeenCalledOnce()
         expect(yield* enrichment.status("owner")).toMatchObject({
           enriched: 2,
@@ -145,7 +145,7 @@ describe("music enrichment", () => {
       return t.run(
         Effect.gen(function* () {
           const enrichment = yield* MusicEnrichment
-          yield* enrichment.processNext()
+          yield* enrichment.processNext("owner")
           expect(yield* enrichment.status("owner")).toMatchObject({
             enriched: 0,
             notFound: 1,
@@ -165,7 +165,9 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        assert.deepStrictEqual(yield* enrichment.processNext(), { looked: 0 })
+        assert.deepStrictEqual(yield* enrichment.processNext("owner"), {
+          looked: 0,
+        })
       })
     )
   })
@@ -179,7 +181,7 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        const error = yield* Effect.flip(enrichment.processNext())
+        const error = yield* Effect.flip(enrichment.processNext("owner"))
         assert.strictEqual(error._tag, "MusicBrainzError")
         expect(yield* enrichment.status("owner")).toMatchObject({ pending: 1 })
       })
@@ -201,7 +203,7 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        yield* enrichment.processNext()
+        yield* enrichment.processNext("owner")
         expect(yield* enrichment.status("owner")).toMatchObject({
           failed: 1,
           enriched: 1,
@@ -218,9 +220,15 @@ describe("music enrichment", () => {
     return t.run(
       Effect.gen(function* () {
         const enrichment = yield* MusicEnrichment
-        assert.deepStrictEqual(yield* enrichment.processNext(), { looked: 10 })
-        assert.deepStrictEqual(t.sent, [{ kind: "music.enrichment" }])
-        assert.deepStrictEqual(yield* enrichment.processNext(), { looked: 2 })
+        assert.deepStrictEqual(yield* enrichment.processNext("owner"), {
+          looked: 10,
+        })
+        assert.deepStrictEqual(t.sent, [
+          { kind: "music.enrichment", ownerId: "owner" },
+        ])
+        assert.deepStrictEqual(yield* enrichment.processNext("owner"), {
+          looked: 2,
+        })
         assert.strictEqual(t.sent.length, 1)
       })
     )
@@ -234,8 +242,8 @@ describe("music enrichment", () => {
       return t.run(
         Effect.gen(function* () {
           const enrichment = yield* MusicEnrichment
-          yield* enrichment.processNext()
-          assert.strictEqual(yield* enrichment.retryUnresolved(), 1)
+          yield* enrichment.processNext("owner")
+          assert.strictEqual(yield* enrichment.retryUnresolved("owner"), 1)
           expect(yield* enrichment.status("owner")).toMatchObject({
             pending: 1,
           })

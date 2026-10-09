@@ -40,11 +40,14 @@ export class MusicIngestion extends Context.Service<
     ) => Effect.Effect<Ingestion, IngestionPersistenceError | JobQueueError>
     /**
      * Handles one page; queues the next page or completes the ingestion.
-     * Reports how many likes the page added, so later steps know there is work.
+     * Reports whose likes and how many the page added, so later steps know there is work.
      */
     readonly processNext: (
       ingestionId: string
-    ) => Effect.Effect<{ readonly added: number }, IngestionError>
+    ) => Effect.Effect<
+      { readonly ownerId: string | null; readonly added: number },
+      IngestionError
+    >
     readonly fail: (
       ingestionId: string,
       error: string
@@ -105,7 +108,7 @@ export class MusicIngestion extends Context.Service<
           ingestion.status === "completed" ||
           ingestion.status === "failed"
         )
-          return { added: 0 }
+          return { ownerId: null, added: 0 }
         const page = yield* spotify.savedTracksPage(
           ingestion.ownerId,
           ingestion.cursor ?? undefined
@@ -130,7 +133,7 @@ export class MusicIngestion extends Context.Service<
           (ingestion.kind === "full" || !result.reachedKnownLike)
         if (morePages) yield* enqueue(ingestion.id)
         else yield* store.complete(ingestion, now)
-        return { added: result.added }
+        return { ownerId: ingestion.ownerId, added: result.added }
       })
 
       const fail = Effect.fn("MusicIngestion.fail")(function* (

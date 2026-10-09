@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "dc4af204-0a38-4785-81a7-c3a4fb3b72ef",
+  "id": "ff6d5cce-0a6d-4e96-b3a5-6e01be73b31a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "app_owners": {
@@ -120,9 +120,51 @@
           "notNull": true,
           "autoincrement": false
         },
-        "decision": {
-          "name": "decision",
+        "destination_ids": {
+          "name": "destination_ids",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "review": {
+          "name": "review",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "probabilities": {
+          "name": "probabilities",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fingerprint": {
+          "name": "fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "classified_at": {
+          "name": "classified_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -588,8 +630,16 @@
           "notNull": false,
           "autoincrement": false
         },
-        "automation_enabled": {
-          "name": "automation_enabled",
+        "ready": {
+          "name": "ready",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "automatic_delivery": {
+          "name": "automatic_delivery",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

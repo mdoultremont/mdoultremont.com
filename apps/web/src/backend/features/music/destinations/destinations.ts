@@ -13,6 +13,7 @@ import {
   type DestinationPersistenceError,
   type OwnedPlaylist,
   PlaylistNotUsable,
+  SetupIncomplete,
 } from "./errors"
 import { DestinationStore } from "./store"
 
@@ -23,6 +24,7 @@ export type DestinationsError =
   | DestinationPersistenceError
   | PlaylistNotUsable
   | CreatedPlaylistConfigurationError
+  | SetupIncomplete
   | SpotifyError
 
 /**
@@ -71,6 +73,11 @@ export class Destinations extends Context.Service<
       | PlaylistNotUsable
       | SpotifyError
     >
+    /** Marks setup as complete (classification may run) or not. */
+    readonly setReady: (input: {
+      readonly ownerId: string
+      readonly ready: boolean
+    }) => Effect.Effect<boolean, SetupIncomplete | DestinationPersistenceError>
     readonly remove: (input: {
       readonly ownerId: string
       readonly playlistId: string
@@ -178,6 +185,35 @@ export class Destinations extends Context.Service<
         }
       )
 
+      const setReady = Effect.fn("Destinations.setReady")(function* (input: {
+        readonly ownerId: string
+        readonly ready: boolean
+      }) {
+        if (input.ready) {
+          const configuration = yield* store.read(input.ownerId)
+          if (configuration.reviewPlaylistId === null)
+            return yield* new SetupIncomplete({
+              message:
+                "Choose a review playlist before starting classification",
+            })
+          if (
+            !configuration.destinations.some(
+              (destination) => destination.enabled && destination.description
+            )
+          )
+            return yield* new SetupIncomplete({
+              message:
+                "Enable at least one playlist with a description before starting classification",
+            })
+        }
+        yield* store.setReady(
+          input.ownerId,
+          input.ready,
+          yield* Clock.currentTimeMillis
+        )
+        return input.ready
+      })
+
       const remove = Effect.fn("Destinations.remove")(function* (input: {
         readonly ownerId: string
         readonly playlistId: string
@@ -191,6 +227,7 @@ export class Destinations extends Context.Service<
         save,
         create,
         setReviewPlaylist,
+        setReady,
         remove,
       })
     })

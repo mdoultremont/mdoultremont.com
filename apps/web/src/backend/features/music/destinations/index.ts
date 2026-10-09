@@ -9,4 +9,5 @@ export {
   DestinationPersistenceError,
   type OwnedPlaylist,
   PlaylistNotUsable,
+  SetupIncomplete,
 } from "./errors"

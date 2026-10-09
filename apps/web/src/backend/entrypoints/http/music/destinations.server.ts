@@ -36,6 +36,8 @@ const route = (
             Effect.succeed(json({ error: error.message }, 400)),
           PlaylistNotUsable: (error) =>
             Effect.succeed(json({ error: error.message }, 400)),
+          SetupIncomplete: (error) =>
+            Effect.succeed(json({ error: error.message }, 409)),
           DestinationConflict: (error) =>
             Effect.succeed(json({ error: error.message }, 409)),
           DestinationPersistenceError: (error) =>

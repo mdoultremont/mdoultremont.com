@@ -18,7 +18,13 @@ CREATE INDEX `app_sessions_expires_at_idx` ON `app_sessions` (`expires_at`);--> 
 CREATE TABLE `music_decisions` (
 	`owner_id` text NOT NULL,
 	`track_id` text NOT NULL,
-	`decision` text NOT NULL,
+	`destination_ids` text NOT NULL,
+	`review` integer NOT NULL,
+	`reason` text NOT NULL,
+	`probabilities` text NOT NULL,
+	`model` text,
+	`fingerprint` text NOT NULL,
+	`classified_at` integer NOT NULL,
 	PRIMARY KEY(`owner_id`, `track_id`),
 	FOREIGN KEY (`owner_id`) REFERENCES `spotify_connections`(`owner_id`) ON UPDATE no action ON DELETE cascade
 );
@@ -93,7 +99,8 @@ CREATE INDEX `music_recordings_status_idx` ON `music_recordings` (`status`);--> 
 CREATE TABLE `music_settings` (
 	`owner_id` text PRIMARY KEY NOT NULL,
 	`review_playlist_id` text,
-	`automation_enabled` integer DEFAULT false NOT NULL,
+	`ready` integer DEFAULT false NOT NULL,
+	`automatic_delivery` integer DEFAULT false NOT NULL,
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `spotify_connections`(`owner_id`) ON UPDATE no action ON DELETE cascade
 );

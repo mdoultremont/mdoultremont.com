@@ -2,6 +2,11 @@ import { describe, expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import { vi } from "vitest"
 import {
+  type ClassificationStatus,
+  MusicClassification,
+} from "@/backend/features/music/classification"
+import { Destinations } from "@/backend/features/music/destinations"
+import {
   type EnrichmentStatus,
   MusicEnrichment,
 } from "@/backend/features/music/enrichment"
@@ -21,10 +26,32 @@ const enrichmentStatus = (pending: number): EnrichmentStatus => ({
   withoutIsrc: 0,
 })
 
-function setup(options: { added?: number; pending?: number } = {}) {
+const classificationStatus = (pending: number): ClassificationStatus => ({
+  ready: true,
+  decided: 0,
+  toDestinations: 0,
+  toReview: 0,
+  withoutRecordingData: 0,
+  waitingForEnrichment: 0,
+  pending,
+  outdated: 0,
+  recent: [],
+})
+
+/** Partial service fakes: only the methods the pipeline calls are implemented. */
+const fake = <S>(service: unknown) => service as S
+
+function setup(
+  options: {
+    added?: number
+    looked?: number
+    enrichmentPending?: number
+    classificationPending?: number
+  } = {}
+) {
   const ingestion = {
     processNext: vi.fn<MusicIngestion["Service"]["processNext"]>(() =>
-      Effect.succeed({ added: options.added ?? 0 })
+      Effect.succeed({ ownerId: "owner", added: options.added ?? 0 })
     ),
     fail: vi.fn<MusicIngestion["Service"]["fail"]>(() => Effect.void),
     scheduled: vi.fn<MusicIngestion["Service"]["scheduled"]>(() => Effect.void),
@@ -32,29 +59,43 @@ function setup(options: { added?: number; pending?: number } = {}) {
   const enrichment = {
     request: vi.fn<MusicEnrichment["Service"]["request"]>(() => Effect.void),
     processNext: vi.fn<MusicEnrichment["Service"]["processNext"]>(() =>
-      Effect.succeed({ looked: 0 })
+      Effect.succeed({ looked: options.looked ?? 0 })
     ),
     status: vi.fn<MusicEnrichment["Service"]["status"]>(() =>
-      Effect.succeed(enrichmentStatus(options.pending ?? 0))
+      Effect.succeed(enrichmentStatus(options.enrichmentPending ?? 0))
+    ),
+  }
+  const classification = {
+    request: vi.fn<MusicClassification["Service"]["request"]>(
+      () => Effect.void
+    ),
+    processNext: vi.fn<MusicClassification["Service"]["processNext"]>(() =>
+      Effect.succeed({ decided: 0 })
+    ),
+    status: vi.fn<MusicClassification["Service"]["status"]>(() =>
+      Effect.succeed(classificationStatus(options.classificationPending ?? 0))
+    ),
+  }
+  const destinations = {
+    setReady: vi.fn<Destinations["Service"]["setReady"]>(({ ready }) =>
+      Effect.succeed(ready)
     ),
   }
   const layer = MusicPipeline.layerNoDeps.pipe(
     Layer.provide(
       Layer.mergeAll(
-        Layer.succeed(
-          MusicIngestion,
-          ingestion as unknown as MusicIngestion["Service"]
-        ),
-        Layer.succeed(
-          MusicEnrichment,
-          enrichment as unknown as MusicEnrichment["Service"]
-        )
+        Layer.succeed(MusicIngestion, fake(ingestion)),
+        Layer.succeed(MusicEnrichment, fake(enrichment)),
+        Layer.succeed(MusicClassification, fake(classification)),
+        Layer.succeed(Destinations, fake(destinations))
       )
     )
   )
   return {
     ingestion,
     enrichment,
+    classification,
+    destinations,
     run: <A, E>(body: Effect.Effect<A, E, MusicPipeline>) =>
       Effect.provide(body, layer),
   }
@@ -66,36 +107,72 @@ const ingestionMessage = {
 } as const
 
 describe("music pipeline", () => {
-  it.effect("starts enrichment as soon as an ingestion page adds likes", () => {
-    const t = setup({ added: 3 })
-    return t.run(
-      Effect.gen(function* () {
-        const pipeline = yield* MusicPipeline
-        yield* pipeline.handle(ingestionMessage)
-        expect(t.ingestion.processNext).toHaveBeenCalledWith("ing-1")
-        expect(t.enrichment.request).toHaveBeenCalledOnce()
-      })
-    )
-  })
+  it.effect(
+    "an ingestion page with new likes starts enrichment and classification",
+    () => {
+      const t = setup({ added: 3 })
+      return t.run(
+        Effect.gen(function* () {
+          const pipeline = yield* MusicPipeline
+          yield* pipeline.handle(ingestionMessage)
+          expect(t.ingestion.processNext).toHaveBeenCalledWith("ing-1")
+          expect(t.enrichment.request).toHaveBeenCalledWith("owner")
+          expect(t.classification.request).toHaveBeenCalledWith("owner")
+        })
+      )
+    }
+  )
 
-  it.effect("does not wake enrichment for a page with nothing new", () => {
+  it.effect("an ingestion page with nothing new wakes no other step", () => {
     const t = setup({ added: 0 })
     return t.run(
       Effect.gen(function* () {
         const pipeline = yield* MusicPipeline
         yield* pipeline.handle(ingestionMessage)
         expect(t.enrichment.request).not.toHaveBeenCalled()
+        expect(t.classification.request).not.toHaveBeenCalled()
       })
     )
   })
 
-  it.effect("runs enrichment batches", () => {
+  it.effect(
+    "an enrichment batch that looked something up starts classification",
+    () => {
+      const t = setup({ looked: 4 })
+      return t.run(
+        Effect.gen(function* () {
+          const pipeline = yield* MusicPipeline
+          yield* pipeline.handle({ kind: "music.enrichment", ownerId: "owner" })
+          expect(t.enrichment.processNext).toHaveBeenCalledWith("owner")
+          expect(t.classification.request).toHaveBeenCalledWith("owner")
+        })
+      )
+    }
+  )
+
+  it.effect("runs classification batches", () => {
     const t = setup()
     return t.run(
       Effect.gen(function* () {
         const pipeline = yield* MusicPipeline
-        yield* pipeline.handle({ kind: "music.enrichment" })
-        expect(t.enrichment.processNext).toHaveBeenCalledOnce()
+        yield* pipeline.handle({
+          kind: "music.classification",
+          ownerId: "owner",
+        })
+        expect(t.classification.processNext).toHaveBeenCalledWith("owner")
+      })
+    )
+  })
+
+  it.effect("setting Ready starts classification; clearing it does not", () => {
+    const t = setup()
+    return t.run(
+      Effect.gen(function* () {
+        const pipeline = yield* MusicPipeline
+        yield* pipeline.setReady("owner", false)
+        expect(t.classification.request).not.toHaveBeenCalled()
+        yield* pipeline.setReady("owner", true)
+        expect(t.classification.request).toHaveBeenCalledWith("owner")
       })
     )
   })
@@ -114,22 +191,18 @@ describe("music pipeline", () => {
     )
   })
 
-  it.effect(
-    "hourly upkeep resumes enrichment only when lookups are pending",
-    () => {
-      const idle = setup({ pending: 0 })
-      const busy = setup({ pending: 4 })
-      return Effect.gen(function* () {
-        yield* idle.run(
-          MusicPipeline.use((pipeline) => pipeline.scheduled("owner"))
-        )
-        yield* busy.run(
-          MusicPipeline.use((pipeline) => pipeline.scheduled("owner"))
-        )
-        expect(idle.ingestion.scheduled).toHaveBeenCalledWith("owner")
-        expect(idle.enrichment.request).not.toHaveBeenCalled()
-        expect(busy.enrichment.request).toHaveBeenCalledOnce()
-      })
-    }
-  )
+  it.effect("hourly upkeep resumes only the steps with pending work", () => {
+    const idle = setup()
+    const busy = setup({ enrichmentPending: 4, classificationPending: 2 })
+    const upkeep = MusicPipeline.use((pipeline) => pipeline.scheduled("owner"))
+    return Effect.gen(function* () {
+      yield* idle.run(upkeep)
+      yield* busy.run(upkeep)
+      expect(idle.ingestion.scheduled).toHaveBeenCalledWith("owner")
+      expect(idle.enrichment.request).not.toHaveBeenCalled()
+      expect(idle.classification.request).not.toHaveBeenCalled()
+      expect(busy.enrichment.request).toHaveBeenCalledOnce()
+      expect(busy.classification.request).toHaveBeenCalledOnce()
+    })
+  })
 })

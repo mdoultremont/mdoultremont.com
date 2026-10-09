@@ -1,5 +1,16 @@
 import { Context, Effect, Layer, Schema } from "effect"
 import {
+  type ClassificationError,
+  ClassificationMessage,
+  type ClassificationPersistenceError,
+  MusicClassification,
+} from "@/backend/features/music/classification"
+import {
+  type DestinationPersistenceError,
+  Destinations,
+  type SetupIncomplete,
+} from "@/backend/features/music/destinations"
+import {
   type EnrichmentError,
   EnrichmentMessage,
   type EnrichmentPersistenceError,
@@ -17,10 +28,14 @@ import type { JobQueueError } from "@/backend/primitives/job-queue"
 export const PipelineMessage = Schema.Union([
   IngestionMessage,
   EnrichmentMessage,
+  ClassificationMessage,
 ])
 export type PipelineMessage = typeof PipelineMessage.Type
 
-export type PipelineError = IngestionError | EnrichmentError
+export type PipelineError =
+  | IngestionError
+  | EnrichmentError
+  | ClassificationError
 
 /** True when the same message may succeed later without the owner doing anything. */
 export function isRetryable(error: PipelineError): boolean {
@@ -28,11 +43,14 @@ export function isRetryable(error: PipelineError): boolean {
     case "SpotifyError":
     case "MusicBrainzError":
     case "AcousticBrainzError":
+    case "JevError":
       return error.retryable
     case "InvalidLikesPage":
       return false
     case "IngestionPersistenceError":
     case "EnrichmentPersistenceError":
+    case "ClassificationPersistenceError":
+    case "DestinationPersistenceError":
     case "JobQueueError":
       return true
   }
@@ -40,7 +58,10 @@ export function isRetryable(error: PipelineError): boolean {
 
 /**
  * The music pipeline: runs each step's queued work and starts the next step
- * when there is something for it. Ingestion feeds enrichment.
+ * when there is something for it.
+ *
+ *   ingestion ──► enrichment ──► classification (once Ready)
+ *        └──────────────────────► classification (tracks without an ISRC)
  */
 export class MusicPipeline extends Context.Service<
   MusicPipeline,
@@ -53,12 +74,24 @@ export class MusicPipeline extends Context.Service<
       message: PipelineMessage,
       error: PipelineError
     ) => Effect.Effect<void, IngestionPersistenceError>
+    /** Marks the setup Ready (or not) and starts classification when it is. */
+    readonly setReady: (
+      ownerId: string,
+      ready: boolean
+    ) => Effect.Effect<
+      boolean,
+      SetupIncomplete | DestinationPersistenceError | JobQueueError
+    >
     /** Hourly upkeep for every step. */
     readonly scheduled: (
       ownerId: string
     ) => Effect.Effect<
       void,
-      IngestionPersistenceError | EnrichmentPersistenceError | JobQueueError
+      | IngestionPersistenceError
+      | EnrichmentPersistenceError
+      | ClassificationPersistenceError
+      | DestinationPersistenceError
+      | JobQueueError
     >
   }
 >()("backend/features/music/MusicPipeline") {
@@ -67,19 +100,29 @@ export class MusicPipeline extends Context.Service<
     Effect.gen(function* () {
       const ingestion = yield* MusicIngestion
       const enrichment = yield* MusicEnrichment
+      const classification = yield* MusicClassification
+      const destinations = yield* Destinations
 
       const handle = Effect.fn("MusicPipeline.handle")(function* (
         message: PipelineMessage
       ) {
         switch (message.kind) {
           case "music.ingestion": {
-            const { added } = yield* ingestion.processNext(message.ingestionId)
-            // Enrichment starts during ingestion, not after it.
-            if (added > 0) yield* enrichment.request()
+            const page = yield* ingestion.processNext(message.ingestionId)
+            if (page.ownerId === null || page.added === 0) return
+            // Enrichment starts during ingestion, not after it. Tracks
+            // without an ISRC can be classified straight away.
+            yield* enrichment.request(page.ownerId)
+            yield* classification.request(page.ownerId)
             return
           }
-          case "music.enrichment":
-            yield* enrichment.processNext()
+          case "music.enrichment": {
+            const { looked } = yield* enrichment.processNext(message.ownerId)
+            if (looked > 0) yield* classification.request(message.ownerId)
+            return
+          }
+          case "music.classification":
+            yield* classification.processNext(message.ownerId)
             return
         }
       })
@@ -93,13 +136,23 @@ export class MusicPipeline extends Context.Service<
             yield* ingestion.fail(message.ingestionId, error.message)
             return
           case "music.enrichment":
-            // Unresolved ISRCs stay pending; the next hourly upkeep tries again.
+          case "music.classification":
+            // Undone work stays pending; the next hourly upkeep tries again.
             yield* Effect.logWarning(
-              "Enrichment batch abandoned",
+              `${message.kind} batch abandoned`,
               error.message
             )
             return
         }
+      })
+
+      const setReady = Effect.fn("MusicPipeline.setReady")(function* (
+        ownerId: string,
+        ready: boolean
+      ) {
+        const result = yield* destinations.setReady({ ownerId, ready })
+        if (result) yield* classification.request(ownerId)
+        return result
       })
 
       const scheduled = Effect.fn("MusicPipeline.scheduled")(function* (
@@ -107,15 +160,25 @@ export class MusicPipeline extends Context.Service<
       ) {
         yield* ingestion.scheduled(ownerId)
         const { pending } = yield* enrichment.status(ownerId)
-        if (pending > 0) yield* enrichment.request()
+        if (pending > 0) yield* enrichment.request(ownerId)
+        const classificationStatus = yield* classification.status(ownerId)
+        if (classificationStatus.pending > 0)
+          yield* classification.request(ownerId)
       })
 
-      return MusicPipeline.of({ handle, giveUp, scheduled })
+      return MusicPipeline.of({ handle, giveUp, setReady, scheduled })
     })
   )
 
   /** Production layer. Needs the platform (`Database`, `JobQueue`, config). */
   static readonly layer = MusicPipeline.layerNoDeps.pipe(
-    Layer.provide(Layer.mergeAll(MusicIngestion.layer, MusicEnrichment.layer))
+    Layer.provide(
+      Layer.mergeAll(
+        MusicIngestion.layer,
+        MusicEnrichment.layer,
+        MusicClassification.layer,
+        Destinations.layer
+      )
+    )
   )
 }

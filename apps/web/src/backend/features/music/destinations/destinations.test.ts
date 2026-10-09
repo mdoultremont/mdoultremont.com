@@ -32,6 +32,7 @@ const tagOf = <A, E extends { _tag: string }>(effect: Effect.Effect<A, E>) =>
 function setup() {
   const destinations = new Map<string, Destination>()
   let reviewPlaylistId: string | null = null
+  let ready = false
   let failNextSave = false
 
   const spotify = {
@@ -54,6 +55,7 @@ function setup() {
       Effect.sync(() => ({
         destinations: [...destinations.values()],
         reviewPlaylistId,
+        ready,
       }))
     ),
     save: vi.fn<Store["save"]>((_ownerId: string, destination: Destination) => {
@@ -68,6 +70,11 @@ function setup() {
       destinations.set(destination.playlistId, destination)
       return Effect.void
     }),
+    setReady: vi.fn<Store["setReady"]>((_ownerId, value) =>
+      Effect.sync(() => {
+        ready = value
+      })
+    ),
     remove: vi.fn<Store["remove"]>((_ownerId: string, playlistId: string) =>
       Effect.sync(() => {
         destinations.delete(playlistId)
@@ -311,6 +318,48 @@ describe("destination configuration", () => {
             description: "",
             enabled: false,
           })
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "Ready needs a review playlist and a described, enabled destination",
+    () => {
+      const { run } = setup()
+      return run(
+        Effect.gen(function* () {
+          const destinations = yield* Destinations
+          const ready = destinations.setReady({ ownerId: "owner", ready: true })
+          expect(yield* Effect.flip(ready)).toMatchObject({
+            _tag: "SetupIncomplete",
+            message: expect.stringContaining("review playlist"),
+          })
+          yield* destinations.setReviewPlaylist({
+            ownerId: "owner",
+            playlistId: "review",
+          })
+          yield* destinations.save({
+            ownerId: "owner",
+            playlistId: "jazz",
+            description: "",
+            enabled: false,
+          })
+          expect(yield* Effect.flip(ready)).toMatchObject({
+            _tag: "SetupIncomplete",
+            message: expect.stringContaining("Enable at least one"),
+          })
+          yield* destinations.save({
+            ownerId: "owner",
+            playlistId: "jazz",
+            description: "Late-night jazz",
+            enabled: true,
+          })
+          assert.isTrue(yield* ready)
+          assert.isTrue((yield* destinations.read("owner")).ready)
+          assert.isFalse(
+            yield* destinations.setReady({ ownerId: "owner", ready: false })
+          )
         })
       )
     }

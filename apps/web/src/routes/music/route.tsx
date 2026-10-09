@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
 import { currentOwner } from "@/backend/entrypoints/app-auth.server"
+import { ClassificationPanel } from "@/components/music/classification-panel"
 import { DestinationPanel } from "@/components/music/destination-panel"
 import { EnrichmentPanel } from "@/components/music/enrichment-panel"
 import { IngestionPanel } from "@/components/music/ingestion-panel"
@@ -69,6 +70,7 @@ function MusicControlPage() {
             <IngestionPanel csrfToken={owner.csrfToken} />
             <EnrichmentPanel csrfToken={owner.csrfToken} />
             <DestinationPanel csrfToken={owner.csrfToken} />
+            <ClassificationPanel csrfToken={owner.csrfToken} />
             <button
               className="mt-8 rounded-full border border-ink/20 px-5 py-3 text-sm font-medium text-ink transition hover:bg-ink/5 disabled:opacity-50"
               disabled={signingOut}

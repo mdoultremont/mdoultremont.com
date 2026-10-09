@@ -18,9 +18,11 @@ import { Route as PhotographyRouteImport } from './routes/photography'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiMusicClassificationRouteImport } from './routes/api/music/classification'
 import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
 import { Route as ApiMusicEnrichmentRouteImport } from './routes/api/music/enrichment'
 import { Route as ApiMusicIngestionRouteImport } from './routes/api/music/ingestion'
+import { Route as ApiMusicReadyRouteImport } from './routes/api/music/ready'
 import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api/music/review-playlist'
 import { Route as ApiSpotifyCallbackRouteImport } from './routes/api/spotify/callback'
 import { Route as ApiSpotifyConnectRouteImport } from './routes/api/spotify/connect'
@@ -76,6 +78,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMusicClassificationRoute = ApiMusicClassificationRouteImport.update({
+  id: '/api/music/classification',
+  path: '/api/music/classification',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMusicDestinationsRoute = ApiMusicDestinationsRouteImport.update({
   id: '/api/music/destinations',
   path: '/api/music/destinations',
@@ -89,6 +96,11 @@ const ApiMusicEnrichmentRoute = ApiMusicEnrichmentRouteImport.update({
 const ApiMusicIngestionRoute = ApiMusicIngestionRouteImport.update({
   id: '/api/music/ingestion',
   path: '/api/music/ingestion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMusicReadyRoute = ApiMusicReadyRouteImport.update({
+  id: '/api/music/ready',
+  path: '/api/music/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMusicReviewPlaylistRoute = ApiMusicReviewPlaylistRouteImport.update({
@@ -148,9 +160,11 @@ export interface FileRoutesByFullPath {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/music/classification': typeof ApiMusicClassificationRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
+  '/api/music/ready': typeof ApiMusicReadyRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
@@ -171,9 +185,11 @@ export interface FileRoutesByTo {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/music/classification': typeof ApiMusicClassificationRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
+  '/api/music/ready': typeof ApiMusicReadyRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
@@ -195,9 +211,11 @@ export interface FileRoutesById {
   '/images/$': typeof ImagesSplatRoute
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/music/classification': typeof ApiMusicClassificationRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
+  '/api/music/ready': typeof ApiMusicReadyRoute
   '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/api/spotify/callback': typeof ApiSpotifyCallbackRoute
   '/api/spotify/connect': typeof ApiSpotifyConnectRoute
@@ -220,9 +238,11 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
+    | '/api/music/classification'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
+    | '/api/music/ready'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
@@ -243,9 +263,11 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
+    | '/api/music/classification'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
+    | '/api/music/ready'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
@@ -266,9 +288,11 @@ export interface FileRouteTypes {
     | '/images/$'
     | '/api/auth/github'
     | '/api/auth/logout'
+    | '/api/music/classification'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
+    | '/api/music/ready'
     | '/api/music/review-playlist'
     | '/api/spotify/callback'
     | '/api/spotify/connect'
@@ -290,9 +314,11 @@ export interface RootRouteChildren {
   ImagesSplatRoute: typeof ImagesSplatRoute
   ApiAuthGithubRoute: typeof ApiAuthGithubRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiMusicClassificationRoute: typeof ApiMusicClassificationRoute
   ApiMusicDestinationsRoute: typeof ApiMusicDestinationsRouteWithChildren
   ApiMusicEnrichmentRoute: typeof ApiMusicEnrichmentRoute
   ApiMusicIngestionRoute: typeof ApiMusicIngestionRoute
+  ApiMusicReadyRoute: typeof ApiMusicReadyRoute
   ApiMusicReviewPlaylistRoute: typeof ApiMusicReviewPlaylistRoute
   ApiSpotifyCallbackRoute: typeof ApiSpotifyCallbackRoute
   ApiSpotifyConnectRoute: typeof ApiSpotifyConnectRoute
@@ -367,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/music/classification': {
+      id: '/api/music/classification'
+      path: '/api/music/classification'
+      fullPath: '/api/music/classification'
+      preLoaderRoute: typeof ApiMusicClassificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/music/destinations': {
       id: '/api/music/destinations'
       path: '/api/music/destinations'
@@ -386,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/api/music/ingestion'
       fullPath: '/api/music/ingestion'
       preLoaderRoute: typeof ApiMusicIngestionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/music/ready': {
+      id: '/api/music/ready'
+      path: '/api/music/ready'
+      fullPath: '/api/music/ready'
+      preLoaderRoute: typeof ApiMusicReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/music/review-playlist': {
@@ -487,9 +527,11 @@ const rootRouteChildren: RootRouteChildren = {
   ImagesSplatRoute: ImagesSplatRoute,
   ApiAuthGithubRoute: ApiAuthGithubRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiMusicClassificationRoute: ApiMusicClassificationRoute,
   ApiMusicDestinationsRoute: ApiMusicDestinationsRouteWithChildren,
   ApiMusicEnrichmentRoute: ApiMusicEnrichmentRoute,
   ApiMusicIngestionRoute: ApiMusicIngestionRoute,
+  ApiMusicReadyRoute: ApiMusicReadyRoute,
   ApiMusicReviewPlaylistRoute: ApiMusicReviewPlaylistRoute,
   ApiSpotifyCallbackRoute: ApiSpotifyCallbackRoute,
   ApiSpotifyConnectRoute: ApiSpotifyConnectRoute,

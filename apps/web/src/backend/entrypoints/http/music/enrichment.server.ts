@@ -52,7 +52,7 @@ export const retryEnrichment = (request: Request) =>
   route(request, { mutation: true }, (ownerId) =>
     Effect.gen(function* () {
       const enrichment = yield* MusicEnrichment
-      yield* enrichment.retryUnresolved()
+      yield* enrichment.retryUnresolved(ownerId)
       return json(yield* enrichment.status(ownerId), 202)
     })
   )

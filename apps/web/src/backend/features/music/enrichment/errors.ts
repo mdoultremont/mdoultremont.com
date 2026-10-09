@@ -21,6 +21,8 @@ export interface EnrichmentStatus {
 /** Queue message asking enrichment to look up the next batch of ISRCs. */
 export const EnrichmentMessage = Schema.Struct({
   kind: Schema.Literal("music.enrichment"),
+  /** Whose pipeline continues afterwards. Recording data itself is shared. */
+  ownerId: Schema.NonEmptyString,
 })
 
 export class EnrichmentPersistenceError extends Data.TaggedError(

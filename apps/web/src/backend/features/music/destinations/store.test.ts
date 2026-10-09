@@ -64,6 +64,7 @@ describe("destination persistence", () => {
           },
         ],
         reviewPlaylistId: "review",
+        ready: false,
       })
     } finally {
       close()
@@ -89,6 +90,7 @@ describe("destination persistence", () => {
       expect(await Effect.runPromise(store.read("owner"))).toEqual({
         destinations: [],
         reviewPlaylistId: null,
+        ready: false,
       })
     } finally {
       close()
