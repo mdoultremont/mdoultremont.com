@@ -1,1 +1,0 @@
-ALTER TABLE `music_run_tracks` ADD `attempted` integer DEFAULT false NOT NULL;

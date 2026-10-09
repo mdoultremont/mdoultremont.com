@@ -1,1 +1,0 @@
-ALTER TABLE `music_run_tracks` ADD `retry_attempts` integer DEFAULT 0 NOT NULL;
