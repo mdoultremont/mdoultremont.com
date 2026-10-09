@@ -6,6 +6,12 @@ import {
   MusicClassification,
 } from "@/backend/features/music/classification"
 import {
+  type DeliveryError,
+  DeliveryMessage,
+  type DeliveryPersistenceError,
+  MusicDelivery,
+} from "@/backend/features/music/delivery"
+import {
   type DestinationPersistenceError,
   Destinations,
   type SetupIncomplete,
@@ -29,6 +35,7 @@ export const PipelineMessage = Schema.Union([
   IngestionMessage,
   EnrichmentMessage,
   ClassificationMessage,
+  DeliveryMessage,
 ])
 export type PipelineMessage = typeof PipelineMessage.Type
 
@@ -36,6 +43,7 @@ export type PipelineError =
   | IngestionError
   | EnrichmentError
   | ClassificationError
+  | DeliveryError
 
 /** True when the same message may succeed later without the owner doing anything. */
 export function isRetryable(error: PipelineError): boolean {
@@ -51,6 +59,7 @@ export function isRetryable(error: PipelineError): boolean {
     case "EnrichmentPersistenceError":
     case "ClassificationPersistenceError":
     case "DestinationPersistenceError":
+    case "DeliveryPersistenceError":
     case "JobQueueError":
       return true
   }
@@ -60,7 +69,8 @@ export function isRetryable(error: PipelineError): boolean {
  * The music pipeline: runs each step's queued work and starts the next step
  * when there is something for it.
  *
- *   ingestion ──► enrichment ──► classification (once Ready)
+ *   ingestion ──► enrichment ──► classification ──► delivery
+ *        │                       (once Ready)       (Write now, or automatic)
  *        └──────────────────────► classification (tracks without an ISRC)
  */
 export class MusicPipeline extends Context.Service<
@@ -91,6 +101,7 @@ export class MusicPipeline extends Context.Service<
       | EnrichmentPersistenceError
       | ClassificationPersistenceError
       | DestinationPersistenceError
+      | DeliveryPersistenceError
       | JobQueueError
     >
   }
@@ -102,6 +113,7 @@ export class MusicPipeline extends Context.Service<
       const enrichment = yield* MusicEnrichment
       const classification = yield* MusicClassification
       const destinations = yield* Destinations
+      const delivery = yield* MusicDelivery
 
       const handle = Effect.fn("MusicPipeline.handle")(function* (
         message: PipelineMessage
@@ -121,8 +133,15 @@ export class MusicPipeline extends Context.Service<
             if (looked > 0) yield* classification.request(message.ownerId)
             return
           }
-          case "music.classification":
-            yield* classification.processNext(message.ownerId)
+          case "music.classification": {
+            const { decided } = yield* classification.processNext(
+              message.ownerId
+            )
+            if (decided > 0) yield* delivery.requestIfAutomatic(message.ownerId)
+            return
+          }
+          case "music.delivery":
+            yield* delivery.processNext(message.ownerId)
             return
         }
       })
@@ -137,6 +156,7 @@ export class MusicPipeline extends Context.Service<
             return
           case "music.enrichment":
           case "music.classification":
+          case "music.delivery":
             // Undone work stays pending; the next hourly upkeep tries again.
             yield* Effect.logWarning(
               `${message.kind} batch abandoned`,
@@ -164,6 +184,9 @@ export class MusicPipeline extends Context.Service<
         const classificationStatus = yield* classification.status(ownerId)
         if (classificationStatus.pending > 0)
           yield* classification.request(ownerId)
+        const deliveryStatus = yield* delivery.status(ownerId)
+        if (deliveryStatus.toWrite > 0)
+          yield* delivery.requestIfAutomatic(ownerId)
       })
 
       return MusicPipeline.of({ handle, giveUp, setReady, scheduled })
@@ -177,6 +200,7 @@ export class MusicPipeline extends Context.Service<
         MusicIngestion.layer,
         MusicEnrichment.layer,
         MusicClassification.layer,
+        MusicDelivery.layer,
         Destinations.layer
       )
     )

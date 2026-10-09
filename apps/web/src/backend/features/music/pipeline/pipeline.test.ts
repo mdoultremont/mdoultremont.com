@@ -5,6 +5,7 @@ import {
   type ClassificationStatus,
   MusicClassification,
 } from "@/backend/features/music/classification"
+import { MusicDelivery } from "@/backend/features/music/delivery"
 import { Destinations } from "@/backend/features/music/destinations"
 import {
   type EnrichmentStatus,
@@ -47,6 +48,8 @@ function setup(
     looked?: number
     enrichmentPending?: number
     classificationPending?: number
+    decided?: number
+    toWrite?: number
   } = {}
 ) {
   const ingestion = {
@@ -70,10 +73,26 @@ function setup(
       () => Effect.void
     ),
     processNext: vi.fn<MusicClassification["Service"]["processNext"]>(() =>
-      Effect.succeed({ decided: 0 })
+      Effect.succeed({ decided: options.decided ?? 0 })
     ),
     status: vi.fn<MusicClassification["Service"]["status"]>(() =>
       Effect.succeed(classificationStatus(options.classificationPending ?? 0))
+    ),
+  }
+  const delivery = {
+    requestIfAutomatic: vi.fn<MusicDelivery["Service"]["requestIfAutomatic"]>(
+      () => Effect.void
+    ),
+    processNext: vi.fn<MusicDelivery["Service"]["processNext"]>(() =>
+      Effect.succeed({ delivered: 0, unliked: 0 })
+    ),
+    status: vi.fn<MusicDelivery["Service"]["status"]>(() =>
+      Effect.succeed({
+        automatic: true,
+        delivered: 0,
+        toWrite: options.toWrite ?? 0,
+        lastDeliveredAt: null,
+      })
     ),
   }
   const destinations = {
@@ -87,7 +106,8 @@ function setup(
         Layer.succeed(MusicIngestion, fake(ingestion)),
         Layer.succeed(MusicEnrichment, fake(enrichment)),
         Layer.succeed(MusicClassification, fake(classification)),
-        Layer.succeed(Destinations, fake(destinations))
+        Layer.succeed(Destinations, fake(destinations)),
+        Layer.succeed(MusicDelivery, fake(delivery))
       )
     )
   )
@@ -95,6 +115,7 @@ function setup(
     ingestion,
     enrichment,
     classification,
+    delivery,
     destinations,
     run: <A, E>(body: Effect.Effect<A, E, MusicPipeline>) =>
       Effect.provide(body, layer),
@@ -164,6 +185,34 @@ describe("music pipeline", () => {
     )
   })
 
+  it.effect(
+    "a classification batch that decided tracks may start delivery",
+    () => {
+      const t = setup({ decided: 5 })
+      return t.run(
+        Effect.gen(function* () {
+          const pipeline = yield* MusicPipeline
+          yield* pipeline.handle({
+            kind: "music.classification",
+            ownerId: "owner",
+          })
+          expect(t.delivery.requestIfAutomatic).toHaveBeenCalledWith("owner")
+        })
+      )
+    }
+  )
+
+  it.effect("runs delivery batches", () => {
+    const t = setup()
+    return t.run(
+      Effect.gen(function* () {
+        const pipeline = yield* MusicPipeline
+        yield* pipeline.handle({ kind: "music.delivery", ownerId: "owner" })
+        expect(t.delivery.processNext).toHaveBeenCalledWith("owner")
+      })
+    )
+  })
+
   it.effect("setting Ready starts classification; clearing it does not", () => {
     const t = setup()
     return t.run(
@@ -193,7 +242,11 @@ describe("music pipeline", () => {
 
   it.effect("hourly upkeep resumes only the steps with pending work", () => {
     const idle = setup()
-    const busy = setup({ enrichmentPending: 4, classificationPending: 2 })
+    const busy = setup({
+      enrichmentPending: 4,
+      classificationPending: 2,
+      toWrite: 7,
+    })
     const upkeep = MusicPipeline.use((pipeline) => pipeline.scheduled("owner"))
     return Effect.gen(function* () {
       yield* idle.run(upkeep)
@@ -203,6 +256,8 @@ describe("music pipeline", () => {
       expect(idle.classification.request).not.toHaveBeenCalled()
       expect(busy.enrichment.request).toHaveBeenCalledOnce()
       expect(busy.classification.request).toHaveBeenCalledOnce()
+      expect(idle.delivery.requestIfAutomatic).not.toHaveBeenCalled()
+      expect(busy.delivery.requestIfAutomatic).toHaveBeenCalledOnce()
     })
   })
 })

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ff6d5cce-0a6d-4e96-b3a5-6e01be73b31a",
+  "id": "a736aa5f-f455-4030-a8f3-bae8d677effb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "app_owners": {
@@ -211,6 +211,20 @@
         "playlist_id": {
           "name": "playlist_id",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

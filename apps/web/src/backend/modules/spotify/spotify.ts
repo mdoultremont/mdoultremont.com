@@ -42,6 +42,9 @@ import {
 const apiOrigin = "https://api.spotify.com"
 const tokenUrl = "https://accounts.spotify.com/api/token"
 const spotifyId = /^[A-Za-z0-9]+$/u
+/** Spotify's per-request limits. */
+const likedCheckLimit = 40
+const playlistAddLimit = 100
 
 /**
  * Spotify Web API access for one app owner. Holds no business rules: it only
@@ -75,19 +78,21 @@ export class Spotify extends Context.Service<
       ownerId: string,
       cursor?: string
     ) => Effect.Effect<SpotifyPage<SpotifySavedTrack>, SpotifyError>
-    readonly isTrackLiked: (
+    /** Which of the tracks are currently in Liked Songs. */
+    readonly likedTracks: (
       ownerId: string,
-      trackId: string
-    ) => Effect.Effect<boolean, SpotifyError>
-    readonly isTrackInPlaylist: (
+      trackIds: readonly string[]
+    ) => Effect.Effect<ReadonlySet<string>, SpotifyError>
+    /** Every track in a playlist, by the ID the owner originally added. */
+    readonly playlistTrackIds: (
+      ownerId: string,
+      playlistId: string
+    ) => Effect.Effect<ReadonlySet<string>, SpotifyError>
+    /** Appends tracks to a playlist. Spotify does not skip duplicates. */
+    readonly addTracksToPlaylist: (
       ownerId: string,
       playlistId: string,
-      trackId: string
-    ) => Effect.Effect<boolean, SpotifyError>
-    readonly addTrackToPlaylist: (
-      ownerId: string,
-      playlistId: string,
-      trackId: string
+      trackIds: readonly string[]
     ) => Effect.Effect<void, SpotifyError>
     readonly disconnect: (ownerId: string) => Effect.Effect<void, SpotifyError>
   }
@@ -569,37 +574,56 @@ const make = Effect.gen(function* () {
     )
   })
 
-  const isTrackLiked = Effect.fn("Spotify.isTrackLiked")(function* (
+  const likedTracks = Effect.fn("Spotify.likedTracks")(function* (
     ownerId: string,
-    trackId: string
+    trackIds: readonly string[]
   ) {
-    yield* requireId(trackId, "track")
+    for (const id of trackIds) yield* requireId(id, "track")
+    if (trackIds.length === 0) return new Set<string>()
     return yield* authorized(ownerId, (accessToken) =>
-      HttpClientRequest.get(new URL("/v1/me/library/contains", apiOrigin)).pipe(
-        HttpClientRequest.setUrlParam("uris", `spotify:track:${trackId}`),
-        HttpClientRequest.bearerToken(accessToken),
-        send,
-        Effect.flatMap(
-          decode(
-            Api.LibraryContains,
-            "Spotify returned an invalid library membership result"
+      Effect.gen(function* () {
+        const liked = new Set<string>()
+        for (const ids of chunks(trackIds, likedCheckLimit)) {
+          const answers = yield* HttpClientRequest.get(
+            new URL("/v1/me/library/contains", apiOrigin)
+          ).pipe(
+            HttpClientRequest.setUrlParam(
+              "uris",
+              ids.map((id) => `spotify:track:${id}`).join(",")
+            ),
+            HttpClientRequest.bearerToken(accessToken),
+            send,
+            Effect.flatMap(
+              decode(
+                Api.LibraryContains,
+                "Spotify returned an invalid library membership result"
+              )
+            )
           )
-        ),
-        Effect.map(([liked]) => liked)
-      )
+          if (answers.length !== ids.length)
+            return yield* fail(
+              new InvalidResponse({
+                message: "Spotify answered for a different number of tracks",
+              })
+            )
+          ids.forEach((id, index) => {
+            if (answers[index]) liked.add(id)
+          })
+        }
+        return liked as ReadonlySet<string>
+      })
     )
   })
 
-  const isTrackInPlaylist = Effect.fn("Spotify.isTrackInPlaylist")(function* (
+  const playlistTrackIds = Effect.fn("Spotify.playlistTrackIds")(function* (
     ownerId: string,
-    playlistId: string,
-    trackId: string
+    playlistId: string
   ) {
     yield* requireId(playlistId, "playlist")
-    yield* requireId(trackId, "track")
     const itemsPath = `/v1/playlists/${playlistId}/items`
     return yield* authorized(ownerId, (accessToken) =>
       Effect.gen(function* () {
+        const ids = new Set<string>()
         let next: string | null = `${itemsPath}?limit=50`
         const seen = new Set<string>()
         while (next) {
@@ -619,36 +643,42 @@ const make = Effect.gen(function* () {
             const entry = Schema.decodeUnknownOption(Api.PlaylistItem)(value)
             if (Option.isNone(entry)) continue
             const track = entry.value.item ?? entry.value.track
-            if (
-              track?.type === "track" &&
-              (yield* originalTrackId(track)) === trackId
-            )
-              return true
+            if (track?.type !== "track") continue
+            const id = yield* originalTrackId(track)
+            if (id) ids.add(id)
           }
           next = current.next
         }
-        return false
+        return ids as ReadonlySet<string>
       })
     )
   })
 
-  const addTrackToPlaylist = Effect.fn("Spotify.addTrackToPlaylist")(function* (
-    ownerId: string,
-    playlistId: string,
-    trackId: string
-  ) {
-    yield* requireId(playlistId, "playlist")
-    yield* requireId(trackId, "track")
-    yield* authorized(ownerId, (accessToken) =>
-      apiPost(`/v1/playlists/${playlistId}/items`, accessToken, {
-        uris: [`spotify:track:${trackId}`],
-      }).pipe(
-        Effect.flatMap(
-          decode(Api.Snapshot, "Spotify returned no playlist snapshot")
+  const addTracksToPlaylist = Effect.fn("Spotify.addTracksToPlaylist")(
+    function* (
+      ownerId: string,
+      playlistId: string,
+      trackIds: readonly string[]
+    ) {
+      yield* requireId(playlistId, "playlist")
+      for (const id of trackIds) yield* requireId(id, "track")
+      if (trackIds.length === 0) return
+      yield* authorized(ownerId, (accessToken) =>
+        Effect.forEach(
+          chunks(trackIds, playlistAddLimit),
+          (ids) =>
+            apiPost(`/v1/playlists/${playlistId}/items`, accessToken, {
+              uris: ids.map((id) => `spotify:track:${id}`),
+            }).pipe(
+              Effect.flatMap(
+                decode(Api.Snapshot, "Spotify returned no playlist snapshot")
+              )
+            ),
+          { discard: true }
         )
       )
-    )
-  })
+    }
+  )
 
   const disconnect = Effect.fn("Spotify.disconnect")(function* (
     ownerId: string
@@ -665,9 +695,9 @@ const make = Effect.gen(function* () {
     playlist,
     createPrivatePlaylist,
     savedTracksPage,
-    isTrackLiked,
-    isTrackInPlaylist,
-    addTrackToPlaylist,
+    likedTracks,
+    playlistTrackIds,
+    addTracksToPlaylist,
     disconnect,
   }
 })
@@ -696,4 +726,11 @@ function isSameEndpoint(value: string, pathname: string) {
   } catch {
     return false
   }
+}
+
+function chunks<A>(items: readonly A[], size: number): A[][] {
+  const result: A[][] = []
+  for (let start = 0; start < items.length; start += size)
+    result.push(items.slice(start, start + size))
+  return result
 }

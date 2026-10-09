@@ -33,6 +33,8 @@ CREATE TABLE `music_deliveries` (
 	`owner_id` text NOT NULL,
 	`track_id` text NOT NULL,
 	`playlist_id` text NOT NULL,
+	`status` text NOT NULL,
+	`updated_at` integer NOT NULL,
 	PRIMARY KEY(`owner_id`, `track_id`, `playlist_id`),
 	FOREIGN KEY (`owner_id`) REFERENCES `spotify_connections`(`owner_id`) ON UPDATE no action ON DELETE cascade
 );

@@ -132,8 +132,7 @@ it.effect("does something", () =>
 ## Migration status
 
 Migrated: `primitives/*`, `modules/{spotify,musicbrainz,acousticbrainz,jev}`,
-`features/music/{destinations,ingestion,enrichment,classification,pipeline}`,
-and the HTTP, queue, and cron entrypoints.
+`features/music/*`, and the HTTP, queue, and cron entrypoints.
 
 Still in the previous layout: auth (`workflows/app-auth`,
-`modules/{app-auth-store,github-oauth}.ts`). Delivery is not built yet.
+`modules/{app-auth-store,github-oauth}.ts`).

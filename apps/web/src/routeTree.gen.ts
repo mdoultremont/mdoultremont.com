@@ -19,6 +19,7 @@ import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiMusicClassificationRouteImport } from './routes/api/music/classification'
+import { Route as ApiMusicDeliveryRouteImport } from './routes/api/music/delivery'
 import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
 import { Route as ApiMusicEnrichmentRouteImport } from './routes/api/music/enrichment'
 import { Route as ApiMusicIngestionRouteImport } from './routes/api/music/ingestion'
@@ -81,6 +82,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
 const ApiMusicClassificationRoute = ApiMusicClassificationRouteImport.update({
   id: '/api/music/classification',
   path: '/api/music/classification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMusicDeliveryRoute = ApiMusicDeliveryRouteImport.update({
+  id: '/api/music/delivery',
+  path: '/api/music/delivery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMusicDestinationsRoute = ApiMusicDestinationsRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/classification': typeof ApiMusicClassificationRoute
+  '/api/music/delivery': typeof ApiMusicDeliveryRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/classification': typeof ApiMusicClassificationRoute
+  '/api/music/delivery': typeof ApiMusicDeliveryRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/api/auth/github': typeof ApiAuthGithubRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/music/classification': typeof ApiMusicClassificationRoute
+  '/api/music/delivery': typeof ApiMusicDeliveryRoute
   '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
   '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
   '/api/music/ingestion': typeof ApiMusicIngestionRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/classification'
+    | '/api/music/delivery'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/classification'
+    | '/api/music/delivery'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/api/auth/github'
     | '/api/auth/logout'
     | '/api/music/classification'
+    | '/api/music/delivery'
     | '/api/music/destinations'
     | '/api/music/enrichment'
     | '/api/music/ingestion'
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   ApiAuthGithubRoute: typeof ApiAuthGithubRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiMusicClassificationRoute: typeof ApiMusicClassificationRoute
+  ApiMusicDeliveryRoute: typeof ApiMusicDeliveryRoute
   ApiMusicDestinationsRoute: typeof ApiMusicDestinationsRouteWithChildren
   ApiMusicEnrichmentRoute: typeof ApiMusicEnrichmentRoute
   ApiMusicIngestionRoute: typeof ApiMusicIngestionRoute
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/api/music/classification'
       fullPath: '/api/music/classification'
       preLoaderRoute: typeof ApiMusicClassificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/music/delivery': {
+      id: '/api/music/delivery'
+      path: '/api/music/delivery'
+      fullPath: '/api/music/delivery'
+      preLoaderRoute: typeof ApiMusicDeliveryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/music/destinations': {
@@ -528,6 +548,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthGithubRoute: ApiAuthGithubRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiMusicClassificationRoute: ApiMusicClassificationRoute,
+  ApiMusicDeliveryRoute: ApiMusicDeliveryRoute,
   ApiMusicDestinationsRoute: ApiMusicDestinationsRouteWithChildren,
   ApiMusicEnrichmentRoute: ApiMusicEnrichmentRoute,
   ApiMusicIngestionRoute: ApiMusicIngestionRoute,

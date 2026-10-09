@@ -185,6 +185,11 @@ export const musicDecisions = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.ownerId, table.trackId] })]
 )
+/**
+ * One track written to one playlist. `pending` marks a write whose outcome is
+ * unknown (for example a network failure after Spotify committed it); the
+ * next delivery checks the playlist before writing again.
+ */
 export const musicDeliveries = sqliteTable(
   "music_deliveries",
   {
@@ -193,6 +198,8 @@ export const musicDeliveries = sqliteTable(
       .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
     trackId: text("track_id").notNull(),
     playlistId: text("playlist_id").notNull(),
+    status: text("status", { enum: ["pending", "delivered"] }).notNull(),
+    updatedAt: integer("updated_at").notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.ownerId, table.trackId, table.playlistId] }),

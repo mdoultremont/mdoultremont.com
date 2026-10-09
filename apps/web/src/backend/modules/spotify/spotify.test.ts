@@ -127,6 +127,22 @@ const connect = (setup: Setup) =>
     return yield* spotify.connect("github-42", "code-123")
   })
 
+type SpotifyService = Spotify["Service"]
+
+const isLiked = (spotify: SpotifyService, trackId: string) =>
+  Effect.map(spotify.likedTracks("github-42", [trackId]), (liked) =>
+    liked.has(trackId)
+  )
+
+const inPlaylist = (
+  spotify: SpotifyService,
+  playlistId: string,
+  trackId: string
+) =>
+  Effect.map(spotify.playlistTrackIds("github-42", playlistId), (ids) =>
+    ids.has(trackId)
+  )
+
 /** Runs an effect expected to fail and returns the Spotify error reason tag. */
 const failureReason = <A>(
   effect: Effect.Effect<A, { readonly reason: { readonly _tag: string } }>
@@ -509,16 +525,14 @@ describe("Spotify playlist delivery boundary", () => {
             json({ access_token: "fresh", expires_in: 3600 })
           )
           setup.fetcher.mockResolvedValueOnce(json([true]))
-          assert.isTrue(yield* spotify.isTrackLiked("github-42", "track123"))
+          assert.isTrue(yield* isLiked(spotify, "track123"))
           setup.fetcher.mockResolvedValueOnce(json([false]))
-          assert.isFalse(yield* spotify.isTrackLiked("github-42", "track456"))
+          assert.isFalse(yield* isLiked(spotify, "track456"))
           expect(tokenCalls(setup)).toHaveLength(2)
           expect(setup.store.get).toHaveBeenCalledTimes(3)
 
           yield* spotify.disconnect("github-42")
-          const reason = yield* failureReason(
-            spotify.isTrackLiked("github-42", "track123")
-          )
+          const reason = yield* failureReason(isLiked(spotify, "track123"))
           assert.strictEqual(reason._tag, "NotConnected")
           expect(setup.fetcher).toHaveBeenCalledTimes(5)
 
@@ -527,7 +541,7 @@ describe("Spotify playlist delivery boundary", () => {
             json({ access_token: "new", expires_in: 3600 })
           )
           setup.fetcher.mockResolvedValueOnce(json([true]))
-          assert.isTrue(yield* spotify.isTrackLiked("github-42", "track123"))
+          assert.isTrue(yield* isLiked(spotify, "track123"))
           expect(tokenCalls(setup)).toHaveLength(4)
         })
       )
@@ -546,7 +560,7 @@ describe("Spotify playlist delivery boundary", () => {
             json({ access_token: "fresh", expires_in: 3600 })
           )
           setup.fetcher.mockResolvedValueOnce(json([true]))
-          yield* spotify.isTrackLiked("github-42", "track123")
+          yield* isLiked(spotify, "track123")
           setup.fetcher.mockResolvedValueOnce(
             json({ error: "invalid_grant" }, 400)
           )
@@ -569,7 +583,7 @@ describe("Spotify playlist delivery boundary", () => {
           yield* connect(setup)
           setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
           setup.fetcher.mockResolvedValueOnce(json([true]))
-          assert.isTrue(yield* spotify.isTrackLiked("github-42", "track123"))
+          assert.isTrue(yield* isLiked(spotify, "track123"))
           const url = new URL(requestUrl(setup, 3))
           assert.strictEqual(url.pathname, "/v1/me/library/contains")
           assert.strictEqual(
@@ -610,9 +624,7 @@ describe("Spotify playlist delivery boundary", () => {
               total: 51,
             })
           )
-          assert.isTrue(
-            yield* spotify.isTrackInPlaylist("github-42", "list123", "track123")
-          )
+          assert.isTrue(yield* inPlaylist(spotify, "list123", "track123"))
           expect(requestUrl(setup, 3)).toBe(
             "https://api.spotify.com/v1/playlists/list123/items?limit=50"
           )
@@ -640,9 +652,7 @@ describe("Spotify playlist delivery boundary", () => {
               total: 1,
             })
           )
-          assert.isFalse(
-            yield* spotify.isTrackInPlaylist("github-42", "list123", "track123")
-          )
+          assert.isFalse(yield* inPlaylist(spotify, "list123", "track123"))
         })
       )
     }
@@ -662,9 +672,7 @@ describe("Spotify playlist delivery boundary", () => {
             total: 1,
           })
         )
-        assert.isTrue(
-          yield* spotify.isTrackInPlaylist("github-42", "list123", "track123")
-        )
+        assert.isTrue(yield* inPlaylist(spotify, "list123", "track123"))
       })
     )
   })
@@ -679,7 +687,7 @@ describe("Spotify playlist delivery boundary", () => {
         setup.fetcher.mockResolvedValueOnce(
           json({ snapshot_id: "snapshot123" }, 201)
         )
-        yield* spotify.addTrackToPlaylist("github-42", "list123", "track123")
+        yield* spotify.addTracksToPlaylist("github-42", "list123", ["track123"])
         expect(requestUrl(setup, 3)).toBe(
           "https://api.spotify.com/v1/playlists/list123/items"
         )
@@ -705,7 +713,7 @@ describe("Spotify playlist delivery boundary", () => {
             new Error("connection reset after remote commit")
           )
           const uncertain = yield* failureReason(
-            spotify.addTrackToPlaylist("github-42", "list123", "track123")
+            spotify.addTracksToPlaylist("github-42", "list123", ["track123"])
           )
           assert.strictEqual(uncertain._tag, "Unavailable")
           setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
@@ -713,14 +721,60 @@ describe("Spotify playlist delivery boundary", () => {
             json({ error: "rate" }, 429, { "Retry-After": "5" })
           )
           expect(
-            yield* failureReason(
-              spotify.isTrackInPlaylist("github-42", "list123", "track123")
-            )
+            yield* failureReason(inPlaylist(spotify, "list123", "track123"))
           ).toMatchObject({ _tag: "RateLimited", retryAfterSeconds: 5 })
         })
       )
     }
   )
+
+  it.effect("checks likes 40 at a time and adds tracks 100 at a time", () => {
+    const setup = testSetup()
+    const ids = Array.from({ length: 150 }, (_, index) => `t${index}`)
+    return setup.run(
+      Effect.gen(function* () {
+        const spotify = yield* Spotify
+        yield* connect(setup)
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(
+          json(Array.from({ length: 40 }, (_, index) => index % 2 === 0))
+        )
+        setup.fetcher.mockResolvedValueOnce(
+          json([true, false, true, false, true])
+        )
+        const liked = yield* spotify.likedTracks("github-42", ids.slice(0, 45))
+        assert.strictEqual(liked.size, 23)
+        assert.isTrue(liked.has("t44"))
+        assert.isFalse(liked.has("t43"))
+        expect(
+          new URL(requestUrl(setup, 3)).searchParams.get("uris")?.split(",")
+        ).toHaveLength(40)
+
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(json({ snapshot_id: "a" }, 201))
+        setup.fetcher.mockResolvedValueOnce(json({ snapshot_id: "b" }, 201))
+        yield* spotify.addTracksToPlaylist("github-42", "list123", ids)
+        expect(JSON.parse(requestBody(setup, -2)).uris).toHaveLength(100)
+        expect(JSON.parse(requestBody(setup, -1)).uris).toHaveLength(50)
+      })
+    )
+  })
+
+  it.effect("rejects a liked-check answer of the wrong length", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        const spotify = yield* Spotify
+        yield* connect(setup)
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(json([true]))
+        const reason = yield* failureReason(
+          spotify.likedTracks("github-42", ["a", "b"])
+        )
+        assert.strictEqual(reason._tag, "InvalidResponse")
+      })
+    )
+  })
 
   it.effect("rejects invalid IDs before any Spotify request", () => {
     const setup = testSetup()
@@ -729,7 +783,7 @@ describe("Spotify playlist delivery boundary", () => {
         const spotify = yield* Spotify
         yield* connect(setup)
         const reason = yield* failureReason(
-          spotify.addTrackToPlaylist("github-42", "list/123", "track123")
+          spotify.addTracksToPlaylist("github-42", "list/123", ["track123"])
         )
         assert.strictEqual(reason._tag, "InvalidInput")
         expect(setup.fetcher).toHaveBeenCalledTimes(2)
@@ -766,30 +820,22 @@ it.effect(
         const page = yield* spotify.savedTracksPage("github-42")
         assert.strictEqual(page.items[0]!.id, "A")
         setup.fetcher.mockResolvedValueOnce(json([true]))
-        assert.isTrue(
-          yield* spotify.isTrackLiked("github-42", page.items[0]!.id)
-        )
+        assert.isTrue(yield* isLiked(spotify, page.items[0]!.id))
         expect(requestUrl(setup, -1)).toContain("uris=spotify%3Atrack%3AA")
         for (const field of ["item", "track"]) {
           setup.fetcher.mockResolvedValueOnce(
             json({ items: [{ [field]: relinked }], next: null, total: 1 })
           )
-          assert.isTrue(
-            yield* spotify.isTrackInPlaylist("github-42", "list123", "A")
-          )
+          assert.isTrue(yield* inPlaylist(spotify, "list123", "A"))
           setup.fetcher.mockResolvedValueOnce(
             json({ items: [{ [field]: relinked }], next: null, total: 1 })
           )
-          assert.isFalse(
-            yield* spotify.isTrackInPlaylist("github-42", "list123", "B")
-          )
+          assert.isFalse(yield* inPlaylist(spotify, "list123", "B"))
         }
         setup.fetcher.mockResolvedValueOnce(json({ snapshot_id: "snapshot" }))
-        yield* spotify.addTrackToPlaylist(
-          "github-42",
-          "list123",
-          page.items[0]!.id
-        )
+        yield* spotify.addTracksToPlaylist("github-42", "list123", [
+          page.items[0]!.id,
+        ])
         expect(JSON.parse(requestBody(setup, -1))).toEqual({
           uris: ["spotify:track:A"],
         })

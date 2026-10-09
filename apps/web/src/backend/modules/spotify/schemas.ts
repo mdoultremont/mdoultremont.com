@@ -104,7 +104,7 @@ export const PlaylistItem = Schema.Struct({
   track: Schema.optional(Schema.NullOr(Track)),
 })
 
-export const LibraryContains = Schema.Tuple([Schema.Boolean])
+export const LibraryContains = Schema.Array(Schema.Boolean)
 
 export const Snapshot = Schema.Struct({ snapshot_id: Schema.NonEmptyString })
 
