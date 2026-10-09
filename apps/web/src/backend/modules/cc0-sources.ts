@@ -35,7 +35,7 @@ export function createCc0Sources(options: {
     if (delay > 0) await wait(delay)
     nextMusicBrainzRequestAt = now() + 1100
     const response = await fetcher(
-      `https://musicbrainz.org/ws/2/isrc/${isrc}?fmt=json`,
+      `https://musicbrainz.org/ws/2/isrc/${isrc}?fmt=json&inc=artist-credits`,
       {
         headers: {
           "User-Agent": "mdoultremont-music/0.1 (https://mdoultremont.com)",

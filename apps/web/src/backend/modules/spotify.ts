@@ -27,7 +27,8 @@ export interface SpotifyConnectionStore {
     previous: string,
     next: string
   ): Promise<boolean>
-  markReconnect(ownerId: string): Promise<void>
+  /** Marks reconnect only while the stored refresh token is still the one that failed. */
+  markReconnect(ownerId: string, encryptedRefreshToken: string): Promise<void>
   disconnect(ownerId: string): Promise<void>
 }
 
@@ -111,9 +112,9 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
     }
   >()
 
-  async function markReconnect(ownerId: string) {
+  async function markReconnect(ownerId: string, encryptedRefreshToken: string) {
     accessTokens.delete(ownerId)
-    await options.store.markReconnect(ownerId)
+    await options.store.markReconnect(ownerId, encryptedRefreshToken)
   }
 
   function configured() {
@@ -273,7 +274,7 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
       )
     } catch (error) {
       if (error instanceof SpotifyError && error.code === "authorization") {
-        await markReconnect(ownerId)
+        await markReconnect(ownerId, connection.encryptedRefreshToken)
         throw new SpotifyError(
           "reconnect_needed",
           "Spotify needs to be reconnected"
@@ -324,12 +325,12 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
   }
 
   async function authorizedApiRequest(ownerId: string, path: string) {
-    const { accessToken } = await refresh(ownerId)
+    const { connection, accessToken } = await refresh(ownerId)
     try {
       return await apiRequest(path, accessToken)
     } catch (error) {
       if (error instanceof SpotifyError && error.code === "authorization") {
-        await markReconnect(ownerId)
+        await markReconnect(ownerId, connection.encryptedRefreshToken)
         throw new SpotifyError(
           "reconnect_needed",
           "Spotify needs to be reconnected"
@@ -427,7 +428,7 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
   async function playlists(
     ownerId: string
   ): Promise<readonly SpotifyPlaylist[]> {
-    const { accessToken } = await refresh(ownerId)
+    const { connection, accessToken } = await refresh(ownerId)
     const items: SpotifyPlaylist[] = []
     let next: string | null = "/v1/me/playlists?limit=50"
     while (next) {
@@ -436,7 +437,7 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
         raw = await apiRequest(next, accessToken)
       } catch (error) {
         if (error instanceof SpotifyError && error.code === "authorization") {
-          await markReconnect(ownerId)
+          await markReconnect(ownerId, connection.encryptedRefreshToken)
           throw new SpotifyError(
             "reconnect_needed",
             "Spotify needs to be reconnected"
@@ -476,7 +477,7 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
       raw = await apiRequest(`/v1/playlists/${playlistId}`, accessToken)
     } catch (error) {
       if (error instanceof SpotifyError && error.code === "authorization") {
-        await markReconnect(ownerId)
+        await markReconnect(ownerId, connection.encryptedRefreshToken)
         throw new SpotifyError(
           "reconnect_needed",
           "Spotify needs to be reconnected"
@@ -512,7 +513,7 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
       })
     } catch (error) {
       if (error instanceof SpotifyError && error.code === "authorization") {
-        await markReconnect(ownerId)
+        await markReconnect(ownerId, connection.encryptedRefreshToken)
         throw new SpotifyError(
           "reconnect_needed",
           "Spotify needs to be reconnected"
@@ -590,12 +591,12 @@ export function createSpotifyModule(options: SpotifyModuleOptions) {
     ownerId: string,
     operation: (accessToken: string) => Promise<T>
   ): Promise<T> {
-    const { accessToken } = await refresh(ownerId)
+    const { connection, accessToken } = await refresh(ownerId)
     try {
       return await operation(accessToken)
     } catch (error) {
       if (error instanceof SpotifyError && error.code === "authorization") {
-        await markReconnect(ownerId)
+        await markReconnect(ownerId, connection.encryptedRefreshToken)
         throw new SpotifyError(
           "reconnect_needed",
           "Spotify needs to be reconnected"

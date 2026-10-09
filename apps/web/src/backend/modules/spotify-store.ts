@@ -47,11 +47,16 @@ export function createSpotifyConnectionStore(
         .returning({ ownerId: spotifyConnections.ownerId })
       return updated.length > 0
     },
-    async markReconnect(ownerId) {
+    async markReconnect(ownerId, encryptedRefreshToken) {
       await database
         .update(spotifyConnections)
         .set({ needsReconnect: true })
-        .where(eq(spotifyConnections.ownerId, ownerId))
+        .where(
+          and(
+            eq(spotifyConnections.ownerId, ownerId),
+            eq(spotifyConnections.encryptedRefreshToken, encryptedRefreshToken)
+          )
+        )
     },
     async disconnect(ownerId) {
       await database

@@ -44,5 +44,6 @@ describe("Spotify connection panel", () => {
       })
     )
     expect(html).toContain("Reconnect Spotify")
+    expect(html).toContain("Disconnect Spotify")
   })
 })

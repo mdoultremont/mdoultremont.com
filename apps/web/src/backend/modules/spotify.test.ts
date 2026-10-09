@@ -28,9 +28,12 @@ function testSetup() {
         return true
       }
     ),
-    markReconnect: vi.fn<SpotifyConnectionStore["markReconnect"]>(async () => {
-      if (connection) connection = { ...connection, needsReconnect: true }
-    }),
+    markReconnect: vi.fn<SpotifyConnectionStore["markReconnect"]>(
+      async (_ownerId, expected) => {
+        if (connection?.encryptedRefreshToken === expected)
+          connection = { ...connection, needsReconnect: true }
+      }
+    ),
     disconnect: vi.fn<SpotifyConnectionStore["disconnect"]>(async () => {
       connection = null
     }),
@@ -143,6 +146,22 @@ describe("Spotify OAuth and connection", () => {
     const status = await Effect.runPromise(setup.spotify.status("github-42"))
     expect(status.status).toBe("reconnect_needed")
     expect(setup.getConnection()?.needsReconnect).toBe(true)
+  })
+
+  test("keeps a newer connection when a stale refresh is revoked", async () => {
+    const setup = testSetup()
+    await connect(setup)
+    const stale = setup.getConnection()!
+    setup.fetcher.mockImplementationOnce(async () => {
+      await setup.store.save({
+        ...stale,
+        encryptedRefreshToken: "newer-connection-token",
+      })
+      return json({ error: "invalid_grant" }, 400)
+    })
+    const status = await Effect.runPromise(setup.spotify.status("github-42"))
+    expect(status.status).toBe("reconnect_needed")
+    expect(setup.getConnection()?.needsReconnect).toBe(false)
   })
 
   test("rejects missing required scopes and a different account on reconnect", async () => {

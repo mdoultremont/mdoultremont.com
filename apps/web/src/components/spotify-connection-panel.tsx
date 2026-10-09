@@ -141,14 +141,26 @@ export function SpotifyConnectionPanel({
               ? "Spotify authorization has expired or been revoked."
               : "No Spotify account is connected."}
           </p>
-          <a
-            className="mt-4 inline-flex rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper"
-            href="/api/spotify/connect"
-          >
-            {connection.status === "reconnect_needed"
-              ? "Reconnect Spotify"
-              : "Connect Spotify"}
-          </a>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <a
+              className="inline-flex rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper"
+              href="/api/spotify/connect"
+            >
+              {connection.status === "reconnect_needed"
+                ? "Reconnect Spotify"
+                : "Connect Spotify"}
+            </a>
+            {connection.status === "reconnect_needed" ? (
+              <button
+                className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
+                disabled={busy}
+                onClick={disconnect}
+                type="button"
+              >
+                Disconnect Spotify
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
       {connection?.status === "connected" ? (

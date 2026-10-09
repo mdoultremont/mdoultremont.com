@@ -34,7 +34,7 @@ describe("CC0 recording sources", () => {
       durationMs: 184000,
     })
     expect(String(fetcher.mock.calls[0]![0])).toContain(
-      `/isrc/${isrc}?fmt=json`
+      `/isrc/${isrc}?fmt=json&inc=artist-credits`
     )
     expect(fetcher.mock.calls[0]![1]?.headers).toHaveProperty("User-Agent")
   })
