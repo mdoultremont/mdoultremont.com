@@ -3,7 +3,7 @@
 The private music backend, written with [Effect](https://effect.website) v4.
 This guide covers the structure and the Effect patterns used here. The
 best worked example is `modules/spotify` together with
-`features/music/destinations` and `entrypoints/http/destinations.server.ts`.
+`features/music/destinations` and `entrypoints/http/music/destinations.server.ts`.
 
 ## Layers
 
@@ -11,12 +11,12 @@ best worked example is `modules/spotify` together with
 entrypoints  →  features  →  modules  →  primitives
 ```
 
-| Layer           | Holds                                                                                   | Example                       |
-| --------------- | --------------------------------------------------------------------------------------- | ----------------------------- |
-| **primitives**  | Raw infrastructure, no domain knowledge.                                                | `database`, `token-cipher`    |
-| **modules**     | Capabilities such as a provider API. Actions only, no business rules.                   | `spotify`                     |
-| **features**    | Business logic, grouped by domain. Combines modules and primitives.                     | `music/destinations`          |
-| **entrypoints** | Adapters that wire features to the outside: HTTP routes, queue consumers, cron, (MCP…). | `http/destinations.server.ts` |
+| Layer           | Holds                                                                                   | Example                             |
+| --------------- | --------------------------------------------------------------------------------------- | ----------------------------------- |
+| **primitives**  | Raw infrastructure, no domain knowledge.                                                | `database`, `token-cipher`          |
+| **modules**     | Capabilities such as a provider API. Actions only, no business rules.                   | `spotify`                           |
+| **features**    | Business logic, grouped by domain. Combines modules and primitives.                     | `music/destinations`                |
+| **entrypoints** | Adapters that wire features to the outside: HTTP routes, queue consumers, cron, (MCP…). | `http/music/destinations.server.ts` |
 
 Features are grouped by domain (`features/music/…`, later `features/flights/…`);
 each folder inside a domain is one unit. Modules and primitives are named after

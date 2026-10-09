@@ -29,8 +29,8 @@ export function EnrichmentPanel({
         if (!active) return
         setStatus(next)
         setError(null)
-        // Keep polling while lookups remain; ingestion may also add more.
-        timer = setTimeout(load, pollMilliseconds)
+        // Poll only while lookups remain.
+        if (next.pending > 0) timer = setTimeout(load, pollMilliseconds)
       } catch (cause) {
         if (active)
           setError(

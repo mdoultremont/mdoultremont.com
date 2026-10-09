@@ -245,9 +245,11 @@ function Decision({
         {decision.review
           ? decision.reason === "no_recording_data"
             ? "Review (no recording data)"
-            : best
-              ? `Review (best: ${name(best[0])} ${percent(best[1])})`
-              : "Review"
+            : decision.reason === "classifier_failed"
+              ? "Review (Jev could not answer)"
+              : best
+                ? `Review (best: ${name(best[0])} ${percent(best[1])})`
+                : "Review"
           : decision.destinationIds
               .map(
                 (id) =>

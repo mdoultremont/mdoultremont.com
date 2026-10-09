@@ -1,7 +1,9 @@
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import type { DeliveryStatus } from "@/backend/features/music/delivery"
 
 const pollMilliseconds = 5000
+/** Polls without progress before giving up, e.g. while Spotify rate-limits. */
+const maxStalledPolls = 6
 
 export function DeliveryPanel({
   csrfToken,
@@ -18,6 +20,7 @@ export function DeliveryPanel({
   // After "Write now", keep polling until the queue has written everything.
   const [writing, setWriting] = useState(false)
   const automaticId = useId()
+  const progress = useRef({ toWrite: Number.POSITIVE_INFINITY, stalled: 0 })
 
   useEffect(() => {
     let active = true
@@ -30,7 +33,12 @@ export function DeliveryPanel({
         if (!active) return
         setStatus(next)
         setError(null)
-        if (next.toWrite === 0) setWriting(false)
+        const stalled =
+          next.toWrite < progress.current.toWrite
+            ? 0
+            : progress.current.stalled + 1
+        progress.current = { toWrite: next.toWrite, stalled }
+        if (next.toWrite === 0 || stalled >= maxStalledPolls) setWriting(false)
         else if (writing || next.automatic)
           timer = setTimeout(load, pollMilliseconds)
       } catch (cause) {
@@ -75,8 +83,10 @@ export function DeliveryPanel({
   }
 
   async function writeNow() {
-    if (await send({ method: "POST" }, "Writing could not start"))
+    if (await send({ method: "POST" }, "Writing could not start")) {
+      progress.current = { toWrite: Number.POSITIVE_INFINITY, stalled: 0 }
       setWriting(true)
+    }
   }
 
   return (
@@ -109,6 +119,13 @@ export function DeliveryPanel({
               : "Nothing to write yet."}
         </output>
       ) : null}
+      {status && status.refused > 0 ? (
+        <p className="mt-2 text-sm text-amber-800">
+          Spotify refused {status.refused} writes, for example to a playlist you
+          can no longer edit. Fix the playlist, then press Write now to try
+          again.
+        </p>
+      ) : null}
       {error ? (
         <p className="mt-2 text-sm text-red-800" role="alert">
           {error}
@@ -119,7 +136,9 @@ export function DeliveryPanel({
         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
           <button
             className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-paper disabled:opacity-50"
-            disabled={busy || writing || status.toWrite === 0}
+            disabled={
+              busy || writing || (status.toWrite === 0 && status.refused === 0)
+            }
             onClick={() => void writeNow()}
             type="button"
           >

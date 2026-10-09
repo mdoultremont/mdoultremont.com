@@ -5,7 +5,12 @@ import {
   type DestinationConfiguration,
   Destinations,
 } from "@/backend/features/music/destinations"
-import { Spotify, spotifyError, Unavailable } from "@/backend/modules/spotify"
+import {
+  AccessDenied,
+  Spotify,
+  spotifyError,
+  Unavailable,
+} from "@/backend/modules/spotify"
 import { Database } from "@/backend/primitives/database"
 import { makeTestD1 } from "@/backend/primitives/database/testing"
 import { JobQueue } from "@/backend/primitives/job-queue"
@@ -18,6 +23,12 @@ const destination = (playlistId: string, enabled = true) => ({
   createdAt: 1,
   updatedAt: 1,
 })
+
+/** Spotify refusing writes to the "jazz" playlist. */
+const refuse = (playlistId: string) =>
+  playlistId === "jazz"
+    ? Effect.fail(spotifyError(new AccessDenied({ message: "Not allowed" })))
+    : undefined
 
 function setup() {
   const d1 = makeTestD1()
@@ -288,4 +299,62 @@ describe("music delivery", () => {
       })
     )
   })
+
+  it.effect("does not add a track that is already in the playlist", () => {
+    const t = setup()
+    t.playlists.set("jazz", ["a"])
+    t.decided("a", { destinationIds: ["jazz"] })
+    t.decided("b", { destinationIds: ["jazz"] })
+    return t.run(
+      Effect.gen(function* () {
+        const delivery = yield* MusicDelivery
+        yield* delivery.processNext("owner")
+        assert.deepStrictEqual(t.playlists.get("jazz"), ["a", "b"])
+        expect(yield* delivery.status("owner")).toMatchObject({
+          delivered: 2,
+          toWrite: 0,
+        })
+      })
+    )
+  })
+
+  it.effect(
+    "sets aside a playlist Spotify refuses, keeps writing the others, and retries it on Write now",
+    () => {
+      const t = setup()
+      t.decided("a", { destinationIds: ["jazz", "focus"] })
+      t.spotify.playlistTrackIds.mockImplementation(
+        (_ownerId, playlistId) =>
+          refuse(playlistId) ??
+          Effect.succeed(new Set(t.playlists.get(playlistId)))
+      )
+      return t.run(
+        Effect.gen(function* () {
+          const delivery = yield* MusicDelivery
+          expect(yield* delivery.processNext("owner")).toMatchObject({
+            delivered: 1,
+          })
+          assert.deepStrictEqual(t.playlists.get("focus"), ["a"])
+          expect(yield* delivery.status("owner")).toMatchObject({
+            toWrite: 0,
+            refused: 1,
+          })
+          // Nothing left to do: no continuation loop on the refused playlist.
+          assert.strictEqual(t.sent.length, 0)
+
+          t.spotify.playlistTrackIds.mockImplementation(
+            (_ownerId, playlistId) =>
+              Effect.succeed(new Set(t.playlists.get(playlistId)))
+          )
+          yield* delivery.request("owner")
+          expect(yield* delivery.status("owner")).toMatchObject({
+            toWrite: 1,
+            refused: 0,
+          })
+          yield* delivery.processNext("owner")
+          assert.deepStrictEqual(t.playlists.get("jazz"), ["a"])
+        })
+      )
+    }
+  )
 })

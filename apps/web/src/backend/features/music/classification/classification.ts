@@ -1,4 +1,4 @@
-import { Clock, Context, Effect, Layer } from "effect"
+import { Clock, Context, Effect, Layer, Option } from "effect"
 import {
   type DestinationPersistenceError,
   Destinations,
@@ -142,16 +142,39 @@ export class MusicClassification extends Context.Service<
           },
           acoustic: track.recording.acoustic,
         }
-        const answer = yield* jev.noul({
-          model: classifierModel,
-          state,
-          questions: Object.fromEntries(
-            setup.destinations.map((destination, index) => [
-              `destination_${index}`,
-              `Does this recording belong in a playlist described as: ${destination.description}?`,
-            ])
-          ),
-        })
+        // Jev refusing this one input must not block every later track; a
+        // missing key or rejected credentials still stop the batch.
+        const response = yield* jev
+          .noul({
+            model: classifierModel,
+            state,
+            questions: Object.fromEntries(
+              setup.destinations.map((destination, index) => [
+                `destination_${index}`,
+                `Does this recording belong in a playlist described as: ${destination.description}?`,
+              ])
+            ),
+          })
+          .pipe(
+            Effect.map(Option.some),
+            Effect.catchIf(
+              (error) => error.reason === "InvalidResponse",
+              () => Effect.succeed(Option.none())
+            )
+          )
+        if (Option.isNone(response))
+          return yield* store.save({
+            ownerId,
+            trackId: track.trackId,
+            destinationIds: [],
+            review: true,
+            reason: "classifier_failed",
+            probabilities: {},
+            model: classifierModel,
+            fingerprint: setup.fingerprint,
+            classifiedAt,
+          })
+        const answer = response.value
         const probabilities = Object.fromEntries(
           setup.destinations.map((destination, index) => [
             destination.playlistId,

@@ -776,6 +776,23 @@ describe("Spotify playlist delivery boundary", () => {
     )
   })
 
+  it.effect("a 403 refuses that request without asking to reconnect", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        const spotify = yield* Spotify
+        yield* connect(setup)
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(json({ error: "forbidden" }, 403))
+        const reason = yield* failureReason(
+          spotify.addTracksToPlaylist("github-42", "list123", ["track123"])
+        )
+        assert.strictEqual(reason._tag, "AccessDenied")
+        assert.isFalse(setup.getConnection()?.needsReconnect)
+      })
+    )
+  })
+
   it.effect("rejects invalid IDs before any Spotify request", () => {
     const setup = testSetup()
     return setup.run(

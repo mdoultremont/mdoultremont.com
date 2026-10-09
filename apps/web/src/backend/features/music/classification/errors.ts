@@ -7,7 +7,7 @@ export interface DecisionSummary {
   readonly artistNames: readonly string[]
   readonly destinationIds: readonly string[]
   readonly review: boolean
-  readonly reason: "classified" | "no_recording_data"
+  readonly reason: "classified" | "no_recording_data" | "classifier_failed"
   readonly probabilities: Readonly<Record<string, number>>
   readonly classifiedAt: number
 }

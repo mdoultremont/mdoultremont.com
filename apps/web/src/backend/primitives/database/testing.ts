@@ -19,6 +19,11 @@ export function makeTestD1() {
   type Params = Parameters<ReturnType<typeof sqlite.prepare>["all"]>
 
   const bound = (query: string, values: unknown[]) => {
+    // D1 rejects statements with more than 100 bound parameters; SQLite does not.
+    if (values.length > 100)
+      throw new Error(
+        `D1 allows at most 100 bound parameters, got ${values.length}`
+      )
     const statement = sqlite.prepare(query)
     const params = values as Params
     const run = () => ({

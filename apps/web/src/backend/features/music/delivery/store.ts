@@ -40,7 +40,7 @@ export class DeliveryStore extends Context.Service<
     >
     readonly deliveries: (ownerId: string) => Effect.Effect<
       readonly (TrackPlaylist & {
-        readonly status: "pending" | "delivered"
+        readonly status: "pending" | "delivered" | "refused"
         readonly updatedAt: number
       })[],
       DeliveryPersistenceError
@@ -55,6 +55,16 @@ export class DeliveryStore extends Context.Service<
       ownerId: string,
       pairs: readonly TrackPlaylist[],
       now: number
+    ) => Effect.Effect<void, DeliveryPersistenceError>
+    /** Records writes Spotify refused, so they are skipped until retried. */
+    readonly markRefused: (
+      ownerId: string,
+      pairs: readonly TrackPlaylist[],
+      now: number
+    ) => Effect.Effect<void, DeliveryPersistenceError>
+    /** Makes refused writes eligible again. */
+    readonly clearRefused: (
+      ownerId: string
     ) => Effect.Effect<void, DeliveryPersistenceError>
     /** Records that Spotify no longer lists these tracks as liked. */
     readonly markUnliked: (
@@ -79,7 +89,7 @@ export class DeliveryStore extends Context.Service<
       const upsert = (
         ownerId: string,
         pairs: readonly TrackPlaylist[],
-        status: "pending" | "delivered",
+        status: "pending" | "delivered" | "refused",
         now: number
       ) =>
         query(async (db) => {
@@ -97,7 +107,11 @@ export class DeliveryStore extends Context.Service<
                   musicDeliveries.trackId,
                   musicDeliveries.playlistId,
                 ],
-                set: { status, updatedAt: now },
+                // Reuse the inserted values: binding them again would pass D1's limit.
+                set: {
+                  status: sql`excluded.status`,
+                  updatedAt: sql`excluded.updated_at`,
+                },
               })
         })
 
@@ -164,6 +178,19 @@ export class DeliveryStore extends Context.Service<
           upsert(ownerId, pairs, "pending", now),
         markDelivered: (ownerId, pairs, now) =>
           upsert(ownerId, pairs, "delivered", now),
+        markRefused: (ownerId, pairs, now) =>
+          upsert(ownerId, pairs, "refused", now),
+        clearRefused: (ownerId) =>
+          query((db) =>
+            db
+              .delete(musicDeliveries)
+              .where(
+                and(
+                  eq(musicDeliveries.ownerId, ownerId),
+                  eq(musicDeliveries.status, "refused")
+                )
+              )
+          ).pipe(Effect.asVoid),
 
         markUnliked: (ownerId, trackIds) =>
           query(async (db) => {

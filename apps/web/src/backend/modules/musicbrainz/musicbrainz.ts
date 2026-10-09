@@ -104,6 +104,7 @@ export class MusicBrainz extends Context.Service<
 
         const recordingsByIsrc = Effect.fn("MusicBrainz.recordingsByIsrc")(
           function* (isrc: string) {
+            isrc = isrc.toUpperCase().replaceAll("-", "")
             if (!isrcPattern.test(isrc)) return []
             const response = yield* spaced(
               HttpClientRequest.get(

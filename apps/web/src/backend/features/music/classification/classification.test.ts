@@ -5,7 +5,7 @@ import {
   type DestinationConfiguration,
   Destinations,
 } from "@/backend/features/music/destinations"
-import { Jev } from "@/backend/modules/jev"
+import { Jev, JevError } from "@/backend/modules/jev"
 import { Database } from "@/backend/primitives/database"
 import { makeTestD1 } from "@/backend/primitives/database/testing"
 import { JobQueue } from "@/backend/primitives/job-queue"
@@ -304,4 +304,57 @@ describe("music classification", () => {
       })
     )
   })
+
+  it.effect(
+    "sends a track Jev cannot answer for to review and keeps going",
+    () => {
+      const t = setup()
+      const rejected = t.like("USAAA2600001")
+      t.recording("USAAA2600001", "found", "Rejected title")
+      const next = t.like("USAAA2600002")
+      t.recording("USAAA2600002", "found", "Blue in Green")
+      t.scores.set("Blue in Green", { "Late-night jazz": 0.9 })
+      const answer = t.noul.getMockImplementation()!
+      t.noul.mockImplementation((input) =>
+        JSON.stringify(input.state).includes("Rejected title")
+          ? Effect.fail(new JevError({ reason: "InvalidResponse" }))
+          : answer(input)
+      )
+      return t.run(
+        Effect.gen(function* () {
+          const classification = yield* MusicClassification
+          assert.deepStrictEqual(yield* classification.processNext("owner"), {
+            decided: 2,
+          })
+          expect(t.decision(rejected)).toMatchObject({
+            review: 1,
+            reason: "classifier_failed",
+          })
+          expect(t.decision(next)).toMatchObject({
+            destination_ids: '["jazz"]',
+          })
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "stops without deciding anything when Jev is not configured",
+    () => {
+      const t = setup()
+      const track = t.like("USAAA2600001")
+      t.recording("USAAA2600001", "found")
+      t.noul.mockReturnValue(
+        Effect.fail(new JevError({ reason: "NotConfigured" }))
+      )
+      return t.run(
+        Effect.gen(function* () {
+          const classification = yield* MusicClassification
+          const error = yield* Effect.flip(classification.processNext("owner"))
+          assert.strictEqual(error._tag, "JevError")
+          assert.isUndefined(t.decision(track))
+        })
+      )
+    }
+  )
 })

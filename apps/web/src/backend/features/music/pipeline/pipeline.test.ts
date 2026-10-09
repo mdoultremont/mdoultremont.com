@@ -91,6 +91,7 @@ function setup(
         automatic: true,
         delivered: 0,
         toWrite: options.toWrite ?? 0,
+        refused: 0,
         lastDeliveredAt: null,
       })
     ),

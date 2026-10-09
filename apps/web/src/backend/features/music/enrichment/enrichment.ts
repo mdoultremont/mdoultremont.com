@@ -96,13 +96,19 @@ export class MusicEnrichment extends Context.Service<
           return
         }
         const [recording] = recordings
-        // Missing or unreadable analyses are normal for newer recordings.
-        const analysis = yield* acousticBrainz.analysis(recording!.id).pipe(
-          Effect.catchIf(
-            (error) => !error.retryable,
-            () => Effect.succeed(Option.none())
+        // The analysis is optional: AcousticBrainz is read-only, lacks every
+        // recording made after 2022, and an outage must not stop MusicBrainz
+        // lookups for every other track.
+        const analysis = yield* acousticBrainz
+          .analysis(recording!.id)
+          .pipe(
+            Effect.catch((error) =>
+              Effect.logWarning(
+                "AcousticBrainz analysis skipped",
+                error.message
+              ).pipe(Effect.as(Option.none()))
+            )
           )
-        )
         yield* store.save({
           isrc,
           status: "found",

@@ -23,9 +23,10 @@ export type DeliveryError =
   | SpotifyError
 
 interface Plan {
-  /** Pairs to write, newest likes first. `uncertain` marks an earlier write with an unknown outcome. */
-  readonly todo: readonly (TrackPlaylist & { readonly uncertain: boolean })[]
+  /** Pairs to write, newest likes first. */
+  readonly todo: readonly TrackPlaylist[]
   readonly delivered: number
+  readonly refused: number
   readonly lastDeliveredAt: number | null
 }
 
@@ -37,8 +38,10 @@ interface Plan {
 export class MusicDelivery extends Context.Service<
   MusicDelivery,
   {
-    /** Queues a delivery batch ("Write now"). */
-    readonly request: (ownerId: string) => Effect.Effect<void, JobQueueError>
+    /** "Write now": queues a batch and retries playlists Spotify refused before. */
+    readonly request: (
+      ownerId: string
+    ) => Effect.Effect<void, DeliveryPersistenceError | JobQueueError>
     /** Queues a batch only when automatic delivery is on. */
     readonly requestIfAutomatic: (
       ownerId: string
@@ -71,12 +74,20 @@ export class MusicDelivery extends Context.Service<
       const spotify = yield* Spotify
       const queue = yield* JobQueue
 
-      const request = (ownerId: string) =>
+      const send = (ownerId: string) =>
         queue.send(DeliveryMessage.make({ kind: "music.delivery", ownerId }))
+
+      /** "Write now": also gives refused playlists another chance. */
+      const writeNow = Effect.fn("MusicDelivery.writeNow")(function* (
+        ownerId: string
+      ) {
+        yield* store.clearRefused(ownerId)
+        yield* send(ownerId)
+      })
 
       const requestIfAutomatic = Effect.fn("MusicDelivery.requestIfAutomatic")(
         function* (ownerId: string) {
-          if (yield* store.automatic(ownerId)) yield* request(ownerId)
+          if (yield* store.automatic(ownerId)) yield* send(ownerId)
         }
       )
 
@@ -84,29 +95,68 @@ export class MusicDelivery extends Context.Service<
         const configuration = yield* destinations.read(ownerId)
         const decisions = yield* store.decisions(ownerId)
         const records = yield* store.deliveries(ownerId)
-        const delivered = new Set<string>()
-        const uncertain = new Set<string>()
+        const settled = new Set<string>()
+        let delivered = 0
+        let refused = 0
         let lastDeliveredAt: number | null = null
         for (const record of records) {
           const key = `${record.trackId}|${record.playlistId}`
           if (record.status === "delivered") {
-            delivered.add(key)
+            settled.add(key)
+            delivered += 1
             lastDeliveredAt = Math.max(lastDeliveredAt ?? 0, record.updatedAt)
-          } else uncertain.add(key)
-        }
-        const todo: Plan["todo"][number][] = []
-        for (const decision of decisions)
-          for (const playlistId of targets(decision, configuration)) {
-            const key = `${decision.trackId}|${playlistId}`
-            if (!delivered.has(key))
-              todo.push({
-                trackId: decision.trackId,
-                playlistId,
-                uncertain: uncertain.has(key),
-              })
+          } else if (record.status === "refused") {
+            settled.add(key)
+            refused += 1
           }
-        return { todo, delivered: delivered.size, lastDeliveredAt } as Plan
+        }
+        const todo: TrackPlaylist[] = []
+        for (const decision of decisions)
+          for (const playlistId of targets(decision, configuration))
+            if (!settled.has(`${decision.trackId}|${playlistId}`))
+              todo.push({ trackId: decision.trackId, playlistId })
+        return { todo, delivered, refused, lastDeliveredAt } satisfies Plan
       })
+
+      /**
+       * Writes the pairs for one playlist. Reads the playlist first: a track
+       * may already be there (a curated playlist, or an earlier write whose
+       * response was lost), and Spotify would add it a second time.
+       */
+      const writePlaylist = Effect.fn("MusicDelivery.writePlaylist")(
+        function* (
+          ownerId: string,
+          playlistId: string,
+          pairs: readonly TrackPlaylist[]
+        ) {
+          const now = yield* Clock.currentTimeMillis
+          const present = yield* spotify.playlistTrackIds(ownerId, playlistId)
+          const toAdd = pairs.filter((pair) => !present.has(pair.trackId))
+          yield* store.markDelivered(
+            ownerId,
+            pairs.filter((pair) => present.has(pair.trackId)),
+            now
+          )
+          yield* store.markPending(ownerId, toAdd, now)
+          yield* spotify.addTracksToPlaylist(
+            ownerId,
+            playlistId,
+            toAdd.map((pair) => pair.trackId)
+          )
+          yield* store.markDelivered(ownerId, toAdd, now)
+          return pairs.length
+        },
+        // A refused playlist must not block the others or be retried in a loop.
+        (effect, ownerId, _playlistId, pairs) =>
+          effect.pipe(
+            Effect.catchReason("SpotifyError", "AccessDenied", () =>
+              Clock.currentTimeMillis.pipe(
+                Effect.flatMap((now) => store.markRefused(ownerId, pairs, now)),
+                Effect.as(0)
+              )
+            )
+          )
+      )
 
       const processNext = Effect.fn("MusicDelivery.processNext")(function* (
         ownerId: string
@@ -126,37 +176,22 @@ export class MusicDelivery extends Context.Service<
           batch.filter((pair) => liked.has(pair.trackId)),
           (pair) => pair.playlistId
         )
-        for (const [playlistId, pairs] of Object.entries(byPlaylist)) {
-          // An earlier write may have reached Spotify before failing; adding
-          // again would duplicate the track.
-          const present = pairs.some((pair) => pair.uncertain)
-            ? yield* spotify.playlistTrackIds(ownerId, playlistId)
-            : new Set<string>()
-          const alreadyThere = pairs.filter((pair) => present.has(pair.trackId))
-          const toAdd = pairs.filter((pair) => !present.has(pair.trackId))
-          const now = yield* Clock.currentTimeMillis
-          yield* store.markDelivered(ownerId, alreadyThere, now)
-          yield* store.markPending(ownerId, toAdd, now)
-          yield* spotify.addTracksToPlaylist(
-            ownerId,
-            playlistId,
-            toAdd.map((pair) => pair.trackId)
-          )
-          yield* store.markDelivered(ownerId, toAdd, now)
-          delivered += pairs.length
-        }
-        if (todo.length > batch.length) yield* request(ownerId)
+        for (const [playlistId, pairs] of Object.entries(byPlaylist))
+          delivered += yield* writePlaylist(ownerId, playlistId, pairs)
+        if (todo.length > batch.length) yield* send(ownerId)
         return { delivered, unliked: unliked.length }
       })
 
       const status = Effect.fn("MusicDelivery.status")(function* (
         ownerId: string
       ) {
-        const { todo, delivered, lastDeliveredAt } = yield* plan(ownerId)
+        const { todo, delivered, refused, lastDeliveredAt } =
+          yield* plan(ownerId)
         return {
           automatic: yield* store.automatic(ownerId),
           delivered,
           toWrite: todo.length,
+          refused,
           lastDeliveredAt,
         } satisfies DeliveryStatus
       })
@@ -170,12 +205,12 @@ export class MusicDelivery extends Context.Service<
           automatic,
           yield* Clock.currentTimeMillis
         )
-        if (automatic) yield* request(ownerId)
+        if (automatic) yield* send(ownerId)
         return automatic
       })
 
       return MusicDelivery.of({
-        request,
+        request: writeNow,
         requestIfAutomatic,
         processNext,
         status,

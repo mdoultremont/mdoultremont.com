@@ -15,6 +15,7 @@ describe("delivery panel", () => {
       automatic: false,
       delivered: 0,
       toWrite: 12,
+      refused: 0,
       lastDeliveredAt: null,
     })
     expect(html).toContain("12 tracks are decided and ready to write")
@@ -27,6 +28,7 @@ describe("delivery panel", () => {
       automatic: true,
       delivered: 40,
       toWrite: 3,
+      refused: 0,
       lastDeliveredAt: 1,
     })
     expect(html).toContain("Writing to Spotify: 3 left")
@@ -38,6 +40,7 @@ describe("delivery panel", () => {
       automatic: false,
       delivered: 40,
       toWrite: 0,
+      refused: 0,
       lastDeliveredAt: null,
     })
     expect(html).toContain("Everything decided is in your playlists")

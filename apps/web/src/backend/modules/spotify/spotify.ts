@@ -187,8 +187,13 @@ const make = Effect.gen(function* () {
           })
         )
       }
-      if (response.status === 401 || response.status === 403)
-        return yield* new Unauthorized()
+      if (response.status === 401) return yield* new Unauthorized()
+      // A 403 refuses this request (e.g. a playlist that is not editable);
+      // the connection itself is still valid.
+      if (response.status === 403)
+        return yield* fail(
+          new AccessDenied({ message: "Spotify refused this request" })
+        )
       if (response.status === 400) {
         const body = yield* response.json.pipe(Effect.orElseSucceed(() => null))
         if (

@@ -75,6 +75,11 @@ describe("MusicBrainz", () => {
           []
         )
         expect(t.fetcher).toHaveBeenCalledOnce()
+        // Lowercase or hyphenated ISRCs are normalised before the lookup.
+        yield* musicBrainz.recordingsByIsrc("us-abc-24-00001")
+        expect(String(t.fetcher.mock.calls[1]![0])).toContain(
+          "/isrc/USABC2400001"
+        )
       })
     )
   })

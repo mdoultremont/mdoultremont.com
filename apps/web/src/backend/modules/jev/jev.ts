@@ -1,4 +1,13 @@
-import { Config, Context, Data, Effect, Layer, Redacted, Schema } from "effect"
+import {
+  Config,
+  Context,
+  Data,
+  Effect,
+  Layer,
+  Option,
+  Redacted,
+  Schema,
+} from "effect"
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http"
 
 export class JevError extends Data.TaggedError("JevError")<{
@@ -6,6 +15,7 @@ export class JevError extends Data.TaggedError("JevError")<{
     | "RateLimited"
     | "Unavailable"
     | "Unauthorized"
+    | "NotConfigured"
     | "InvalidResponse"
   readonly retryAfterSeconds?: number
   readonly cause?: unknown
@@ -14,6 +24,8 @@ export class JevError extends Data.TaggedError("JevError")<{
     switch (this.reason) {
       case "Unauthorized":
         return "Jev rejected the API key"
+      case "NotConfigured":
+        return "Set JEV_API_KEY to classify tracks"
       case "InvalidResponse":
         return "Jev returned an answer that could not be read"
       default:
@@ -65,9 +77,10 @@ export class Jev extends Context.Service<
   static readonly layer = Layer.effect(
     Jev,
     Effect.gen(function* () {
-      const apiKey = yield* Config.schema(
-        Schema.Redacted(Schema.NonEmptyString),
-        "JEV_API_KEY"
+      // Optional at startup: the rest of the pipeline runs without a key,
+      // and only classification reports that it is missing.
+      const apiKey = yield* Config.option(
+        Config.schema(Schema.Redacted(Schema.NonEmptyString), "JEV_API_KEY")
       )
       const http = yield* HttpClient.HttpClient
 
@@ -76,12 +89,14 @@ export class Jev extends Context.Service<
         readonly state: unknown
         readonly questions: Readonly<Record<string, string>>
       }) {
+        if (Option.isNone(apiKey))
+          return yield* new JevError({ reason: "NotConfigured" })
         const keys = Object.keys(input.questions)
         if (keys.length === 0) return { model: input.model, probabilities: {} }
         const response = yield* HttpClientRequest.post(
           "https://api.typesafe.ai/v1/systemone"
         ).pipe(
-          HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+          HttpClientRequest.bearerToken(Redacted.value(apiKey.value)),
           HttpClientRequest.bodyJsonUnsafe({
             model: input.model,
             state: input.state,

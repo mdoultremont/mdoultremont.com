@@ -172,7 +172,7 @@ export const musicDecisions = sqliteTable(
       .notNull(),
     review: integer("review", { mode: "boolean" }).notNull(),
     reason: text("reason", {
-      enum: ["classified", "no_recording_data"],
+      enum: ["classified", "no_recording_data", "classifier_failed"],
     }).notNull(),
     /** Yes-probability per destination playlist ID, as returned by the classifier. */
     probabilities: text("probabilities", { mode: "json" })
@@ -198,7 +198,10 @@ export const musicDeliveries = sqliteTable(
       .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
     trackId: text("track_id").notNull(),
     playlistId: text("playlist_id").notNull(),
-    status: text("status", { enum: ["pending", "delivered"] }).notNull(),
+    /** `refused`: Spotify denied writing to the playlist; skipped until the next Write now. */
+    status: text("status", {
+      enum: ["pending", "delivered", "refused"],
+    }).notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (table) => [

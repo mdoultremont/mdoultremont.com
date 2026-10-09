@@ -252,4 +252,29 @@ describe("music enrichment", () => {
       )
     }
   )
+
+  it.effect("keeps MusicBrainz data when AcousticBrainz is down", () => {
+    const t = setup()
+    t.like("USAAA2600001")
+    t.like("USAAA2600002")
+    t.recordingsByIsrc.mockImplementation((isrc) =>
+      Effect.succeed([recording(isrc)])
+    )
+    t.analysisFor.mockReturnValue(
+      Effect.fail(new AcousticBrainzError({ reason: "Unavailable" }))
+    )
+    return t.run(
+      Effect.gen(function* () {
+        const enrichment = yield* MusicEnrichment
+        assert.deepStrictEqual(yield* enrichment.processNext("owner"), {
+          looked: 2,
+        })
+        expect(yield* enrichment.status("owner")).toMatchObject({
+          enriched: 2,
+          withAnalysis: 0,
+          pending: 0,
+        })
+      })
+    )
+  })
 })

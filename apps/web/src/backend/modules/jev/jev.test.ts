@@ -101,4 +101,25 @@ describe("Jev", () => {
       })
     )
   })
+
+  it.effect(
+    "builds without a key and refuses to answer until one is set",
+    () => {
+      const fetcher = vi.fn<typeof fetch>()
+      return ask.pipe(
+        Effect.flip,
+        Effect.map((error) => {
+          assert.strictEqual(error.reason, "NotConfigured")
+          assert.isFalse(error.retryable)
+          expect(fetcher).not.toHaveBeenCalled()
+        }),
+        Effect.provide(
+          Jev.layer.pipe(
+            Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown({})))
+          )
+        ),
+        Effect.provideService(FetchHttpClient.Fetch, fetcher)
+      )
+    }
+  )
 })

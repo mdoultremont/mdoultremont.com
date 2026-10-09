@@ -7,6 +7,8 @@ export interface DeliveryStatus {
   readonly delivered: number
   /** Pairs decided but not written yet. */
   readonly toWrite: number
+  /** Pairs Spotify refused to write (e.g. a playlist no longer editable). */
+  readonly refused: number
   readonly lastDeliveredAt: number | null
 }
 
