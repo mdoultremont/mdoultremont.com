@@ -1,7 +1,10 @@
-import { Cause, Data, Effect, Schema } from "effect"
+import { Cause, Data, Effect, Option, Schema } from "effect"
 import type { Config } from "effect"
 import type { SpotifyError } from "@/backend/modules/spotify"
-import { requireCurrentOwner } from "../app-auth.server"
+import { ownerFromRequest } from "./auth.server"
+import { readCookie } from "./cookies"
+
+export { readCookie }
 
 export class OwnerRequired extends Data.TaggedError("OwnerRequired")<{}> {}
 
@@ -62,11 +65,15 @@ export function respond(
   )
 }
 
+/** The signed-in owner, or `OwnerRequired`. Checked on every private request. */
 export const requireOwner = (request: Request) =>
-  Effect.tryPromise({
-    try: () => requireCurrentOwner(request),
-    catch: () => new OwnerRequired(),
-  })
+  ownerFromRequest(request).pipe(
+    Effect.flatMap((owner) =>
+      Option.isSome(owner)
+        ? Effect.succeed(owner.value)
+        : Effect.fail(new OwnerRequired())
+    )
+  )
 
 /** Same-origin request carrying the CSRF token from its cookie. */
 export const requireMutation = (request: Request) => {
@@ -88,19 +95,6 @@ export const decodeBody = <S extends Schema.Top>(
     Effect.flatMap(Schema.decodeUnknownEffect(schema)),
     Effect.mapError(() => new InvalidBody({ message }))
   )
-
-export function readCookie(request: Request, name: string): string | null {
-  for (const part of request.headers.get("Cookie")?.split(";") ?? []) {
-    const separator = part.indexOf("=")
-    if (separator < 0 || part.slice(0, separator).trim() !== name) continue
-    try {
-      return decodeURIComponent(part.slice(separator + 1).trim())
-    } catch {
-      return null
-    }
-  }
-  return null
-}
 
 const spotifyStatus = {
   NotConnected: 409,

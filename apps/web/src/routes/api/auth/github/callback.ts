@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { completeGitHubSignIn } from "@/backend/entrypoints/app-auth.server"
+import { completeGitHubSignIn } from "@/backend/entrypoints/http/auth.server"
 
 export const Route = createFileRoute("/api/auth/github/callback")({
   server: {

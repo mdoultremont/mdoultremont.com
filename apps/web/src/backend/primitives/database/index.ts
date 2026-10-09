@@ -35,8 +35,3 @@ export class Database extends Context.Service<
       })
     })
 }
-
-/** @deprecated Use the Database service. Kept until every store is an Effect service. */
-export function createDatabase(binding: D1Database) {
-  return drizzle(binding, { schema })
-}

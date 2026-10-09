@@ -6,8 +6,9 @@
   features → modules → primitives. Imports only point down; each unit is a
   directory whose `index.ts` is its public API. Features must not depend on
   TanStack routes, Cloudflare binding types, browser state, or provider
-  transport payloads. Read `src/backend/README.md` before changing backend
-  code; it defines the Effect patterns to follow.
+  transport payloads; lint enforces these boundaries. Read
+  `src/backend/README.md` before changing backend code; it defines the Effect
+  patterns to follow.
 - Keep provider integrations independent from app sign-in. Private server
   actions must verify the configured GitHub owner on every request.
 - Edit content records under `content/`. Update the repository-root

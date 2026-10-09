@@ -1,11 +1,15 @@
+import { Effect, Option } from "effect"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const auth = vi.hoisted(() => ({
   requireCurrentOwner: vi.fn<() => Promise<{ id: string }>>(),
 }))
 vi.mock("cloudflare:workers", () => ({ env: {} }))
-vi.mock("../../app-auth.server", () => ({
-  requireCurrentOwner: auth.requireCurrentOwner,
+vi.mock("../auth.server", () => ({
+  ownerFromRequest: () =>
+    Effect.promise(() =>
+      auth.requireCurrentOwner().then(Option.some, () => Option.none())
+    ),
 }))
 
 import {

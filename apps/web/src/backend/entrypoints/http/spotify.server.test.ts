@@ -1,3 +1,4 @@
+import { Effect, Option } from "effect"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import {
   beginSpotifyConnection,
@@ -22,7 +23,12 @@ vi.mock("cloudflare:workers", () => ({
     ),
   },
 }))
-vi.mock("../app-auth.server", () => ({ requireCurrentOwner: mocks.owner }))
+vi.mock("./auth.server", () => ({
+  ownerFromRequest: (request: Request) =>
+    Effect.promise(() =>
+      mocks.owner(request).then(Option.some, () => Option.none())
+    ),
+}))
 
 beforeEach(() => {
   vi.resetAllMocks()

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { signOut } from "@/backend/entrypoints/app-auth.server"
+import { signOut } from "@/backend/entrypoints/http/auth.server"
 
 export const Route = createFileRoute("/api/auth/logout")({
   server: {

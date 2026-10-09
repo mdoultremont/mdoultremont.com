@@ -1,9 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import {
-  beginGitHubSignIn,
-  completeGitHubSignIn,
-  signOut,
-} from "./app-auth.server"
+import { beginGitHubSignIn, completeGitHubSignIn, signOut } from "./auth.server"
 
 const bindings = vi.hoisted(() => ({
   GITHUB_CLIENT_ID: "test-client",

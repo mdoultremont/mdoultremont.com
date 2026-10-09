@@ -96,16 +96,22 @@ stable while the Spotify connection exists; changing it makes the stored
 refresh token unreadable and requires reconnecting. The server stores only an
 encrypted refresh token, account identifiers, display name, scopes, and
 connection status. Disconnect deletes this connection record and its dependent
-music configuration while leaving GitHub sign-in intact. Connecting does not
-process existing Liked Songs.
+music data while leaving GitHub sign-in intact. Connecting starts a full
+ingestion of existing Liked Songs.
 
-## Music runs
+Classification uses [Jev](https://typesafe.ai). Set its API key with the
+others:
 
-The private `/music` control area includes hourly scheduling, asynchronous
-catch-up/full/reclassification runs, and recent progress. The classifier launch
-gate is closed: runs currently make no Jev calls or playlist additions.
-See [music automation operation](../../docs/music-automation.md) for recovery,
-migrations, evaluation requirements, and the current limitations.
+```text
+JEV_API_KEY=<TypeSafe API key>
+```
+
+## Music pipeline
+
+The private `/music` area runs four steps: ingestion of Liked Songs,
+enrichment from MusicBrainz and AcousticBrainz, classification with Jev once
+you mark your playlists **Ready**, and delivery to Spotify on **Write now** or
+automatically. See [music automation operation](../../docs/music-automation.md).
 
 ## Image runtime
 

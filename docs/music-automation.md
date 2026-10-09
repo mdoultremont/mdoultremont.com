@@ -1,102 +1,83 @@
 # Music automation operation
 
-Issue #16's backend is local to `apps/web/src/backend`: primitives own D1,
-modules own provider and storage capabilities, workflows own behavior, and
-HTTP/queue/cron entrypoints dispatch into those workflows. Effect is pinned to
-`4.0.0-rc.118`.
+The private `/music` area sorts the owner's Spotify Liked Songs into playlists.
+Vocabulary is defined in `CONTEXT.md` (Music control area); code structure and
+Effect patterns are in `apps/web/src/backend/README.md`.
 
-## Current launch state
+## Pipeline
 
-The live policy in `modules/music-run-runtime.ts` is closed. Runs discover
-current likes, resolve only CC0 recording evidence, save progress, and report
-status. They make **no Jev calls and no playlist additions**, including review
-playlist additions. Dry runs do not advance the live discovery checkpoint or
-record playlist delivery, so likes remain eligible when the gate eventually
-opens. Playlist creation requested explicitly through configuration remains
-available and creates private playlists.
+Four steps, each re-runnable on its own:
 
-Absent ISRCs, ambiguous MusicBrainz matches, or absent AcousticBrainz recording
-data produce an abstention. The portable sync workflow selects the review
-playlist for abstentions, and reconciles exact Spotify IDs before every write
-when writes are enabled. Spotify metadata stays outside the model request.
-See [the input policy](spotify-classifier-input-policy.md).
+| Step           | Reads                                    | Writes            | Runs when                                                 |
+| -------------- | ---------------------------------------- | ----------------- | --------------------------------------------------------- |
+| Ingestion      | Spotify Liked Songs                      | liked tracks      | Spotify connects; hourly; "Check for new likes"           |
+| Enrichment     | MusicBrainz, AcousticBrainz (by ISRC)    | recording data    | an ingestion page adds likes; hourly while pending        |
+| Classification | recording data + destination description | decisions         | the owner sets **Ready**; after enrichment; "Reclassify"  |
+| Delivery       | decisions                                | Spotify playlists | **Write now**; after classification if automatic delivery |
 
-An owner-labeled evaluation is still required. Do not open the live gate merely
-because tests pass. Record clear, overlapping, and ambiguous CC0 examples;
-record the selected exact Jev model version, input policy version, probability
-threshold, destination rules, expected labels, actual decisions, abstentions,
-and errors. Establish useful precision and coverage with the owner before
-changing the policy. The threshold of 1 in the closed policy is a placeholder,
-not an evaluated threshold. A model-version change must change the decision
-fingerprint. Jev availability and the authenticated response contract must
-also be verified before launch. No evaluation labels were invented here.
+- **Ingestion.** A full ingestion reads every page and marks likes it no longer
+  finds as un-liked; it runs on connect and then once a day. An incremental
+  ingestion stops at the first like already stored; it runs every other hour.
+  One ingestion runs at a time per owner.
+- **Enrichment.** Recording data is stored per ISRC, so re-ingesting never
+  repeats a lookup. An ISRC with several MusicBrainz recordings is stored as
+  ambiguous rather than guessed. AcousticBrainz only knows recordings analysed
+  before 2022; newer ones get MusicBrainz data only. "Look up unresolved tracks
+  again" retries not-found, ambiguous, and failed ISRCs.
+- **Classification.** Jev (`jev-1.13.0`, pinned) answers one yes/no question
+  per enabled destination. Destinations at 0.5 or more are accepted; otherwise
+  the track goes to review. Tracks without recording data go to review without
+  a Jev call. Only recording data reaches Jev; see
+  [the input policy](spotify-classifier-input-policy.md). Each decision
+  records a fingerprint of the destinations it used, so changing destinations
+  marks decisions as outdated until the owner reclassifies.
+- **Delivery.** Adds each decided track to its enabled destinations, or to the
+  review playlist. It only adds, never removes; it re-checks that each track is
+  still liked right before writing. Writes are recorded as pending first; a
+  pending write is checked against the playlist before being retried, so a lost
+  response does not duplicate a track.
+
+## Queue and cron
+
+All steps share one Cloudflare queue (binding `MUSIC_QUEUE`, queue
+`mdoultremont-music-baseline`), with consumer concurrency one. Each message
+names its step (`music.ingestion`, `music.enrichment`, `music.classification`,
+`music.delivery`) and processes one batch, queuing the next while work remains.
+After a batch, the pipeline queues the next step when it has work.
+
+Retryable failures (rate limits, provider outages, storage errors) retry with
+exponential backoff, honouring `Retry-After`, for up to ten attempts. Other
+failures stop: an ingestion is marked failed with its reason, and other steps
+leave their work pending.
+
+The hourly cron (`0 * * * *`) runs the upkeep: it starts the due ingestion,
+re-sends a stalled ingestion's message after ten minutes, and resumes every
+step with pending work.
 
 ## Configuration and deployment
 
-The Worker needs D1 and the `MUSIC_QUEUE` binding, which points at the
-existing `mdoultremont-music-baseline` queue. Each message carries a `kind`
-naming the pipeline step it belongs to; ingestion handles one Spotify page per
-message. Consumer concurrency is one. Configure the hourly cron
-`0 * * * *` and apply all migrations before using the control area:
+Worker variables and secrets: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
+`GITHUB_OWNER_ID`, `GITHUB_REDIRECT_URI`, `SPOTIFY_CLIENT_ID`,
+`SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`,
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/web/README.md` for
+how to obtain each. A missing variable returns 503 from the routes that need it.
+
+Bindings: D1 `DB` (`mdoultremont-music`), queue `MUSIC_QUEUE`, and the hourly
+cron. Apply migrations before first use:
 
 ```sh
 pnpm --filter @mdoultremont/portfolio db:migrate:local
-# For an authorized deployment, apply the same migrations remotely first:
 pnpm --filter @mdoultremont/portfolio exec wrangler d1 migrations apply mdoultremont-music --remote
 ```
 
-Set the GitHub and Spotify secrets described in `apps/web/README.md`. A Jev key
-will be needed only after evaluation; the closed runtime does not use it.
-The owner ID must be the configured GitHub numeric account ID. Provisioning,
-remote migration, OAuth connection, and deployment were not performed by this
-implementation.
-
-## Runs and recovery
-
-The initial baseline inventories historical IDs without processing them.
-Catch-up scans every current Liked Songs page, includes checkpoint ties and a
-one-minute overlap, and excludes initial-baseline history. Full and full
-reclassification scan current likes afresh, including historical likes.
-The latter bypasses saved decisions once model calls are permitted. Saved
-decisions include permitted-input, enabled-destination rule, classifier-version,
-and threshold fingerprints. Catch-up respects recorded deliveries; full runs
-can restore manually removed entries. No mode removes likes or playlist items.
-
-An owner-level partial unique index prevents concurrent active starts. Queue
-processing acquires a conditional lease before reading/advancing run state;
-continuation is sent after releasing it. Leases last twenty minutes, exceeding
-Cloudflare's queue invocation lifetime. Redelivery resumes saved progress.
-Hourly cron also re-enqueues stranded active runs, even when scheduling is
-paused. Disabling automation affects new scheduled starts only; manual starts
-remain available.
-
-Discovery inserts each page and advances its cursor atomically. The live
-checkpoint advances only with the final durable discovery page, independently
-of later track failures. Transient provider failures remain pending and rotate behind untried tracks.
-Queue redelivery uses exponential backoff and honors provider Retry-After, with
-at most ten durable transient attempts per track. Permanent failures and exhausted
-retries finish as failed track work without preventing later tracks from progressing.
-Successful recovery retires historical failed copies of the same exact track ID,
-and subsequent catch-up runs exclude already recovered work. Runs with failures report `failed`; starting another run imports their
-unfinished track IDs independently of the timestamp checkpoint. Repeated
-queue/provider failures produce a persisted actionable error. Remote write
-retries always inspect playlist membership before adding; this is reconciliation,
-not cross-system exactly-once delivery.
-
-Disconnect cascades stored configuration, baseline, checkpoints, runs, decisions,
-and delivery records, while retaining app identity. The private `/music` route
-and API routes are excluded from public prerendering.
+Disconnecting Spotify deletes the connection and, through foreign keys, every
+liked track, decision, delivery record, destination, and setting of the owner.
+Recording data is kept, since it is shared CC0 data keyed by ISRC.
 
 ## Validation
 
-Run `pnpm check` and `pnpm build` at the repository root. Focused browser checks:
-
-```sh
-pnpm --filter @mdoultremont/portfolio exec playwright test tests/browser/music.spec.ts tests/browser/destinations.spec.ts tests/browser/music-runs.spec.ts
-```
-
-The browser configuration smoke tests mount real UI modules with controlled API
-responses; they do not claim a live GitHub/Spotify OAuth round trip or provider
-writes. Workflow tests and SQLite-backed module tests cover durable discovery,
-cutoff ties, batching, overlap coordination, pause/manual starts, partial failure,
-checkpoint preservation, dry-run delivery gating, and disconnect cleanup.
+Run `pnpm check` and `pnpm build` at the repository root. Stores are tested
+against in-memory SQLite with the real migrations; provider modules against
+mocked `fetch` responses shaped like recorded live responses. Browser tests
+(`pnpm --filter @mdoultremont/portfolio exec playwright test`) mount the UI
+with controlled API responses; they do not perform a live OAuth round trip.

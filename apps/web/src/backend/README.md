@@ -129,10 +129,8 @@ it.effect("does something", () =>
 - HTTP modules use the real `FetchHttpClient`, with the `fetch` function
   replaced by `Effect.provideService(FetchHttpClient.Fetch, vi.fn())`.
 
-## Migration status
+## Enforcing the layers
 
-Migrated: `primitives/*`, `modules/{spotify,musicbrainz,acousticbrainz,jev}`,
-`features/music/*`, and the HTTP, queue, and cron entrypoints.
-
-Still in the previous layout: auth (`workflows/app-auth`,
-`modules/{app-auth-store,github-oauth}.ts`).
+`.oxlintrc.json` rejects imports that bypass a unit's `index.ts` and imports
+that point up a layer, and keeps `cloudflare:workers` out of features. The one
+exception is `@/backend/primitives/database/testing`, a test-only in-memory D1.
