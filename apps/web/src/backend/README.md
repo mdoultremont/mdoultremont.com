@@ -3,7 +3,7 @@
 The private music backend, written with [Effect](https://effect.website) v4.
 This guide covers the structure and the Effect patterns used here. The
 best worked example is `modules/spotify` together with
-`features/destinations` and `entrypoints/http/destinations.server.ts`.
+`features/music/destinations` and `entrypoints/http/destinations.server.ts`.
 
 ## Layers
 
@@ -15,8 +15,12 @@ entrypoints  →  features  →  modules  →  primitives
 | --------------- | --------------------------------------------------------------------------------------- | ----------------------------- |
 | **primitives**  | Raw infrastructure, no domain knowledge.                                                | `database`, `token-cipher`    |
 | **modules**     | Capabilities such as a provider API. Actions only, no business rules.                   | `spotify`                     |
-| **features**    | Business logic. Combines modules and primitives.                                        | `destinations`                |
+| **features**    | Business logic, grouped by domain. Combines modules and primitives.                     | `music/destinations`          |
 | **entrypoints** | Adapters that wire features to the outside: HTTP routes, queue consumers, cron, (MCP…). | `http/destinations.server.ts` |
+
+Features are grouped by domain (`features/music/…`, later `features/flights/…`);
+each folder inside a domain is one unit. Modules and primitives are named after
+what they talk to or do, not after a domain, so any feature can reuse them.
 
 Rules:
 
@@ -27,7 +31,7 @@ Rules:
 - Start from the feature. Add a module or primitive only when a feature needs
   one, and keep business rules out of them.
 - A store whose tables only make sense for one feature lives in that feature
-  (`features/destinations/store.ts`). A store that is part of a capability
+  (`features/music/destinations/store.ts`). A store that is part of a capability
   lives in the module (`modules/spotify/connections.ts`).
 
 ## Effect patterns
@@ -72,7 +76,7 @@ becomes the tracing span.
 - A module exposes **one error with a `reason`**: `SpotifyError` carries
   `NotConnected | ReconnectNeeded | RateLimited | …`. Callers handle specific
   reasons with `Effect.catchReason` or `Effect.catchReasons` (see `usable` in
-  `features/destinations/destinations.ts`).
+  `features/music/destinations/destinations.ts`).
 - A feature adds its own business errors (`DestinationConflict`, …) and passes
   module errors through when the caller should see them.
 - Entrypoints turn every error into a response with `Effect.catchTags`. Only
@@ -128,7 +132,7 @@ it.effect("does something", () =>
 ## Migration status
 
 These are migrated to this structure: `primitives/*`, `modules/spotify`,
-`features/destinations`, and `entrypoints/http/{destinations,spotify}.server.ts`.
+`features/music/destinations`, and `entrypoints/http/{destinations,spotify}.server.ts`.
 
 Still in the previous layout: auth (`workflows/app-auth`), the likes
 baseline, music runs, and the CC0 classifier. Until they move,

@@ -1,7 +1,7 @@
 import { Combobox } from "@base-ui/react/combobox"
 import { useEffect, useId, useState } from "react"
 import type { SpotifyPlaylist } from "@/backend/modules/spotify"
-import type { DestinationConfiguration } from "@/backend/features/destinations"
+import type { DestinationConfiguration } from "@/backend/features/music/destinations"
 
 type ViewState =
   | { readonly kind: "loading" }

@@ -3,7 +3,7 @@ import { Effect, Layer, Schema } from "effect"
 import {
   Destinations,
   type DestinationsError,
-} from "@/backend/features/destinations"
+} from "@/backend/features/music/destinations"
 import { platformLayer } from "../platform"
 import {
   decodeBody,

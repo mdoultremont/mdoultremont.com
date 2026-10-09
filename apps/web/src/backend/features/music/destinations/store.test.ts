@@ -8,7 +8,7 @@ import { DestinationStore } from "./store"
 function setup() {
   const sqlite = new DatabaseSync(":memory:")
   sqlite.exec("PRAGMA foreign_keys = ON")
-  const migrations = new URL("../../../../migrations/", import.meta.url)
+  const migrations = new URL("../../../../../migrations/", import.meta.url)
   for (const file of readdirSync(migrations)
     .filter((name) => name.endsWith(".sql"))
     // oxlint-disable-next-line unicorn/no-array-sort -- this freshly read migration list has no other consumers
