@@ -5,11 +5,12 @@ type PortfolioImageMetadata = Record<
   { width: number; height: number; version: string }
 >
 interface Env {
+  BETTER_AUTH_SECRET: string
+  BETTER_AUTH_URL: string
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
-  GITHUB_OWNER_ID: string
-  GITHUB_REDIRECT_URI: string
   JEV_API_KEY: string
+  OWNER_ACCOUNTS: string
   SPOTIFY_CLIENT_ID: string
   SPOTIFY_CLIENT_SECRET: string
   SPOTIFY_REDIRECT_URI: string
@@ -18,11 +19,12 @@ interface Env {
 
 declare namespace Cloudflare {
   interface Env {
+    BETTER_AUTH_SECRET: string
+    BETTER_AUTH_URL: string
     GITHUB_CLIENT_ID: string
     GITHUB_CLIENT_SECRET: string
-    GITHUB_OWNER_ID: string
-    GITHUB_REDIRECT_URI: string
     JEV_API_KEY: string
+    OWNER_ACCOUNTS: string
     SPOTIFY_CLIENT_ID: string
     SPOTIFY_CLIENT_SECRET: string
     SPOTIFY_REDIRECT_URI: string

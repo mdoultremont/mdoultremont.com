@@ -24,7 +24,6 @@ const ingestion: Ingestion = {
 const render = (latest: Ingestion | null, liked = 0, unliked = 0) =>
   renderToStaticMarkup(
     createElement(IngestionPanel, {
-      csrfToken: "csrf",
       initialStatus: { latest, liked, unliked },
     })
   )

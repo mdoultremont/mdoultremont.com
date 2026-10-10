@@ -30,6 +30,7 @@
     "@tanstack/react-router": "latest",
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-start": "latest",
+    "better-auth": "1.7.7",
     "drizzle-orm": "^0.45.3",
     "effect": "4.0.2",
     "react": "^19.2.0",

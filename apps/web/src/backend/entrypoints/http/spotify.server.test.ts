@@ -8,7 +8,8 @@ import {
 } from "./spotify.server"
 
 const mocks = vi.hoisted(() => ({
-  owner: vi.fn<(request: Request) => Promise<{ id: string }>>(),
+  owner:
+    vi.fn<(request: Request) => Promise<{ id: string; sessionId: string }>>(),
   prepare: vi.fn<() => void>(),
 }))
 
@@ -32,7 +33,13 @@ vi.mock("./auth.server", () => ({
 
 beforeEach(() => {
   vi.resetAllMocks()
-  mocks.owner.mockResolvedValue({ id: "github-42" })
+  // The owner's session follows the request's test cookie.
+  mocks.owner.mockImplementation(async (request) => ({
+    id: "owner",
+    sessionId:
+      /session=([^;]+)/.exec(request.headers.get("Cookie") ?? "")?.[1] ??
+      "none",
+  }))
 })
 
 describe("Spotify private entrypoint", () => {
@@ -74,7 +81,7 @@ describe("Spotify private entrypoint", () => {
   test("binds OAuth callback to the same session and state cookie", async () => {
     const start = await beginSpotifyConnection(
       new Request("https://example.com/api/spotify/connect", {
-        headers: { Cookie: "music_session=session-a" },
+        headers: { Cookie: "session=session-a" },
       })
     )
     expect(start.status).toBe(302)
@@ -88,14 +95,14 @@ describe("Spotify private entrypoint", () => {
     const callback = `https://example.com/api/spotify/callback?state=${encodeURIComponent(state ?? "")}&code=code`
     const wrongSession = await completeSpotifyConnection(
       new Request(callback, {
-        headers: { Cookie: `music_session=session-b; ${stateCookie}` },
+        headers: { Cookie: `session=session-b; ${stateCookie}` },
       })
     )
     expect(wrongSession.headers.get("Location")).toContain("spotify=failed")
     const wrongCookie = await completeSpotifyConnection(
       new Request(callback, {
         headers: {
-          Cookie: "music_session=session-a; spotify_oauth_state=forged",
+          Cookie: "session=session-a; spotify_oauth_state=forged",
         },
       })
     )
@@ -103,14 +110,10 @@ describe("Spotify private entrypoint", () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
-  test("checks origin and CSRF token before disconnect", async () => {
+  test("checks origin before disconnect", async () => {
     const request = new Request("https://example.com/api/spotify/disconnect", {
       method: "POST",
-      headers: {
-        Origin: "https://attacker.example",
-        Cookie: "music_csrf=csrf",
-        "X-CSRF-Token": "csrf",
-      },
+      headers: { Origin: "https://attacker.example" },
     })
     expect((await disconnectSpotify(request)).status).toBe(403)
     expect(mocks.prepare).not.toHaveBeenCalled()

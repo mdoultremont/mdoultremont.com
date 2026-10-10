@@ -56,8 +56,8 @@ step with pending work.
 
 ## Configuration and deployment
 
-Worker variables and secrets: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
-`GITHUB_OWNER_ID`, `GITHUB_REDIRECT_URI`, `SPOTIFY_CLIENT_ID`,
+Worker variables and secrets: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
+`OWNER_ACCOUNTS`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`,
 `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`,
 `SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/web/README.md` for
 how to obtain each. A missing variable returns 503 from the routes that need it.

@@ -7,10 +7,8 @@ import type {
 const pollMilliseconds = 3000
 
 export function IngestionPanel({
-  csrfToken,
   initialStatus,
 }: {
-  readonly csrfToken: string
   readonly initialStatus?: IngestionStatus
 }) {
   const [status, setStatus] = useState<IngestionStatus | null>(
@@ -63,7 +61,6 @@ export function IngestionPanel({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
         },
         body: JSON.stringify({ kind }),
       })

@@ -7,7 +7,6 @@ describe("Spotify connection panel", () => {
   test("offers connection when disconnected", () => {
     const html = renderToStaticMarkup(
       createElement(SpotifyConnectionPanel, {
-        csrfToken: "csrf",
         initialConnection: { status: "disconnected" },
       })
     )
@@ -18,7 +17,6 @@ describe("Spotify connection panel", () => {
   test("shows account controls when connected", () => {
     const html = renderToStaticMarkup(
       createElement(SpotifyConnectionPanel, {
-        csrfToken: "csrf",
         initialConnection: {
           status: "connected",
           accountId: "spotify-42",
@@ -35,7 +33,6 @@ describe("Spotify connection panel", () => {
   test("offers reconnection after authorization failure", () => {
     const html = renderToStaticMarkup(
       createElement(SpotifyConnectionPanel, {
-        csrfToken: "csrf",
         initialConnection: {
           status: "reconnect_needed",
           accountId: "spotify-42",

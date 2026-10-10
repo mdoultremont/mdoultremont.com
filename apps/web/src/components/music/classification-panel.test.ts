@@ -50,7 +50,6 @@ const status: ClassificationStatus = {
 const render = (value: ClassificationStatus) =>
   renderToStaticMarkup(
     createElement(ClassificationPanel, {
-      csrfToken: "csrf",
       initialStatus: value,
       initialPlaylistNames: { jazz: "Late Jazz", party: "Party" },
     })

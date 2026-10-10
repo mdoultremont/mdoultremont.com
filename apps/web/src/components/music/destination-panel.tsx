@@ -12,11 +12,7 @@ type ViewState =
       readonly playlists: readonly SpotifyPlaylist[]
     }
 
-export function DestinationPanel({
-  csrfToken,
-}: {
-  readonly csrfToken: string
-}) {
+export function DestinationPanel() {
   const [view, setView] = useState<ViewState>({ kind: "loading" })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +66,6 @@ export function DestinationPanel({
         method,
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
         },
         body: JSON.stringify(body),
       })

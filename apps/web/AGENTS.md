@@ -9,8 +9,9 @@
   transport payloads; lint enforces these boundaries. Read
   `src/backend/README.md` before changing backend code; it defines the Effect
   patterns to follow.
-- Keep provider integrations independent from app sign-in. Private server
-  actions must verify the configured GitHub owner on every request.
+- Keep provider integrations independent from app sign-in (Better Auth, in
+  `features/auth` and `modules/better-auth`). Private server actions must
+  verify the owner on every request through `requireOwner`.
 - Edit content records under `content/`. Update the repository-root
   `.pages.yml` when their schema or media paths change.
 - Generate D1 migrations with `pnpm db:generate`. Production applies them

@@ -1,98 +1,119 @@
-import { Clock, Config, Context, Effect, Layer, Option } from "effect"
+import { Context, Effect, Layer, Option } from "effect"
 import {
-  GitHub,
-  type GitHubError,
-  type GitHubIdentity,
-} from "@/backend/modules/github"
-import { randomToken, sha256Hex } from "@/backend/primitives/hashing"
-import { type AuthPersistenceError, OwnerAccessDenied } from "./errors"
+  AuthGate,
+  type AuthUser,
+  BetterAuth,
+  type BetterAuthError,
+  SignInRejected,
+} from "@/backend/modules/better-auth"
+import type { AuthPersistenceError } from "./errors"
+import { isOwnerAccount, ownerAccounts } from "./owner-accounts"
 import { AuthStore } from "./store"
 
-export const sessionLifetimeSeconds = 60 * 60 * 24 * 30
+/** The signed-in owner, and the providers they can sign in with. */
+export interface Owner extends AuthUser {
+  readonly providers: ReadonlyArray<string>
+}
 
-export interface OwnerSession {
-  readonly identity: GitHubIdentity
-  /** Sent to the browser in an HttpOnly cookie; only its hash is stored. */
-  readonly sessionToken: string
-  /** Sent in a readable cookie and echoed in a header to prove same-origin mutations. */
-  readonly csrfToken: string
+/** The owner and their current session. `sessionId` stays on the server. */
+export interface OwnerSession extends Owner {
+  readonly sessionId: string
 }
 
 /**
- * Owner sign-in: only the GitHub account configured as GITHUB_OWNER_ID can
- * open a session for the private area.
+ * Admits only the owner's accounts (OWNER_ACCOUNTS). The site has a single
+ * user: once it exists, a new sign-in method must be linked from a signed-in
+ * session, or match its email, rather than create a second user.
  */
+export const OwnerGate = Layer.effect(
+  AuthGate,
+  Effect.gen(function* () {
+    const accounts = yield* ownerAccounts
+    const store = yield* AuthStore
+    return AuthGate.of({
+      admit: Effect.fn("OwnerGate.admit")(function* (attempt) {
+        if (!isOwnerAccount(accounts, attempt))
+          return yield* new SignInRejected({
+            code: "not_allowed",
+            description: "This account is not allowed to sign in",
+          })
+        if (attempt.action !== "create-user") return
+        const users = yield* store.userCount().pipe(
+          Effect.catch(() =>
+            Effect.fail(
+              new SignInRejected({
+                code: "unavailable",
+                description: "Sign-in is temporarily unavailable",
+              })
+            )
+          )
+        )
+        if (users > 0)
+          return yield* new SignInRejected({
+            code: "link_required",
+            description:
+              "Sign in with the account you used before, then link this one",
+          })
+      }),
+    })
+  })
+)
+
+/** Owner sign-in for the private area, on top of Better Auth. */
 export class OwnerAuth extends Context.Service<
   OwnerAuth,
   {
-    readonly authorizationUrl: (state: string) => string
-    readonly signIn: (
-      code: string
-    ) => Effect.Effect<
-      OwnerSession,
-      OwnerAccessDenied | AuthPersistenceError | GitHubError
-    >
-    /** The owner behind a session token, if the session is valid and still the owner's. */
+    /** Better Auth's routes: sign-in redirects, callbacks, sign-out, linking. */
+    readonly handler: (
+      request: Request
+    ) => Effect.Effect<Response, BetterAuthError>
+    /** The owner behind the request's session, if it is still one of OWNER_ACCOUNTS. */
     readonly currentOwner: (
-      sessionToken: string
-    ) => Effect.Effect<Option.Option<GitHubIdentity>, AuthPersistenceError>
-    readonly signOut: (
-      sessionToken: string
-    ) => Effect.Effect<void, AuthPersistenceError>
+      headers: Headers
+    ) => Effect.Effect<
+      Option.Option<OwnerSession>,
+      BetterAuthError | AuthPersistenceError
+    >
+    /** Every owner user, for scheduled work that runs without a request. */
+    readonly ownerIds: () => Effect.Effect<
+      ReadonlyArray<string>,
+      AuthPersistenceError
+    >
   }
 >()("backend/features/OwnerAuth") {
   static readonly layerNoDeps = Layer.effect(
     OwnerAuth,
     Effect.gen(function* () {
-      const ownerId = yield* Config.NonEmptyString("GITHUB_OWNER_ID")
-      const github = yield* GitHub
+      const accounts = yield* ownerAccounts
+      const betterAuth = yield* BetterAuth
       const store = yield* AuthStore
-      const nowSeconds = Effect.map(Clock.currentTimeMillis, (millis) =>
-        Math.floor(millis / 1000)
-      )
-
-      const signIn = Effect.fn("OwnerAuth.signIn")(function* (code: string) {
-        const identity = yield* github.identify(code)
-        if (identity.id !== ownerId) return yield* new OwnerAccessDenied()
-        const sessionToken = yield* randomToken
-        const now = yield* nowSeconds
-        yield* store.saveSession({
-          identity,
-          sessionHash: yield* sha256Hex(sessionToken),
-          expiresAt: now + sessionLifetimeSeconds,
-          now,
-        })
-        return { identity, sessionToken, csrfToken: yield* randomToken }
-      })
 
       const currentOwner = Effect.fn("OwnerAuth.currentOwner")(function* (
-        sessionToken: string
+        headers: Headers
       ) {
-        const identity = yield* store.findSession({
-          sessionHash: yield* sha256Hex(sessionToken),
-          now: yield* nowSeconds,
-        })
-        // A session outlives a change of configured owner; it must not grant access.
-        return Option.filter(identity, (owner) => owner.id === ownerId)
-      })
-
-      const signOut = Effect.fn("OwnerAuth.signOut")(function* (
-        sessionToken: string
-      ) {
-        yield* store.revokeSession(yield* sha256Hex(sessionToken))
+        const session = yield* betterAuth.session(headers)
+        if (Option.isNone(session)) return Option.none<OwnerSession>()
+        const { sessionId, user } = session.value
+        // Checked on every request: removing an account from OWNER_ACCOUNTS
+        // ends access even for sessions opened before.
+        const owners = yield* store.usersWithAccounts(accounts, user.id)
+        if (owners.length === 0) return Option.none<OwnerSession>()
+        const providers = yield* store.providers(user.id)
+        return Option.some({ ...user, providers, sessionId })
       })
 
       return OwnerAuth.of({
-        authorizationUrl: github.authorizationUrl,
-        signIn,
+        handler: betterAuth.handler,
         currentOwner,
-        signOut,
+        ownerIds: () => store.usersWithAccounts(accounts),
       })
     })
   )
 
-  /** Production layer. Needs `Database` and the GITHUB_* configuration. */
+  /** Production layer. Needs `Database` and the OWNER_ACCOUNTS, BETTER_AUTH_*, GITHUB_* and SPOTIFY_* configuration. */
   static readonly layer = OwnerAuth.layerNoDeps.pipe(
-    Layer.provide(Layer.mergeAll(GitHub.layer, AuthStore.layer))
+    Layer.provide(BetterAuth.layer),
+    Layer.provide(OwnerGate),
+    Layer.provideMerge(AuthStore.layer)
   )
 }

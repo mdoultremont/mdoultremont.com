@@ -5,9 +5,7 @@ import type { DeliveryStatus } from "@/backend/features/music/delivery"
 import { DeliveryPanel } from "./delivery-panel"
 
 const render = (status: DeliveryStatus) =>
-  renderToStaticMarkup(
-    createElement(DeliveryPanel, { csrfToken: "csrf", initialStatus: status })
-  )
+  renderToStaticMarkup(createElement(DeliveryPanel, { initialStatus: status }))
 
 describe("delivery panel", () => {
   test("offers Write now while decisions wait to be written", () => {

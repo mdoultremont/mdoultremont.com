@@ -1,20 +1,29 @@
-import { Config, Effect, Layer } from "effect"
+import { Effect, Layer } from "effect"
+import { OwnerAuth } from "@/backend/features/auth"
 import { MusicPipeline } from "@/backend/features/music/pipeline"
 import { platformLayer } from "../platform"
 
-/** Hourly trigger from wrangler.jsonc. Keeps the owner's music pipeline moving. */
+/** Hourly trigger from wrangler.jsonc. Keeps each owner's music pipeline moving. */
 export function runScheduled(
   _controller: ScheduledController,
   bindings: Cloudflare.Env
 ): Promise<void> {
   return Effect.runPromise(
     Effect.gen(function* () {
-      const ownerId = yield* Config.NonEmptyString("GITHUB_OWNER_ID")
+      const ownerIds = yield* OwnerAuth.use((auth) => auth.ownerIds())
       const pipeline = yield* MusicPipeline
-      yield* pipeline.scheduled(ownerId)
+      yield* Effect.forEach(
+        ownerIds,
+        (ownerId) => pipeline.scheduled(ownerId),
+        {
+          discard: true,
+        }
+      )
     }).pipe(
       Effect.provide(
-        MusicPipeline.layer.pipe(Layer.provide(platformLayer(bindings)))
+        Layer.mergeAll(OwnerAuth.layer, MusicPipeline.layer).pipe(
+          Layer.provide(platformLayer(bindings))
+        )
       ),
       Effect.catchCause((cause) =>
         Effect.logError("Scheduled music upkeep failed", cause)

@@ -4,10 +4,8 @@ import type { EnrichmentStatus } from "@/backend/features/music/enrichment"
 const pollMilliseconds = 5000
 
 export function EnrichmentPanel({
-  csrfToken,
   initialStatus,
 }: {
-  readonly csrfToken: string
   readonly initialStatus?: EnrichmentStatus
 }) {
   const [status, setStatus] = useState<EnrichmentStatus | null>(
@@ -53,7 +51,6 @@ export function EnrichmentPanel({
     try {
       const response = await fetch("/api/music/enrichment", {
         method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
       })
       const payload = (await response.json().catch(() => null)) as
         | (EnrichmentStatus & { error?: string })

@@ -52,37 +52,51 @@ The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
 ## Private music connection
 
-The `/music` route uses GitHub for app sign-in and Spotify for music access. Apply
-the local D1 migrations before signing in:
+The `/music` route uses [Better Auth](https://www.better-auth.com) for app
+sign-in, with GitHub or Spotify, and a separate Spotify connection for music
+access. Apply the local D1 migrations before signing in:
 
 ```bash
 pnpm --filter @mdoultremont/portfolio db:migrate:local
 ```
 
-Register a GitHub OAuth app callback at
-`http://127.0.0.1:3000/api/auth/github/callback` for local use or
-`https://mdoultremont.com/api/auth/github/callback` in production. Open the
-local app at `http://127.0.0.1:3000/music` so both OAuth callbacks use the same
-browser cookie host. Configure the numeric GitHub account ID of the only
-permitted owner:
+Open the local app at `http://127.0.0.1:3000/music`, not `localhost`: Spotify
+rejects `localhost` callbacks, and every callback must use the same cookie
+host.
+
+Register a GitHub OAuth app with the callback
+`http://127.0.0.1:3000/api/auth/callback/github` for local use, or
+`https://mdoultremont.com/api/auth/callback/github` in production. Only the
+accounts listed in `OWNER_ACCOUNTS` can sign in, as `provider:accountId` pairs:
+the numeric GitHub account ID and the Spotify user ID.
 
 ```text
+BETTER_AUTH_SECRET=<openssl rand -base64 32>
+BETTER_AUTH_URL=http://127.0.0.1:3000
+OWNER_ACCOUNTS=github:<numeric GitHub account ID>,spotify:<Spotify user ID>
 GITHUB_CLIENT_ID=<GitHub OAuth app client ID>
 GITHUB_CLIENT_SECRET=<GitHub OAuth app client secret>
-GITHUB_OWNER_ID=<numeric GitHub account ID>
-GITHUB_REDIRECT_URI=http://127.0.0.1:3000/api/auth/github/callback
 ```
 
-Create a Spotify app with Web API access, and register the exact callback URL
-`http://127.0.0.1:3000/api/spotify/callback` for local use or
-`https://mdoultremont.com/api/spotify/callback` in production. Spotify
+In production, `BETTER_AUTH_URL` is `https://mdoultremont.com`. Changing
+`BETTER_AUTH_SECRET` signs everyone out.
+
+The first sign-in creates the owner. To add the other provider, sign in and
+use "Also sign in with …" on the music page; signing in with it directly works
+only when both accounts share an email address.
+
+Create a Spotify app with Web API access, and register two exact callback
+URLs, one for the music connection and one for sign-in:
+`http://127.0.0.1:3000/api/spotify/callback` and
+`http://127.0.0.1:3000/api/auth/callback/spotify` for local use, or the same
+paths on `https://mdoultremont.com` in production. Spotify
 [allows HTTP loopback IP addresses](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
 for local OAuth callbacks. In development mode, the Spotify app owner needs
 Premium and each authorized account must be on the app's
 [allowlist](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
 
 Set these values in an untracked `apps/web/.dev.vars` for local development and
-as Worker secrets for deployment, alongside the GitHub values above:
+as Worker secrets for deployment, alongside the sign-in values above:
 
 ```text
 SPOTIFY_CLIENT_ID=<Spotify app client ID>
@@ -96,7 +110,7 @@ stable while the Spotify connection exists; changing it makes the stored
 refresh token unreadable and requires reconnecting. The server stores only an
 encrypted refresh token, account identifiers, display name, scopes, and
 connection status. Disconnect deletes this connection record and its dependent
-music data while leaving GitHub sign-in intact. Connecting starts a full
+music data while leaving sign-in intact. Connecting starts a full
 ingestion of existing Liked Songs.
 
 Classification uses [Jev](https://typesafe.ai). Set its API key with the

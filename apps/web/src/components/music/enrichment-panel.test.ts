@@ -15,9 +15,7 @@ const status: EnrichmentStatus = {
 }
 
 const render = (value: EnrichmentStatus) =>
-  renderToStaticMarkup(
-    createElement(EnrichmentPanel, { csrfToken: "csrf", initialStatus: value })
-  )
+  renderToStaticMarkup(createElement(EnrichmentPanel, { initialStatus: value }))
 
 describe("enrichment panel", () => {
   test("shows lookups in progress and why tracks lack recording data", () => {

@@ -8,11 +8,9 @@ import type { SpotifyPlaylist } from "@/backend/modules/spotify"
 const pollMilliseconds = 5000
 
 export function ClassificationPanel({
-  csrfToken,
   initialStatus,
   initialPlaylistNames,
 }: {
-  readonly csrfToken: string
   readonly initialStatus?: ClassificationStatus
   readonly initialPlaylistNames?: Readonly<Record<string, string>>
 }) {
@@ -93,7 +91,6 @@ export function ClassificationPanel({
         ...init,
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
         },
       })
       const payload = (await response.json().catch(() => null)) as {

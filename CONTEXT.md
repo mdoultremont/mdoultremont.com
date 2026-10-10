@@ -19,8 +19,10 @@ _Avoid_: Public page, finished page
 ## Music control area
 
 **Owner**:
-A single configured GitHub account allowed to use the private music control
-area. App identity is separate from Spotify authorization.
+The single user allowed to use the private music control area. They sign in
+with one of the accounts listed in `OWNER_ACCOUNTS` (GitHub or Spotify). App
+sign-in is separate from the Spotify connection that gives music access, even
+when both use the same Spotify account.
 
 ### Pipeline
 

@@ -6,10 +6,8 @@ const pollMilliseconds = 5000
 const maxStalledPolls = 6
 
 export function DeliveryPanel({
-  csrfToken,
   initialStatus,
 }: {
-  readonly csrfToken: string
   readonly initialStatus?: DeliveryStatus
 }) {
   const [status, setStatus] = useState<DeliveryStatus | null>(
@@ -65,7 +63,6 @@ export function DeliveryPanel({
         ...init,
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
         },
       })
       const payload = (await response.json().catch(() => null)) as

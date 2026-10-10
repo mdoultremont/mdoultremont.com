@@ -8,31 +8,109 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core"
 
-export const appOwners = sqliteTable("app_owners", {
-  githubId: text("github_id").primaryKey(),
-  login: text("login").notNull(),
-  name: text("name"),
-  avatarUrl: text("avatar_url"),
-  updatedAt: integer("updated_at").notNull(),
+const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`
+
+/**
+ * Better Auth's tables (users, sessions, linked sign-in accounts, one-time
+ * verification values). Better Auth reads and writes them through its Drizzle
+ * adapter; the column set follows `npx auth generate` for Better Auth 1.7.
+ */
+export const authUsers = sqliteTable("auth_users", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: integer("email_verified", { mode: "boolean" })
+    .default(false)
+    .notNull(),
+  image: text("image"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(now)
+    .notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .default(now)
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
-export const appSessions = sqliteTable(
-  "app_sessions",
+export const authSessions = sqliteTable(
+  "auth_sessions",
   {
-    tokenHash: text("token_hash").primaryKey(),
-    githubId: text("github_id")
+    id: text("id").primaryKey(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(now)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
       .notNull()
-      .references(() => appOwners.githubId, { onDelete: "cascade" }),
-    createdAt: integer("created_at").notNull(),
-    expiresAt: integer("expires_at").notNull(),
+      .references(() => authUsers.id, { onDelete: "cascade" }),
   },
-  (table) => [index("app_sessions_expires_at_idx").on(table.expiresAt)]
+  (table) => [index("auth_sessions_user_id_idx").on(table.userId)]
+)
+
+export const authAccounts = sqliteTable(
+  "auth_accounts",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: integer("access_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
+    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(now)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("auth_accounts_user_id_idx").on(table.userId),
+    uniqueIndex("auth_accounts_provider_account_idx").on(
+      table.providerId,
+      table.accountId
+    ),
+  ]
+)
+
+export const authVerifications = sqliteTable(
+  "auth_verifications",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(now)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(now)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("auth_verifications_identifier_idx").on(table.identifier)]
 )
 
 export const spotifyConnections = sqliteTable("spotify_connections", {
   ownerId: text("owner_id")
     .primaryKey()
-    .references(() => appOwners.githubId, { onDelete: "cascade" }),
+    .references(() => authUsers.id, { onDelete: "cascade" }),
   accountId: text("account_id").notNull(),
   spotifyUserId: text("spotify_user_id").notNull(),
   displayName: text("display_name"),

@@ -8,10 +8,9 @@ import {
 } from "@/backend/modules/spotify"
 import { MusicIngestion } from "@/backend/features/music/ingestion"
 import { platformLayer } from "../platform"
+import { readCookie } from "./cookies"
 import {
   json,
-  OwnerRequired,
-  readCookie,
   type RequestError,
   requireMutation,
   requireOwner,
@@ -20,7 +19,6 @@ import {
 } from "./http"
 
 const stateCookie = "spotify_oauth_state"
-const sessionCookie = "music_session"
 
 const spotifyLayer = () => Spotify.layer.pipe(Layer.provide(platformLayer(env)))
 
@@ -48,10 +46,8 @@ const route = (
 export const beginSpotifyConnection = (request: Request) =>
   respond(
     Effect.gen(function* () {
-      yield* requireOwner(request)
-      const sessionToken = readCookie(request, sessionCookie)
-      if (!sessionToken) return yield* new OwnerRequired()
-      const state = yield* createSpotifyOAuthState(sessionToken)
+      const owner = yield* requireOwner(request)
+      const state = yield* createSpotifyOAuthState(owner.sessionId)
       const spotify = yield* Spotify
       return new Response(null, {
         status: 302,
@@ -94,16 +90,14 @@ export const completeSpotifyConnection = (request: Request) => {
   return respond(
     Effect.gen(function* () {
       const owner = yield* requireOwner(request)
-      const sessionToken = readCookie(request, sessionCookie)
       const state = url.searchParams.get("state")
       const code = url.searchParams.get("code")
       if (
-        !sessionToken ||
         !state ||
         state !== readCookie(request, stateCookie) ||
         !code ||
         url.searchParams.has("error") ||
-        !(yield* verifySpotifyOAuthState(state, sessionToken))
+        !(yield* verifySpotifyOAuthState(state, owner.sessionId))
       )
         return redirect("failed")
 

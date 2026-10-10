@@ -1,27 +1,27 @@
-import { and, eq, gt, lt } from "drizzle-orm"
-import { Context, Effect, Layer, Option } from "effect"
-import type { GitHubIdentity } from "@/backend/modules/github"
-import { appOwners, appSessions, Database } from "@/backend/primitives/database"
+import { and, count, eq, inArray, or } from "drizzle-orm"
+import { Context, Effect, Layer } from "effect"
+import {
+  authAccounts,
+  authUsers,
+  Database,
+} from "@/backend/primitives/database"
 import { AuthPersistenceError } from "./errors"
+import type { OwnerAccount } from "./owner-accounts"
 
-/** The owner's GitHub profile and their sessions, stored by token hash only. */
+/** Reads Better Auth's users and linked accounts. Better Auth does all the writing. */
 export class AuthStore extends Context.Service<
   AuthStore,
   {
-    /** Saves the session and drops the owner's expired ones. Times are Unix seconds. */
-    readonly saveSession: (input: {
-      readonly identity: GitHubIdentity
-      readonly sessionHash: string
-      readonly expiresAt: number
-      readonly now: number
-    }) => Effect.Effect<void, AuthPersistenceError>
-    readonly findSession: (input: {
-      readonly sessionHash: string
-      readonly now: number
-    }) => Effect.Effect<Option.Option<GitHubIdentity>, AuthPersistenceError>
-    readonly revokeSession: (
-      sessionHash: string
-    ) => Effect.Effect<void, AuthPersistenceError>
+    readonly userCount: () => Effect.Effect<number, AuthPersistenceError>
+    /** Users who have linked at least one of these accounts. */
+    readonly usersWithAccounts: (
+      accounts: ReadonlyArray<OwnerAccount>,
+      userId?: string
+    ) => Effect.Effect<ReadonlyArray<string>, AuthPersistenceError>
+    /** Providers the user can sign in with. */
+    readonly providers: (
+      userId: string
+    ) => Effect.Effect<ReadonlyArray<string>, AuthPersistenceError>
   }
 >()("backend/features/auth/AuthStore") {
   static readonly layer = Layer.effect(
@@ -38,71 +38,42 @@ export class AuthStore extends Context.Service<
           )
 
       return AuthStore.of({
-        saveSession: ({ identity, sessionHash, expiresAt, now }) =>
+        userCount: () =>
           query((db) =>
-            db.batch([
-              db
-                .insert(appOwners)
-                .values({
-                  githubId: identity.id,
-                  login: identity.login,
-                  name: identity.name,
-                  avatarUrl: identity.avatarUrl,
-                  updatedAt: now,
-                })
-                .onConflictDoUpdate({
-                  target: appOwners.githubId,
-                  set: {
-                    login: identity.login,
-                    name: identity.name,
-                    avatarUrl: identity.avatarUrl,
-                    updatedAt: now,
-                  },
-                }),
-              db.insert(appSessions).values({
-                tokenHash: sessionHash,
-                githubId: identity.id,
-                createdAt: now,
-                expiresAt,
-              }),
-              db
-                .delete(appSessions)
-                .where(
-                  and(
-                    eq(appSessions.githubId, identity.id),
-                    lt(appSessions.expiresAt, now)
-                  )
-                ),
-            ])
-          ).pipe(Effect.asVoid),
+            db.select({ users: count() }).from(authUsers).get()
+          ).pipe(Effect.map((row) => row?.users ?? 0)),
 
-        findSession: ({ sessionHash, now }) =>
+        usersWithAccounts: (accounts, userId) =>
+          accounts.length === 0
+            ? Effect.succeed([])
+            : query((db) =>
+                db
+                  .selectDistinct({ userId: authAccounts.userId })
+                  .from(authAccounts)
+                  .where(
+                    and(
+                      or(
+                        ...accounts.map((account) =>
+                          and(
+                            eq(authAccounts.providerId, account.provider),
+                            eq(authAccounts.accountId, account.accountId)
+                          )
+                        )
+                      ),
+                      userId === undefined
+                        ? undefined
+                        : inArray(authAccounts.userId, [userId])
+                    )
+                  )
+              ).pipe(Effect.map((rows) => rows.map((row) => row.userId))),
+
+        providers: (userId) =>
           query((db) =>
             db
-              .select({
-                id: appOwners.githubId,
-                login: appOwners.login,
-                name: appOwners.name,
-                avatarUrl: appOwners.avatarUrl,
-              })
-              .from(appSessions)
-              .innerJoin(
-                appOwners,
-                eq(appSessions.githubId, appOwners.githubId)
-              )
-              .where(
-                and(
-                  eq(appSessions.tokenHash, sessionHash),
-                  gt(appSessions.expiresAt, now)
-                )
-              )
-              .get()
-          ).pipe(Effect.map(Option.fromNullishOr)),
-
-        revokeSession: (sessionHash) =>
-          query((db) =>
-            db.delete(appSessions).where(eq(appSessions.tokenHash, sessionHash))
-          ).pipe(Effect.asVoid),
+              .select({ providerId: authAccounts.providerId })
+              .from(authAccounts)
+              .where(eq(authAccounts.userId, userId))
+          ).pipe(Effect.map((rows) => rows.map((row) => row.providerId))),
       })
     })
   )

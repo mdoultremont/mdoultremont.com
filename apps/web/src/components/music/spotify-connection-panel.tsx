@@ -10,10 +10,8 @@ type LoadState =
   | { kind: "ready"; connection: SpotifyConnectionStatus }
 
 export function SpotifyConnectionPanel({
-  csrfToken,
   initialConnection,
 }: {
-  readonly csrfToken: string
   readonly initialConnection?: SpotifyConnectionStatus
 }) {
   const [state, setState] = useState<LoadState>(
@@ -80,7 +78,6 @@ export function SpotifyConnectionPanel({
     try {
       const response = await fetch("/api/spotify/disconnect", {
         method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
       })
       if (!response.ok) throw new Error("Spotify could not be disconnected")
       setState({ kind: "ready", connection: { status: "disconnected" } })

@@ -70,9 +70,9 @@ export function makeTestD1() {
   const seedOwner = (ownerId = "owner") => {
     sqlite
       .prepare(
-        "INSERT INTO app_owners (github_id, login, name, avatar_url, updated_at) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO auth_users (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 1)"
       )
-      .run(ownerId, ownerId, null, null, 1)
+      .run(ownerId, ownerId, `${ownerId}@example.com`)
     sqlite
       .prepare(
         "INSERT INTO spotify_connections (owner_id, account_id, display_name, encrypted_refresh_token, scopes, connected_at, needs_reconnect, spotify_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"

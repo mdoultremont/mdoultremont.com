@@ -18,6 +18,8 @@ export class DatabaseError extends Data.TaggedError("DatabaseError")<{
 export class Database extends Context.Service<
   Database,
   {
+    /** The Drizzle instance itself, for libraries that take one (Better Auth). Prefer `use`. */
+    readonly drizzle: Drizzle
     readonly use: <A>(
       query: (db: Drizzle) => Promise<A>
     ) => Effect.Effect<A, DatabaseError>
@@ -27,6 +29,7 @@ export class Database extends Context.Service<
     Layer.sync(Database, () => {
       const db = drizzle(binding, { schema })
       return Database.of({
+        drizzle: db,
         use: (query) =>
           Effect.tryPromise({
             try: () => query(db),

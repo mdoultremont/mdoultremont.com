@@ -45,7 +45,7 @@ describe("private destination API", () => {
     }
   })
 
-  test("requires same-origin CSRF proof before mutation input is processed", async () => {
+  test("refuses a change from another site before reading its input", async () => {
     auth.requireCurrentOwner.mockResolvedValue({ id: "owner" })
     const request = new Request(
       "https://portfolio.example/api/music/destinations",
@@ -53,7 +53,7 @@ describe("private destination API", () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Cookie: "music_csrf=token",
+          Origin: "https://attacker.example",
         },
         body: JSON.stringify({
           playlistId: "jazz",

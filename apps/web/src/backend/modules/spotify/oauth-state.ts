@@ -2,27 +2,30 @@ import { Clock, Effect } from "effect"
 
 const lifetimeSeconds = 600
 
-/** Signed, expiring OAuth `state` bound to the app session that started the flow. */
+/**
+ * Signed, expiring OAuth `state` bound to the app session that started the
+ * flow. The key is the session's server-side ID, which the browser never sees.
+ */
 export const createSpotifyOAuthState = Effect.fn("createSpotifyOAuthState")(
-  function* (sessionToken: string) {
+  function* (sessionId: string) {
     const now = yield* Clock.currentTimeMillis
-    return yield* Effect.promise(() => signState(sessionToken, now))
+    return yield* Effect.promise(() => signState(sessionId, now))
   }
 )
 
 export const verifySpotifyOAuthState = Effect.fn("verifySpotifyOAuthState")(
-  function* (state: string, sessionToken: string) {
+  function* (state: string, sessionId: string) {
     const now = yield* Clock.currentTimeMillis
-    return yield* Effect.promise(() => verifyState(state, sessionToken, now))
+    return yield* Effect.promise(() => verifyState(state, sessionId, now))
   }
 )
 
-async function signState(sessionToken: string, now: number): Promise<string> {
+async function signState(sessionId: string, now: number): Promise<string> {
   const nonce = encode(crypto.getRandomValues(new Uint8Array(24)))
   const payload = `${nonce}.${Math.floor(now / 1000) + lifetimeSeconds}`
   const signature = await crypto.subtle.sign(
     "HMAC",
-    await stateKey(sessionToken),
+    await stateKey(sessionId),
     new TextEncoder().encode(payload)
   )
   return `${payload}.${encode(new Uint8Array(signature))}`
@@ -30,7 +33,7 @@ async function signState(sessionToken: string, now: number): Promise<string> {
 
 async function verifyState(
   state: string,
-  sessionToken: string,
+  sessionId: string,
   now: number
 ): Promise<boolean> {
   const parts = state.split(".")
@@ -43,7 +46,7 @@ async function verifyState(
   try {
     return await crypto.subtle.verify(
       "HMAC",
-      await stateKey(sessionToken),
+      await stateKey(sessionId),
       decode(parts[2] ?? ""),
       new TextEncoder().encode(payload)
     )
@@ -52,10 +55,10 @@ async function verifyState(
   }
 }
 
-async function stateKey(sessionToken: string): Promise<CryptoKey> {
+async function stateKey(sessionId: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(sessionToken),
+    new TextEncoder().encode(sessionId),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"]

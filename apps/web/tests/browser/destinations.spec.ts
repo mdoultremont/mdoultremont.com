@@ -13,7 +13,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   let reviewPlaylistId: string | null = null
   const writes: {
     method: string
-    csrf: string | undefined
     body: Record<string, unknown>
   }[] = []
   const spotifyPlaylists = [
@@ -41,7 +40,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     const body = request.postDataJSON() as Record<string, unknown>
     writes.push({
       method: request.method(),
-      csrf: request.headers()["x-csrf-token"],
       body,
     })
     if (request.method() === "PUT") {
@@ -67,7 +65,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     }
     writes.push({
       method: route.request().method(),
-      csrf: route.request().headers()["x-csrf-token"],
       body,
     })
     const destination = {
@@ -98,7 +95,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     const body = request.postDataJSON() as { playlistId: string | null }
     writes.push({
       method: request.method(),
-      csrf: request.headers()["x-csrf-token"],
       body,
     })
     reviewPlaylistId = body.playlistId
@@ -150,7 +146,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   expect(writes).toEqual([
     {
       method: "PUT",
-      csrf: "test-csrf",
       body: {
         playlistId: "jazz",
         description: "",
@@ -159,7 +154,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     },
     {
       method: "PUT",
-      csrf: "test-csrf",
       body: {
         playlistId: "jazz",
         description: "Improvised acoustic music",
@@ -168,7 +162,6 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     },
     {
       method: "POST",
-      csrf: "test-csrf",
       body: { name: "Focus mix", description: "" },
     },
   ])

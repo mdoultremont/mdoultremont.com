@@ -4,5 +4,5 @@ import { DestinationPanel } from "../../../src/components/music/destination-pane
 export function mountDestinationPanel() {
   const element = document.createElement("div")
   document.body.appendChild(element)
-  createRoot(element).render(<DestinationPanel csrfToken="test-csrf" />)
+  createRoot(element).render(<DestinationPanel />)
 }

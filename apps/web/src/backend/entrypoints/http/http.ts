@@ -2,9 +2,6 @@ import { Cause, Data, Effect, Option, Schema } from "effect"
 import type { Config } from "effect"
 import type { SpotifyError } from "@/backend/modules/spotify"
 import { ownerFromRequest } from "./auth.server"
-import { readCookie } from "./cookies"
-
-export { readCookie }
 
 export class OwnerRequired extends Data.TaggedError("OwnerRequired")<{}> {}
 
@@ -75,15 +72,15 @@ export const requireOwner = (request: Request) =>
     )
   )
 
-/** Same-origin request carrying the CSRF token from its cookie. */
-export const requireMutation = (request: Request) => {
-  const csrf = readCookie(request, "music_csrf")
-  return request.headers.get("Origin") === new URL(request.url).origin &&
-    Boolean(csrf) &&
-    csrf === request.headers.get("X-CSRF-Token")
+/**
+ * Changes must come from this site's own pages. Browsers always send `Origin`
+ * on a POST, PUT or DELETE, and the session cookie is `SameSite=Lax`, so a
+ * request from another site is refused twice over.
+ */
+export const requireMutation = (request: Request) =>
+  request.headers.get("Origin") === new URL(request.url).origin
     ? Effect.void
     : Effect.fail(new MutationRejected())
-}
 
 /** Parses the JSON body with a schema; any failure becomes `InvalidBody` with the given message. */
 export const decodeBody = <S extends Schema.Top>(

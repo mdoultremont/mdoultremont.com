@@ -3,6 +3,12 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
 import { currentOwner } from "@/backend/entrypoints/http/auth.server"
+import {
+  authClient,
+  providerNames,
+  type SignInProvider,
+  signInErrorMessage,
+} from "@/components/auth/auth-client"
 import { ClassificationPanel } from "@/components/music/classification-panel"
 import { DeliveryPanel } from "@/components/music/delivery-panel"
 import { DestinationPanel } from "@/components/music/destination-panel"
@@ -27,22 +33,42 @@ export const Route = createFileRoute("/music")({
 
 function MusicControlPage() {
   const owner = Route.useLoaderData()
-  const [signingOut, setSigningOut] = useState(false)
-  const message =
+  const [busy, setBusy] = useState(false)
+  const error =
     typeof window === "undefined"
       ? null
-      : new URLSearchParams(window.location.search).get("signIn")
+      : new URLSearchParams(window.location.search).get("error")
+
+  async function signIn(provider: SignInProvider) {
+    setBusy(true)
+    const result = await authClient.signIn.social({
+      provider,
+      callbackURL: "/music",
+      errorCallbackURL: "/music",
+    })
+    if (result.error) setBusy(false)
+  }
+
+  async function link(provider: SignInProvider) {
+    setBusy(true)
+    const result = await authClient.linkSocial({
+      provider,
+      callbackURL: "/music",
+      errorCallbackURL: "/music",
+    })
+    if (result.error) setBusy(false)
+  }
 
   async function signOut() {
-    if (!owner || signingOut) return
-    setSigningOut(true)
-    const response = await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: { "X-CSRF-Token": owner.csrfToken },
-    })
-    if (response.ok) window.location.assign("/music")
-    else setSigningOut(false)
+    setBusy(true)
+    const result = await authClient.signOut()
+    if (result.error) setBusy(false)
+    else window.location.assign("/music")
   }
+
+  const unlinked = signInProviders.filter(
+    (provider) => owner && !owner.providers.includes(provider)
+  )
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-16 md:px-10">
@@ -56,57 +82,75 @@ function MusicControlPage() {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
           Music control
         </h1>
+        {error ? (
+          <p className="mt-4 text-sm text-red-800" role="alert">
+            {signInErrorMessage(error)}
+          </p>
+        ) : null}
         {owner ? (
           <div className="mt-8">
             <p className="text-base text-ink/75">
               Signed in as{" "}
-              <strong className="font-semibold">@{owner.identity.login}</strong>
-              .
+              <strong className="font-semibold">{owner.name}</strong>.
             </p>
+            {unlinked.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-3">
+                {unlinked.map((provider) => (
+                  <button
+                    className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
+                    disabled={busy}
+                    key={provider}
+                    onClick={() => void link(provider)}
+                    type="button"
+                  >
+                    Also sign in with {providerNames[provider]}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <p className="mt-5 rounded-2xl bg-ink/5 p-5 text-sm leading-6 text-ink/70">
               Your private control area is ready. Connect Spotify to configure
               music automation.
             </p>
-            <SpotifyConnectionPanel csrfToken={owner.csrfToken} />
-            <IngestionPanel csrfToken={owner.csrfToken} />
-            <EnrichmentPanel csrfToken={owner.csrfToken} />
-            <DestinationPanel csrfToken={owner.csrfToken} />
-            <ClassificationPanel csrfToken={owner.csrfToken} />
-            <DeliveryPanel csrfToken={owner.csrfToken} />
+            <SpotifyConnectionPanel />
+            <IngestionPanel />
+            <EnrichmentPanel />
+            <DestinationPanel />
+            <ClassificationPanel />
+            <DeliveryPanel />
             <button
               className="mt-8 rounded-full border border-ink/20 px-5 py-3 text-sm font-medium text-ink transition hover:bg-ink/5 disabled:opacity-50"
-              disabled={signingOut}
-              onClick={signOut}
+              disabled={busy}
+              onClick={() => void signOut()}
               type="button"
             >
-              {signingOut ? "Signing out…" : "Sign out"}
+              Sign out
             </button>
           </div>
         ) : (
           <div className="mt-8">
             <p className="max-w-prose text-base leading-7 text-ink/70">
-              Sign in with the configured GitHub account to manage private music
+              Sign in with one of the owner's accounts to manage private music
               settings.
             </p>
-            {message === "denied" ? (
-              <p className="mt-4 text-sm text-red-800" role="alert">
-                This GitHub account is not allowed to use the private music
-                area.
-              </p>
-            ) : message === "failed" ? (
-              <p className="mt-4 text-sm text-red-800" role="alert">
-                GitHub sign-in could not be completed. Please try again.
-              </p>
-            ) : null}
-            <a
-              className="mt-8 inline-flex rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-ink/80"
-              href="/api/auth/github"
-            >
-              Continue with GitHub
-            </a>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {signInProviders.map((provider) => (
+                <button
+                  className="rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-ink/80 disabled:opacity-50"
+                  disabled={busy}
+                  key={provider}
+                  onClick={() => void signIn(provider)}
+                  type="button"
+                >
+                  Continue with {providerNames[provider]}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </section>
     </main>
   )
 }
+
+const signInProviders: ReadonlyArray<SignInProvider> = ["github", "spotify"]
