@@ -31,6 +31,18 @@
     "coverage/**"
   ],
   "rules": {
+    "eslint/no-underscore-dangle": [
+      "error",
+      {
+        "allow": ["_tag"]
+      }
+    ],
+    "vitest/no-standalone-expect": [
+      "error",
+      {
+        "additionalTestBlockFunctions": ["it.effect", "it.live"]
+      }
+    ],
     "promise/always-return": "off",
     "react/exhaustive-effect-dependencies": "off",
     "react/preserve-manual-memoization": "off",
@@ -38,6 +50,107 @@
     "react/refs": "off",
     "react/set-state-in-effect": "off",
     "react-hooks/exhaustive-deps": "off",
-    "unicorn/no-array-fill-with-reference-type": "off"
-  }
+    "unicorn/no-array-fill-with-reference-type": "off",
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@/backend/primitives/*/*",
+              "!@/backend/primitives/database/testing",
+              "@/backend/modules/*/*",
+              "@/backend/features/music/*/*",
+              "@/backend/features/auth/*"
+            ],
+            "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/src/backend/primitives/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/backend/primitives/*/*",
+                  "!@/backend/primitives/database/testing",
+                  "@/backend/modules/*/*",
+                  "@/backend/features/music/*/*",
+                  "@/backend/features/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+              },
+              {
+                "group": [
+                  "@/backend/modules/**",
+                  "@/backend/features/**",
+                  "@/backend/entrypoints/**"
+                ],
+                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/backend/modules/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/backend/primitives/*/*",
+                  "!@/backend/primitives/database/testing",
+                  "@/backend/modules/*/*",
+                  "@/backend/features/music/*/*",
+                  "@/backend/features/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+              },
+              {
+                "group": ["@/backend/features/**", "@/backend/entrypoints/**"],
+                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/backend/features/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/backend/primitives/*/*",
+                  "!@/backend/primitives/database/testing",
+                  "@/backend/modules/*/*",
+                  "@/backend/features/music/*/*",
+                  "@/backend/features/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+              },
+              {
+                "group": ["@/backend/entrypoints/**", "cloudflare:workers"],
+                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

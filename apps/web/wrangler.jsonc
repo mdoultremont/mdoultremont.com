@@ -3,11 +3,37 @@
   "name": "mdoultremont-me",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "./src/server.ts",
   "workers_dev": false,
   "preview_urls": true,
   "assets": {
     "binding": "ASSETS",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mdoultremont-data",
+      "database_id": "482954d4-e4c9-4f9e-89a5-ece06e26b041",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "triggers": { "crons": ["0 * * * *"] },
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOBS",
+        "queue": "mdoultremont-jobs",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "mdoultremont-jobs",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 10,
+      },
+    ],
   },
   "images": {
     "binding": "IMAGES",

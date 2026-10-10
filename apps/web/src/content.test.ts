@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
-import { createPersonalContent } from "./content/personal"
-import { createPhotographyContent } from "./content/photography"
-import { createProfessionalContent } from "./content/professional"
+import { createPersonalContent } from "@/content/personal"
+import { createPhotographyContent } from "@/content/photography"
+import { createProfessionalContent } from "@/content/professional"
 
 const professionalPage = {
   hero: { eyebrow: "Work", introduction: "A short introduction." },

@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
-import { SiteShell } from "../components/site-shell"
-import { CopyEmailButton } from "../components/copy-email-button"
-import { experiences, professionalCopy } from "../content/professional"
-import { profile } from "../content/shared"
-import { ResponsiveImage } from "../features/images/responsive-image"
+import { SiteShell } from "@/components/site-shell"
+import { CopyEmailButton } from "@/components/copy-email-button"
+import { experiences, professionalCopy } from "@/content/professional"
+import { profile } from "@/content/shared"
+import { ResponsiveImage } from "@/features/images/responsive-image"
 import metadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/iterations")({

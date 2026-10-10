@@ -44,6 +44,7 @@ function portfolioImageMetadata() {
 }
 
 const config = defineConfig({
+  server: { host: "127.0.0.1" },
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
@@ -54,6 +55,8 @@ const config = defineConfig({
       prerender: {
         enabled: true,
         crawlLinks: false,
+        filter: (page) =>
+          !page.path.startsWith("/music") && !page.path.startsWith("/api/"),
       },
     }),
     viteReact(),
