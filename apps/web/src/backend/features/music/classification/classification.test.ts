@@ -6,9 +6,9 @@ import {
   Destinations,
 } from "@/backend/features/music/destinations"
 import { Jev, JevError } from "@/backend/modules/jev"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
-import { JobQueue } from "@/backend/primitives/job-queue"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
+import { JobQueue } from "@/backend/modules/job-queue"
 import { ClassificationStore, MusicClassification } from "."
 
 const destination = (playlistId: string, description: string) => ({

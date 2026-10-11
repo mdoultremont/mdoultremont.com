@@ -22,7 +22,7 @@ export class TokenCipher extends Context.Service<
       ciphertext: string
     ) => Effect.Effect<string, TokenCipherError>
   }
->()("backend/primitives/TokenCipher") {
+>()("backend/modules/TokenCipher") {
   static readonly layer = (key: Redacted.Redacted<string>) =>
     Layer.effect(
       TokenCipher,

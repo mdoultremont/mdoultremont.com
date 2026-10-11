@@ -1,8 +1,8 @@
 import { afterEach, assert, describe, it } from "@effect/vitest"
 import { ConfigProvider, Effect, Layer, Option } from "effect"
 import { vi } from "vitest"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
 import { AuthGate, BetterAuth, SignInRejected } from "."
 
 const baseURL = "http://127.0.0.1:3000"

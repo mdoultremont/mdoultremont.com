@@ -57,9 +57,8 @@
         "patterns": [
           {
             "group": [
-              "@/backend/primitives/*/*",
-              "!@/backend/primitives/database/testing",
               "@/backend/modules/*/*",
+              "!@/backend/modules/database/testing",
               "@/backend/features/music/*/*",
               "@/backend/features/auth/*"
             ],
@@ -71,36 +70,6 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/backend/primitives/**"],
-      "rules": {
-        "eslint/no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "@/backend/primitives/*/*",
-                  "!@/backend/primitives/database/testing",
-                  "@/backend/modules/*/*",
-                  "@/backend/features/music/*/*",
-                  "@/backend/features/auth/*"
-                ],
-                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
-              },
-              {
-                "group": [
-                  "@/backend/modules/**",
-                  "@/backend/features/**",
-                  "@/backend/entrypoints/**"
-                ],
-                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "files": ["apps/web/src/backend/modules/**"],
       "rules": {
         "eslint/no-restricted-imports": [
@@ -109,9 +78,8 @@
             "patterns": [
               {
                 "group": [
-                  "@/backend/primitives/*/*",
-                  "!@/backend/primitives/database/testing",
                   "@/backend/modules/*/*",
+                  "!@/backend/modules/database/testing",
                   "@/backend/features/music/*/*",
                   "@/backend/features/auth/*"
                 ],
@@ -119,11 +87,12 @@
               },
               {
                 "group": ["@/backend/features/**", "@/backend/entrypoints/**"],
-                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
+                "message": "Backend imports only point down: entrypoints → features → modules."
               }
             ]
           }
-        ]
+        ],
+        "import/no-cycle": "error"
       }
     },
     {
@@ -135,9 +104,8 @@
             "patterns": [
               {
                 "group": [
-                  "@/backend/primitives/*/*",
-                  "!@/backend/primitives/database/testing",
                   "@/backend/modules/*/*",
+                  "!@/backend/modules/database/testing",
                   "@/backend/features/music/*/*",
                   "@/backend/features/auth/*"
                 ],
@@ -145,7 +113,7 @@
               },
               {
                 "group": ["@/backend/entrypoints/**", "cloudflare:workers"],
-                "message": "Backend imports only point down: entrypoints \u2192 features \u2192 modules \u2192 primitives."
+                "message": "Backend imports only point down: entrypoints → features → modules."
               }
             ]
           }

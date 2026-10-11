@@ -6,8 +6,8 @@ import {
   BetterAuth,
   type SignInAttempt,
 } from "@/backend/modules/better-auth"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
 import { AuthStore, OwnerAuth, OwnerGate } from "."
 
 const config = ConfigProvider.layer(

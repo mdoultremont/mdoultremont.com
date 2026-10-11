@@ -17,7 +17,7 @@ export class JobQueue extends Context.Service<
       options?: { readonly delaySeconds?: number }
     ) => Effect.Effect<void, JobQueueError>
   }
->()("backend/primitives/JobQueue") {
+>()("backend/modules/JobQueue") {
   static readonly layer = (binding: Queue) =>
     Layer.succeed(
       JobQueue,

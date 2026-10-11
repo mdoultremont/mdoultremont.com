@@ -16,7 +16,7 @@ import {
   HttpClientRequest,
   type HttpClientResponse,
 } from "effect/http"
-import { TokenCipher } from "@/backend/primitives/token-cipher"
+import { TokenCipher } from "@/backend/modules/token-cipher"
 import { type SpotifyConnection, SpotifyConnections } from "./connections"
 import {
   AccessDenied,

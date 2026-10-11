@@ -24,7 +24,7 @@ export class Database extends Context.Service<
       query: (db: Drizzle) => Promise<A>
     ) => Effect.Effect<A, DatabaseError>
   }
->()("backend/primitives/Database") {
+>()("backend/modules/Database") {
   static readonly layer = (binding: D1Database) =>
     Layer.sync(Database, () => {
       const db = drizzle(binding, { schema })

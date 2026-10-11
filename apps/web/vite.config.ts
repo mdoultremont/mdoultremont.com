@@ -55,8 +55,9 @@ const config = defineConfig({
       prerender: {
         enabled: true,
         crawlLinks: false,
+        // Private apps depend on the session, so they render per request.
         filter: (page) =>
-          !page.path.startsWith("/music") && !page.path.startsWith("/api/"),
+          !page.path.startsWith("/apps") && !page.path.startsWith("/api/"),
       },
     }),
     viteReact(),

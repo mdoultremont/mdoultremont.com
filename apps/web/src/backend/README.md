@@ -8,28 +8,31 @@ best worked example is `modules/spotify` together with
 ## Layers
 
 ```
-entrypoints  →  features  →  modules  →  primitives
+entrypoints  →  features  →  modules
 ```
 
 | Layer           | Holds                                                                                   | Example                             |
 | --------------- | --------------------------------------------------------------------------------------- | ----------------------------------- |
-| **primitives**  | Raw infrastructure, no domain knowledge.                                                | `database`, `token-cipher`          |
-| **modules**     | Capabilities such as a provider API. Actions only, no business rules.                   | `spotify`                           |
-| **features**    | Business logic, grouped by domain. Combines modules and primitives.                     | `music/destinations`                |
+| **modules**     | Capabilities with no business rules: infrastructure and provider clients.               | `database`, `spotify`               |
+| **features**    | Business logic, grouped by domain. Combines modules.                                    | `music/destinations`                |
 | **entrypoints** | Adapters that wire features to the outside: HTTP routes, queue consumers, cron, (MCP…). | `http/music/destinations.server.ts` |
 
 Features are grouped by domain (`features/music/…`, later `features/flights/…`);
-each folder inside a domain is one unit. Modules and primitives are named after
-what they talk to or do, not after a domain, so any feature can reuse them.
+each folder inside a domain is one unit. Modules are named after what they do
+or talk to, not after a domain, so any feature can reuse them: a generic
+capability by the capability (`database`, `job-queue`), a client for one
+provider by the provider (`spotify`, `better-auth`).
 
 Rules:
 
 - Imports point down only. A module never imports a feature; a feature never
   imports an entrypoint.
+- Modules may use other modules (`spotify` uses `database` and `token-cipher`)
+  but never in a cycle; lint rejects cycles.
 - Each unit is a directory. Its `index.ts` is the public API; import
   `@/backend/modules/spotify`, never `@/backend/modules/spotify/spotify`.
-- Start from the feature. Add a module or primitive only when a feature needs
-  one, and keep business rules out of them.
+- Start from the feature. Add a module only when a feature needs one, and keep
+  business rules out of it.
 - A store whose tables only make sense for one feature lives in that feature
   (`features/music/destinations/store.ts`). A store that is part of a capability
   lives in the module (`modules/spotify/connections.ts`).
@@ -140,4 +143,4 @@ it.effect("does something", () =>
 
 `.oxlintrc.json` rejects imports that bypass a unit's `index.ts` and imports
 that point up a layer, and keeps `cloudflare:workers` out of features. The one
-exception is `@/backend/primitives/database/testing`, a test-only in-memory D1.
+exception is `@/backend/modules/database/testing`, a test-only in-memory D1.

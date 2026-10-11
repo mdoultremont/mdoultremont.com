@@ -10,9 +10,9 @@ import {
   MusicBrainzError,
   type MusicBrainzRecording,
 } from "@/backend/modules/musicbrainz"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
-import { JobQueue } from "@/backend/primitives/job-queue"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
+import { JobQueue } from "@/backend/modules/job-queue"
 import { EnrichmentStore, MusicEnrichment } from "."
 
 const recording = (id: string): MusicBrainzRecording => ({

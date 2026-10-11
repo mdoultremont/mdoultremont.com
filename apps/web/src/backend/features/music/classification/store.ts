@@ -5,7 +5,7 @@ import {
   musicDecisions,
   musicLikedTracks,
   musicRecordings,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 import { ClassificationPersistenceError, type DecisionSummary } from "./errors"
 
 export type DecisionRow = typeof musicDecisions.$inferInsert

@@ -5,7 +5,7 @@ import {
   Destinations,
 } from "@/backend/features/music/destinations"
 import { Spotify, type SpotifyError } from "@/backend/modules/spotify"
-import { JobQueue, type JobQueueError } from "@/backend/primitives/job-queue"
+import { JobQueue, type JobQueueError } from "@/backend/modules/job-queue"
 import {
   DeliveryMessage,
   type DeliveryPersistenceError,

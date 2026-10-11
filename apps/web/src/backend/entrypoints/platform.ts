@@ -1,6 +1,6 @@
 import { ConfigProvider, Layer } from "effect"
-import { Database } from "@/backend/primitives/database"
-import { JobQueue } from "@/backend/primitives/job-queue"
+import { Database } from "@/backend/modules/database"
+import { JobQueue } from "@/backend/modules/job-queue"
 
 /**
  * What every feature layer needs from the Worker: the D1 binding as the

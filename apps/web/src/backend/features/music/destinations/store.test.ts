@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect"
 import { describe, expect, test } from "vitest"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
 import { DestinationStore } from "./store"
 
 function setup() {

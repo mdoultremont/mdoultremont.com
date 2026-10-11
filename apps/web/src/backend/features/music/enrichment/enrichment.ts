@@ -7,7 +7,7 @@ import {
   MusicBrainz,
   type MusicBrainzError,
 } from "@/backend/modules/musicbrainz"
-import { JobQueue, type JobQueueError } from "@/backend/primitives/job-queue"
+import { JobQueue, type JobQueueError } from "@/backend/modules/job-queue"
 import {
   EnrichmentMessage,
   type EnrichmentPersistenceError,

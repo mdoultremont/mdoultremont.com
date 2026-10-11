@@ -4,7 +4,7 @@ import {
   Database,
   type DatabaseError,
   spotifyConnections,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 
 export interface SpotifyConnection {
   readonly ownerId: string

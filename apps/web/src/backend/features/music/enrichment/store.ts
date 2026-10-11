@@ -4,7 +4,7 @@ import {
   Database,
   musicLikedTracks,
   musicRecordings,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 import { EnrichmentPersistenceError, type EnrichmentStatus } from "./errors"
 
 export type RecordingRow = typeof musicRecordings.$inferInsert

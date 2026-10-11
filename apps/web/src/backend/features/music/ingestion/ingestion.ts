@@ -4,7 +4,7 @@ import {
   SpotifyConnections,
   type SpotifyError,
 } from "@/backend/modules/spotify"
-import { JobQueue, type JobQueueError } from "@/backend/primitives/job-queue"
+import { JobQueue, type JobQueueError } from "@/backend/modules/job-queue"
 import {
   type Ingestion,
   type IngestionKind,

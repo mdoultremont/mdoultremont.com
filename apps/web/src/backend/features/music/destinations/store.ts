@@ -4,7 +4,7 @@ import {
   Database,
   musicDestinations,
   musicSettings,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 import {
   type Destination,
   type DestinationConfiguration,

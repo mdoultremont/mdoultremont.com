@@ -6,8 +6,8 @@
   APIs in `src/routes/api/apps/<name>/`, UI in `src/components/apps/<name>/`.
   The `/apps` layout signs the owner in for every app; each API handler still
   checks the owner itself.
-- Keep backend code under `src/backend/` in four layers: entrypoints →
-  features → modules → primitives. Imports only point down; each unit is a
+- Keep backend code under `src/backend/` in three layers: entrypoints →
+  features → modules. Imports only point down; each unit is a
   directory whose `index.ts` is its public API. Features must not depend on
   TanStack routes, Cloudflare binding types, browser state, or provider
   transport payloads; lint enforces these boundaries. Read

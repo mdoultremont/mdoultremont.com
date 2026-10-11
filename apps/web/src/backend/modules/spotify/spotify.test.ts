@@ -3,7 +3,7 @@ import { ConfigProvider, Effect, Layer, Option, Redacted } from "effect"
 import { FetchHttpClient } from "effect/http"
 import { TestClock } from "effect/testing"
 import { vi } from "vitest"
-import { TokenCipher } from "@/backend/primitives/token-cipher"
+import { TokenCipher } from "@/backend/modules/token-cipher"
 import {
   createSpotifyOAuthState,
   Spotify,

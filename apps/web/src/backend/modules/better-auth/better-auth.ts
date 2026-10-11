@@ -16,7 +16,7 @@ import {
   authUsers,
   authVerifications,
   Database,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 
 /** The sign-in providers this site offers. */
 export const signInProviders = ["github", "spotify"] as const

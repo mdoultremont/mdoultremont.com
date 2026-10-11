@@ -4,7 +4,7 @@ import {
   Destinations,
 } from "@/backend/features/music/destinations"
 import { Jev, type JevError } from "@/backend/modules/jev"
-import { JobQueue, type JobQueueError } from "@/backend/primitives/job-queue"
+import { JobQueue, type JobQueueError } from "@/backend/modules/job-queue"
 import {
   ClassificationMessage,
   type ClassificationPersistenceError,

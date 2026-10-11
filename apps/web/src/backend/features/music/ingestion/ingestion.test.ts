@@ -8,9 +8,9 @@ import {
   type SpotifyPage,
   type SpotifySavedTrack,
 } from "@/backend/modules/spotify"
-import { Database } from "@/backend/primitives/database"
-import { makeTestD1 } from "@/backend/primitives/database/testing"
-import { JobQueue } from "@/backend/primitives/job-queue"
+import { Database } from "@/backend/modules/database"
+import { makeTestD1 } from "@/backend/modules/database/testing"
+import { JobQueue } from "@/backend/modules/job-queue"
 import { IngestionStore, MusicIngestion } from "."
 
 const hour = 60 * 60 * 1000

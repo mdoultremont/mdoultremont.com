@@ -1,10 +1,6 @@
 import { and, count, eq, inArray, or } from "drizzle-orm"
 import { Context, Effect, Layer } from "effect"
-import {
-  authAccounts,
-  authUsers,
-  Database,
-} from "@/backend/primitives/database"
+import { authAccounts, authUsers, Database } from "@/backend/modules/database"
 import { AuthPersistenceError } from "./errors"
 import type { OwnerAccount } from "./owner-accounts"
 

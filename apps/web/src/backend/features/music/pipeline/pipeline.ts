@@ -28,7 +28,7 @@ import {
   type IngestionPersistenceError,
   MusicIngestion,
 } from "@/backend/features/music/ingestion"
-import type { JobQueueError } from "@/backend/primitives/job-queue"
+import type { JobQueueError } from "@/backend/modules/job-queue"
 
 /** Every queue message of the music pipeline. */
 export const PipelineMessage = Schema.Union([

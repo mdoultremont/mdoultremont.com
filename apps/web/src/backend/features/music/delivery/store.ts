@@ -6,7 +6,7 @@ import {
   musicDeliveries,
   musicLikedTracks,
   musicSettings,
-} from "@/backend/primitives/database"
+} from "@/backend/modules/database"
 import { DeliveryPersistenceError } from "./errors"
 
 export interface TrackPlaylist {
