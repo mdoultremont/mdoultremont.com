@@ -15,6 +15,11 @@ pnpm build
 
 Run `pnpm deploy` to build and deploy the portfolio to Cloudflare.
 
+In a new git worktree, run `scripts/setup-worktree.sh`. It copies the
+git-ignored local files listed in `.worktreeinclude` (such as
+`apps/web/.dev.vars`) from the main checkout, then installs dependencies. Keep
+the real copies of those files in the main checkout.
+
 See [Deploy to Cloudflare](docs/deploy-to-cloudflare.md) for the GitHub Actions
 setup and the first deployment checklist.
 
