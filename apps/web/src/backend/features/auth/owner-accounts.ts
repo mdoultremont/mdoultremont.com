@@ -10,9 +10,9 @@ const entry = String.raw`[a-z]+:[^,:\s]+`
 
 /**
  * OWNER_ACCOUNTS: the owner's sign-in accounts, as comma-separated
- * `provider:accountId` pairs (`github:18487606,spotify:abc`). Only these
- * accounts can sign in, and a user owns the private area while one of them is
- * linked.
+ * `provider:accountId` pairs (`github:18487606,spotify:abc`). While nobody may
+ * use the back office, these accounts may sign in and receive every app.
+ * Everyone else needs an invitation.
  */
 export const ownerAccounts = Config.schema(
   Schema.String.check(Schema.isPattern(new RegExp(`^${entry}(,${entry})*$`))),

@@ -68,7 +68,7 @@ A service's definition and its implementation can live in different units.
 When a module needs a decision that belongs to a feature, the module defines
 the service and the feature provides a layer for it. `modules/better-auth`
 defines `AuthGate` (who may sign in) and asks it before admitting anyone;
-`features/auth` implements it as `OwnerGate`. The module stays free of
+`features/auth` implements it as `AccessGate`. The module stays free of
 business rules, and imports still point down.
 
 ### Functions

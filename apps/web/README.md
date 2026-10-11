@@ -52,10 +52,11 @@ The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
 ## Private music connection
 
-Private apps live under `/apps` (the music app at `/apps/music`). The `/apps`
-layout signs the owner in with [Better Auth](https://www.better-auth.com),
-through GitHub or Spotify; the music app adds a separate Spotify connection for
-music access. Apply the local D1 migrations before signing in:
+Private apps live under `/apps`: the music app at `/apps/music` and the back
+office at `/apps/back-office`. The `/apps` layout signs users in with
+[Better Auth](https://www.better-auth.com), through GitHub or Spotify, and each
+user may use only the apps they have access to. The music app adds a separate
+Spotify connection for music access. Apply the local D1 migrations before signing in:
 
 ```bash
 pnpm --filter @mdoultremont/portfolio db:migrate:local
@@ -67,9 +68,11 @@ host.
 
 Register a GitHub OAuth app with the callback
 `http://127.0.0.1:3000/api/auth/callback/github` for local use, or
-`https://mdoultremont.com/api/auth/callback/github` in production. Only the
-accounts listed in `OWNER_ACCOUNTS` can sign in, as `provider:accountId` pairs:
-the numeric GitHub account ID and the Spotify user ID.
+`https://mdoultremont.com/api/auth/callback/github` in production.
+`OWNER_ACCOUNTS` lists the owner's accounts as `provider:accountId` pairs: the
+numeric GitHub account ID and the Spotify user ID. While nobody has access to
+the back office (on a fresh database), these accounts can sign in and receive
+every app. Everyone else signs up through an invitation from the back office.
 
 ```text
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
@@ -82,9 +85,23 @@ GITHUB_CLIENT_SECRET=<GitHub OAuth app client secret>
 In production, `BETTER_AUTH_URL` is `https://mdoultremont.com`. Changing
 `BETTER_AUTH_SECRET` signs everyone out.
 
-The first sign-in creates the owner. To add the other provider, sign in and
-use "Also sign in with …" on the music page; signing in with it directly works
-only when both accounts share an email address.
+To add another provider to a user, sign in and use "Also sign in with …".
+Accounts are never linked because their emails match.
+
+Invitations are emailed through
+[Cloudflare Email Service](https://developers.cloudflare.com/email-service/) via
+the `EMAIL` binding, from `EMAIL_FROM` (an address on a domain onboarded with
+`pnpm exec wrangler email sending enable mdoultremont.com`). Local development
+uses Wrangler's email simulator, which does not deliver mail; the invitation
+link is in the logged message.
+
+```text
+EMAIL_FROM=apps@mdoultremont.com
+```
+
+A Spotify app in development mode only signs in accounts on its allowlist
+(see below), so add Spotify users there before they accept an invitation, or
+have them use GitHub.
 
 Create a Spotify app with Web API access, and register two exact callback
 URLs, one for the music connection and one for sign-in:

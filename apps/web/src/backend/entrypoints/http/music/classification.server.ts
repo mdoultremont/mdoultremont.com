@@ -8,7 +8,7 @@ import {
   json,
   type RequestError,
   requireMutation,
-  requireOwner,
+  requireApp,
   respond,
 } from "../http"
 
@@ -29,7 +29,7 @@ const route = (
 ) =>
   respond(
     Effect.gen(function* () {
-      const owner = yield* requireOwner(request)
+      const owner = yield* requireApp(request, "music")
       if (options.mutation) yield* requireMutation(request)
       return yield* handler(owner.id).pipe(
         Effect.catchTags({

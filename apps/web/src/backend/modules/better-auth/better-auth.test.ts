@@ -3,7 +3,7 @@ import { ConfigProvider, Effect, Layer, Option } from "effect"
 import { vi } from "vitest"
 import { Database } from "@/backend/modules/database"
 import { makeTestD1 } from "@/backend/modules/database/testing"
-import { AuthGate, BetterAuth, SignInRejected } from "."
+import { AuthGate, BetterAuth, type SignInAttempt, SignInRejected } from "."
 
 const baseURL = "http://127.0.0.1:3000"
 
@@ -36,8 +36,10 @@ function stubGitHub(id: number) {
   )
 }
 
-function setup() {
+function setup(options: { readonly startSession?: boolean } = {}) {
   const d1 = makeTestD1()
+  const attempts: Array<SignInAttempt> = []
+  const sessionsStarting: Array<{ userId: string; cookie: string | null }> = []
   const layer = BetterAuth.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
@@ -45,15 +47,28 @@ function setup() {
         Layer.succeed(
           AuthGate,
           AuthGate.of({
-            admit: (attempt) =>
-              attempt.provider === "github" && attempt.accountId === "42"
+            admit: (attempt) => {
+              attempts.push(attempt)
+              return attempt.provider === "github" && attempt.accountId === "42"
                 ? Effect.void
                 : Effect.fail(
                     new SignInRejected({
                       code: "not_allowed",
                       description: "Not allowed",
                     })
-                  ),
+                  )
+            },
+            sessionStarting: (userId, headers) => {
+              sessionsStarting.push({ userId, cookie: headers.get("Cookie") })
+              return options.startSession === false
+                ? Effect.fail(
+                    new SignInRejected({
+                      code: "unavailable",
+                      description: "Unavailable",
+                    })
+                  )
+                : Effect.void
+            },
           })
         ),
         ConfigProvider.layer(
@@ -71,6 +86,8 @@ function setup() {
   )
   return {
     d1,
+    attempts,
+    sessionsStarting,
     run: <A, E>(body: Effect.Effect<A, E, BetterAuth>) =>
       body.pipe(Effect.provide(layer), Effect.ensuring(Effect.sync(d1.close))),
   }
@@ -83,7 +100,7 @@ const cookiesOf = (response: Response) =>
     .join("; ")
 
 /** Runs a GitHub sign-in through Better Auth's real routes, up to the callback's redirect. */
-const signInWithGitHub = Effect.fn(function* () {
+const signInWithGitHub = Effect.fn(function* (extraCookie?: string) {
   const auth = yield* BetterAuth
   const started = yield* auth.handler(
     new Request(`${baseURL}/api/auth/sign-in/social`, {
@@ -104,7 +121,11 @@ const signInWithGitHub = Effect.fn(function* () {
   const callback = yield* auth.handler(
     new Request(
       `${baseURL}/api/auth/callback/github?code=code&state=${authorization.searchParams.get("state")}`,
-      { headers: { Cookie: cookiesOf(started) } }
+      {
+        headers: {
+          Cookie: [cookiesOf(started), extraCookie].filter(Boolean).join("; "),
+        },
+      }
     )
   )
   return callback
@@ -169,6 +190,75 @@ describe("Better Auth on D1", () => {
           Option.isNone(
             yield* auth.session(new Headers({ Cookie: cookiesOf(callback) }))
           )
+        )
+      })
+    )
+  })
+
+  it.effect("shows the gate the callback's cookies", () => {
+    stubGitHub(42)
+    const t = setup()
+    return t.run(
+      Effect.gen(function* () {
+        yield* signInWithGitHub("invitation=token")
+        assert.deepStrictEqual(
+          t.attempts.map((attempt) => [
+            attempt.action,
+            attempt.headers.get("Cookie")?.includes("invitation=token"),
+          ]),
+          [["create-user", true]]
+        )
+        assert.strictEqual(t.sessionsStarting.length, 1)
+        assert.include(t.sessionsStarting[0]?.cookie ?? "", "invitation=token")
+      })
+    )
+  })
+
+  it.effect("starts no session when the gate refuses it", () => {
+    stubGitHub(42)
+    const t = setup({ startSession: false })
+    return t.run(
+      Effect.gen(function* () {
+        const callback = yield* signInWithGitHub()
+        const location = new URL(
+          callback.headers.get("Location") ?? "",
+          baseURL
+        )
+        assert.isNotNull(location.searchParams.get("error"))
+        assert.strictEqual(
+          t.d1.sqlite
+            .prepare("SELECT count(*) AS sessions FROM auth_sessions")
+            .get()?.sessions,
+          0
+        )
+      })
+    )
+  })
+
+  it.effect("never links a new account to a user because emails match", () => {
+    stubGitHub(42)
+    const t = setup()
+    t.d1.sqlite
+      .prepare(
+        "INSERT INTO auth_users (id, name, email, email_verified, created_at, updated_at) VALUES ('other', 'Other', 'matthieu@example.com', 1, 1, 1)"
+      )
+      .run()
+    return t.run(
+      Effect.gen(function* () {
+        const callback = yield* signInWithGitHub()
+        const location = new URL(
+          callback.headers.get("Location") ?? "",
+          baseURL
+        )
+        assert.strictEqual(
+          location.searchParams.get("error"),
+          "account_not_linked"
+        )
+        assert.strictEqual(
+          t.d1.sqlite
+            .prepare("SELECT count(*) AS accounts FROM auth_accounts")
+            .get()?.accounts,
+          0
         )
       })
     )

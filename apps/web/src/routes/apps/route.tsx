@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
-import { currentOwner } from "@/backend/entrypoints/http/auth.server"
+import { currentUser } from "@/backend/entrypoints/http/auth.server"
 import {
   authClient,
   providerNames,
@@ -10,13 +10,13 @@ import {
   signInErrorMessage,
 } from "@/components/auth/auth-client"
 
-const loadCurrentOwner = createServerFn({ method: "GET" }).handler(() =>
-  currentOwner(getRequest())
+const loadCurrentUser = createServerFn({ method: "GET" }).handler(() =>
+  currentUser(getRequest())
 )
 
-/** Every private app lives under /apps; this layout signs the owner in once for all of them. */
+/** Every private app lives under /apps; this layout signs the user in once for all of them. */
 export const Route = createFileRoute("/apps")({
-  loader: () => loadCurrentOwner(),
+  loader: () => loadCurrentUser(),
   head: () => ({
     meta: [
       { title: "Apps · Matthieu d'Oultremont" },
@@ -27,12 +27,14 @@ export const Route = createFileRoute("/apps")({
 })
 
 function AppsLayout() {
-  const owner = Route.useLoaderData()
+  const user = Route.useLoaderData()
   const [busy, setBusy] = useState(false)
-  const error =
+  const search =
     typeof window === "undefined"
       ? null
-      : new URLSearchParams(window.location.search).get("error")
+      : new URLSearchParams(window.location.search)
+  const error = search?.get("error") ?? null
+  const invited = search?.get("invited") === "1"
 
   async function signIn(provider: SignInProvider) {
     setBusy(true)
@@ -62,7 +64,7 @@ function AppsLayout() {
   }
 
   const unlinked = signInProviders.filter(
-    (provider) => owner && !owner.providers.includes(provider)
+    (provider) => user && !user.providers.includes(provider)
   )
 
   return (
@@ -71,7 +73,7 @@ function AppsLayout() {
         <a className="underline underline-offset-4" href="/">
           Return to portfolio
         </a>
-        {owner ? (
+        {user ? (
           <Link className="underline underline-offset-4" to="/apps">
             All apps
           </Link>
@@ -86,13 +88,13 @@ function AppsLayout() {
             {signInErrorMessage(error)}
           </p>
         ) : null}
-        {owner ? (
+        {user ? (
           <>
             <Outlet />
             <div className="mt-10 border-t border-ink/10 pt-6">
               <p className="text-sm text-ink/70">
                 Signed in as{" "}
-                <strong className="font-semibold">{owner.name}</strong>.
+                <strong className="font-semibold">{user.name}</strong>.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 {unlinked.map((provider) => (
@@ -120,10 +122,12 @@ function AppsLayout() {
         ) : (
           <div className="mt-3">
             <h1 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-              Sign in
+              {invited ? "Finish signing up" : "Sign in"}
             </h1>
             <p className="mt-8 max-w-prose text-base leading-7 text-ink/70">
-              Sign in with one of the owner's accounts to use the private apps.
+              {invited
+                ? "Continue with GitHub or Spotify to accept your invitation. You will sign in with that account from now on."
+                : "Sign in with an account you have used here before. New users need an invitation."}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               {signInProviders.map((provider) => (
@@ -147,5 +151,5 @@ function AppsLayout() {
 
 const signInProviders: ReadonlyArray<SignInProvider> = ["github", "spotify"]
 
-/** Return to the app the owner started from. */
+/** Return to the app the user started from. */
 const here = () => window.location.pathname

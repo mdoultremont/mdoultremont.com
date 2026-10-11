@@ -30,6 +30,8 @@ export const authUsers = sqliteTable("auth_users", {
     .default(now)
     .$onUpdate(() => new Date())
     .notNull(),
+  /** Set when the user is removed: they can no longer sign in. Not Better Auth's. */
+  deletedAt: integer("deleted_at"),
 })
 
 export const authSessions = sqliteTable(
@@ -105,6 +107,47 @@ export const authVerifications = sqliteTable(
       .notNull(),
   },
   (table) => [index("auth_verifications_identifier_idx").on(table.identifier)]
+)
+
+/** Which apps under /apps each user may use. */
+export const appAccess = sqliteTable(
+  "app_access",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    app: text("app").notNull(),
+    grantedAt: integer("granted_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.app] }),
+    index("app_access_app_idx").on(table.app),
+  ]
+)
+
+/**
+ * Invitations to become a user. Only the token's hash is stored; the token
+ * itself is in the emailed link. An accepted invitation keeps its row.
+ */
+export const invitations = sqliteTable(
+  "invitations",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    /** JSON array of app IDs granted on acceptance. */
+    apps: text("apps").notNull(),
+    invitedBy: text("invited_by").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+    createdAt: integer("created_at").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+    acceptedAt: integer("accepted_at"),
+    acceptedBy: text("accepted_by").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [index("invitations_email_idx").on(table.email)]
 )
 
 export const spotifyConnections = sqliteTable("spotify_connections", {

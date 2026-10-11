@@ -1,18 +1,19 @@
 import { env } from "cloudflare:workers"
 import { Effect, Layer, Option } from "effect"
 import {
-  type Owner,
-  OwnerAuth,
-  type OwnerSession,
+  type SignedInUser,
+  UserAuth,
+  type UserSession,
 } from "@/backend/features/auth"
 import { platformLayer } from "../platform"
 
-const authLayer = () => OwnerAuth.layer.pipe(Layer.provide(platformLayer(env)))
+export const authLayer = () =>
+  UserAuth.layer.pipe(Layer.provide(platformLayer(env)))
 
 /** Better Auth's routes under /api/auth: sign-in, callbacks, sign-out, linking. */
 export const handleAuthRequest = (request: Request) =>
   Effect.runPromise(
-    OwnerAuth.use((auth) => auth.handler(request)).pipe(
+    UserAuth.use((auth) => auth.handler(request)).pipe(
       Effect.provide(authLayer()),
       Effect.catchTag("ConfigError", () =>
         Effect.succeed(
@@ -27,26 +28,27 @@ export const handleAuthRequest = (request: Request) =>
     )
   )
 
-/** The signed-in owner, if any. Never fails: any problem reads as signed out. */
-export const ownerFromRequest = (request: Request) =>
-  OwnerAuth.use((auth) => auth.currentOwner(request.headers)).pipe(
+/** The signed-in user, if any. Never fails: any problem reads as signed out. */
+export const userFromRequest = (request: Request) =>
+  UserAuth.use((auth) => auth.currentUser(request.headers)).pipe(
     Effect.provide(authLayer()),
-    Effect.orElseSucceed(() => Option.none<OwnerSession>())
+    Effect.orElseSucceed(() => Option.none<UserSession>())
   )
 
-/** For the /music page loader: the signed-in owner, or null. Sent to the browser. */
-export const currentOwner = (request: Request): Promise<Owner | null> =>
+/** For the /apps layout loader: the signed-in user, or null. Sent to the browser. */
+export const currentUser = (request: Request): Promise<SignedInUser | null> =>
   Effect.runPromise(
-    ownerFromRequest(request).pipe(
+    userFromRequest(request).pipe(
       Effect.map(
         Option.match({
           onNone: () => null,
-          onSome: ({ id, name, email, image, providers }) => ({
+          onSome: ({ id, name, email, image, providers, apps }) => ({
             id,
             name,
             email,
             image,
             providers,
+            apps,
           }),
         })
       )

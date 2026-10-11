@@ -16,9 +16,13 @@ import { Route as IterationsRouteImport } from './routes/iterations'
 import { Route as PersonalRouteImport } from './routes/personal'
 import { Route as PhotographyRouteImport } from './routes/photography'
 import { Route as AppsIndexRouteImport } from './routes/apps/index'
+import { Route as AppsBackOfficeRouteImport } from './routes/apps/back-office'
 import { Route as AppsMusicRouteImport } from './routes/apps/music'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
+import { Route as ApiAppsBackOfficeInvitationsRouteImport } from './routes/api/apps/back-office/invitations'
+import { Route as ApiAppsBackOfficeUsersRouteImport } from './routes/api/apps/back-office/users'
 import { Route as ApiAppsMusicClassificationRouteImport } from './routes/api/apps/music/classification'
 import { Route as ApiAppsMusicDeliveryRouteImport } from './routes/api/apps/music/delivery'
 import { Route as ApiAppsMusicDestinationsRouteImport } from './routes/api/apps/music/destinations'
@@ -26,6 +30,7 @@ import { Route as ApiAppsMusicEnrichmentRouteImport } from './routes/api/apps/mu
 import { Route as ApiAppsMusicIngestionRouteImport } from './routes/api/apps/music/ingestion'
 import { Route as ApiAppsMusicReadyRouteImport } from './routes/api/apps/music/ready'
 import { Route as ApiAppsMusicReviewPlaylistRouteImport } from './routes/api/apps/music/review-playlist'
+import { Route as ApiAppsBackOfficeInvitationsResendRouteImport } from './routes/api/apps/back-office/invitations/resend'
 import { Route as ApiAppsMusicDestinationsCreateRouteImport } from './routes/api/apps/music/destinations/create'
 import { Route as ApiAppsMusicSpotifyCallbackRouteImport } from './routes/api/apps/music/spotify/callback'
 import { Route as ApiAppsMusicSpotifyConnectRouteImport } from './routes/api/apps/music/spotify/connect'
@@ -69,6 +74,11 @@ const AppsIndexRoute = AppsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppsRouteRoute,
 } as any)
+const AppsBackOfficeRoute = AppsBackOfficeRouteImport.update({
+  id: '/back-office',
+  path: '/back-office',
+  getParentRoute: () => AppsRouteRoute,
+} as any)
 const AppsMusicRoute = AppsMusicRouteImport.update({
   id: '/music',
   path: '/music',
@@ -82,6 +92,22 @@ const ImagesSplatRoute = ImagesSplatRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInvitationsAcceptRoute = ApiInvitationsAcceptRouteImport.update({
+  id: '/api/invitations/accept',
+  path: '/api/invitations/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAppsBackOfficeInvitationsRoute =
+  ApiAppsBackOfficeInvitationsRouteImport.update({
+    id: '/api/apps/back-office/invitations',
+    path: '/api/apps/back-office/invitations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAppsBackOfficeUsersRoute = ApiAppsBackOfficeUsersRouteImport.update({
+  id: '/api/apps/back-office/users',
+  path: '/api/apps/back-office/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAppsMusicClassificationRoute =
@@ -121,6 +147,12 @@ const ApiAppsMusicReviewPlaylistRoute =
     id: '/api/apps/music/review-playlist',
     path: '/api/apps/music/review-playlist',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAppsBackOfficeInvitationsResendRoute =
+  ApiAppsBackOfficeInvitationsResendRouteImport.update({
+    id: '/resend',
+    path: '/resend',
+    getParentRoute: () => ApiAppsBackOfficeInvitationsRoute,
   } as any)
 const ApiAppsMusicDestinationsCreateRoute =
   ApiAppsMusicDestinationsCreateRouteImport.update({
@@ -172,10 +204,14 @@ export interface FileRoutesByFullPath {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/apps/back-office': typeof AppsBackOfficeRoute
   '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
   '/apps/': typeof AppsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
+  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
   '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
   '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
   '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
@@ -183,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
   '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
   '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
+  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
   '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
   '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
   '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
@@ -197,10 +234,14 @@ export interface FileRoutesByTo {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/apps/back-office': typeof AppsBackOfficeRoute
   '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
   '/apps': typeof AppsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
+  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
   '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
   '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
   '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
@@ -208,6 +249,7 @@ export interface FileRoutesByTo {
   '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
   '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
   '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
+  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
   '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
   '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
   '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
@@ -224,10 +266,14 @@ export interface FileRoutesById {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
+  '/apps/back-office': typeof AppsBackOfficeRoute
   '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
   '/apps/': typeof AppsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
+  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
   '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
   '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
   '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
@@ -235,6 +281,7 @@ export interface FileRoutesById {
   '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
   '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
   '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
+  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
   '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
   '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
   '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
@@ -252,10 +299,14 @@ export interface FileRouteTypes {
     | '/iterations'
     | '/personal'
     | '/photography'
+    | '/apps/back-office'
     | '/apps/music'
     | '/images/$'
     | '/apps/'
     | '/api/auth/$'
+    | '/api/invitations/accept'
+    | '/api/apps/back-office/invitations'
+    | '/api/apps/back-office/users'
     | '/api/apps/music/classification'
     | '/api/apps/music/delivery'
     | '/api/apps/music/destinations'
@@ -263,6 +314,7 @@ export interface FileRouteTypes {
     | '/api/apps/music/ingestion'
     | '/api/apps/music/ready'
     | '/api/apps/music/review-playlist'
+    | '/api/apps/back-office/invitations/resend'
     | '/api/apps/music/destinations/create'
     | '/api/apps/music/spotify/callback'
     | '/api/apps/music/spotify/connect'
@@ -277,10 +329,14 @@ export interface FileRouteTypes {
     | '/iterations'
     | '/personal'
     | '/photography'
+    | '/apps/back-office'
     | '/apps/music'
     | '/images/$'
     | '/apps'
     | '/api/auth/$'
+    | '/api/invitations/accept'
+    | '/api/apps/back-office/invitations'
+    | '/api/apps/back-office/users'
     | '/api/apps/music/classification'
     | '/api/apps/music/delivery'
     | '/api/apps/music/destinations'
@@ -288,6 +344,7 @@ export interface FileRouteTypes {
     | '/api/apps/music/ingestion'
     | '/api/apps/music/ready'
     | '/api/apps/music/review-playlist'
+    | '/api/apps/back-office/invitations/resend'
     | '/api/apps/music/destinations/create'
     | '/api/apps/music/spotify/callback'
     | '/api/apps/music/spotify/connect'
@@ -303,10 +360,14 @@ export interface FileRouteTypes {
     | '/iterations'
     | '/personal'
     | '/photography'
+    | '/apps/back-office'
     | '/apps/music'
     | '/images/$'
     | '/apps/'
     | '/api/auth/$'
+    | '/api/invitations/accept'
+    | '/api/apps/back-office/invitations'
+    | '/api/apps/back-office/users'
     | '/api/apps/music/classification'
     | '/api/apps/music/delivery'
     | '/api/apps/music/destinations'
@@ -314,6 +375,7 @@ export interface FileRouteTypes {
     | '/api/apps/music/ingestion'
     | '/api/apps/music/ready'
     | '/api/apps/music/review-playlist'
+    | '/api/apps/back-office/invitations/resend'
     | '/api/apps/music/destinations/create'
     | '/api/apps/music/spotify/callback'
     | '/api/apps/music/spotify/connect'
@@ -332,6 +394,9 @@ export interface RootRouteChildren {
   PhotographyRoute: typeof PhotographyRoute
   ImagesSplatRoute: typeof ImagesSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiInvitationsAcceptRoute: typeof ApiInvitationsAcceptRoute
+  ApiAppsBackOfficeInvitationsRoute: typeof ApiAppsBackOfficeInvitationsRouteWithChildren
+  ApiAppsBackOfficeUsersRoute: typeof ApiAppsBackOfficeUsersRoute
   ApiAppsMusicClassificationRoute: typeof ApiAppsMusicClassificationRoute
   ApiAppsMusicDeliveryRoute: typeof ApiAppsMusicDeliveryRoute
   ApiAppsMusicDestinationsRoute: typeof ApiAppsMusicDestinationsRouteWithChildren
@@ -398,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppsIndexRouteImport
       parentRoute: typeof AppsRouteRoute
     }
+    '/apps/back-office': {
+      id: '/apps/back-office'
+      path: '/back-office'
+      fullPath: '/apps/back-office'
+      preLoaderRoute: typeof AppsBackOfficeRouteImport
+      parentRoute: typeof AppsRouteRoute
+    }
     '/apps/music': {
       id: '/apps/music'
       path: '/music'
@@ -417,6 +489,27 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/invitations/accept': {
+      id: '/api/invitations/accept'
+      path: '/api/invitations/accept'
+      fullPath: '/api/invitations/accept'
+      preLoaderRoute: typeof ApiInvitationsAcceptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/apps/back-office/invitations': {
+      id: '/api/apps/back-office/invitations'
+      path: '/api/apps/back-office/invitations'
+      fullPath: '/api/apps/back-office/invitations'
+      preLoaderRoute: typeof ApiAppsBackOfficeInvitationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/apps/back-office/users': {
+      id: '/api/apps/back-office/users'
+      path: '/api/apps/back-office/users'
+      fullPath: '/api/apps/back-office/users'
+      preLoaderRoute: typeof ApiAppsBackOfficeUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/apps/music/classification': {
@@ -467,6 +560,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/apps/music/review-playlist'
       preLoaderRoute: typeof ApiAppsMusicReviewPlaylistRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/apps/back-office/invitations/resend': {
+      id: '/api/apps/back-office/invitations/resend'
+      path: '/resend'
+      fullPath: '/api/apps/back-office/invitations/resend'
+      preLoaderRoute: typeof ApiAppsBackOfficeInvitationsResendRouteImport
+      parentRoute: typeof ApiAppsBackOfficeInvitationsRoute
     }
     '/api/apps/music/destinations/create': {
       id: '/api/apps/music/destinations/create'
@@ -521,11 +621,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppsRouteRouteChildren {
+  AppsBackOfficeRoute: typeof AppsBackOfficeRoute
   AppsMusicRoute: typeof AppsMusicRoute
   AppsIndexRoute: typeof AppsIndexRoute
 }
 
 const AppsRouteRouteChildren: AppsRouteRouteChildren = {
+  AppsBackOfficeRoute: AppsBackOfficeRoute,
   AppsMusicRoute: AppsMusicRoute,
   AppsIndexRoute: AppsIndexRoute,
 }
@@ -533,6 +635,21 @@ const AppsRouteRouteChildren: AppsRouteRouteChildren = {
 const AppsRouteRouteWithChildren = AppsRouteRoute._addFileChildren(
   AppsRouteRouteChildren,
 )
+
+interface ApiAppsBackOfficeInvitationsRouteChildren {
+  ApiAppsBackOfficeInvitationsResendRoute: typeof ApiAppsBackOfficeInvitationsResendRoute
+}
+
+const ApiAppsBackOfficeInvitationsRouteChildren: ApiAppsBackOfficeInvitationsRouteChildren =
+  {
+    ApiAppsBackOfficeInvitationsResendRoute:
+      ApiAppsBackOfficeInvitationsResendRoute,
+  }
+
+const ApiAppsBackOfficeInvitationsRouteWithChildren =
+  ApiAppsBackOfficeInvitationsRoute._addFileChildren(
+    ApiAppsBackOfficeInvitationsRouteChildren,
+  )
 
 interface ApiAppsMusicDestinationsRouteChildren {
   ApiAppsMusicDestinationsCreateRoute: typeof ApiAppsMusicDestinationsCreateRoute
@@ -557,6 +674,10 @@ const rootRouteChildren: RootRouteChildren = {
   PhotographyRoute: PhotographyRoute,
   ImagesSplatRoute: ImagesSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiInvitationsAcceptRoute: ApiInvitationsAcceptRoute,
+  ApiAppsBackOfficeInvitationsRoute:
+    ApiAppsBackOfficeInvitationsRouteWithChildren,
+  ApiAppsBackOfficeUsersRoute: ApiAppsBackOfficeUsersRoute,
   ApiAppsMusicClassificationRoute: ApiAppsMusicClassificationRoute,
   ApiAppsMusicDeliveryRoute: ApiAppsMusicDeliveryRoute,
   ApiAppsMusicDestinationsRoute: ApiAppsMusicDestinationsRouteWithChildren,

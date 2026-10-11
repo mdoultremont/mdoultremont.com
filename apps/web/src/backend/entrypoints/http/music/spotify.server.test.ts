@@ -8,8 +8,13 @@ import {
 } from "./spotify.server"
 
 const mocks = vi.hoisted(() => ({
-  owner:
-    vi.fn<(request: Request) => Promise<{ id: string; sessionId: string }>>(),
+  owner: vi.fn<
+    (request: Request) => Promise<{
+      id: string
+      sessionId: string
+      apps: ReadonlyArray<string>
+    }>
+  >(),
   prepare: vi.fn<() => void>(),
 }))
 
@@ -25,7 +30,7 @@ vi.mock("cloudflare:workers", () => ({
   },
 }))
 vi.mock("../auth.server", () => ({
-  ownerFromRequest: (request: Request) =>
+  userFromRequest: (request: Request) =>
     Effect.promise(() =>
       mocks.owner(request).then(Option.some, () => Option.none())
     ),
@@ -36,6 +41,7 @@ beforeEach(() => {
   // The owner's session follows the request's test cookie.
   mocks.owner.mockImplementation(async (request) => ({
     id: "owner",
+    apps: ["music"],
     sessionId:
       /session=([^;]+)/.exec(request.headers.get("Cookie") ?? "")?.[1] ??
       "none",

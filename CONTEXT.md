@@ -16,13 +16,50 @@ _Avoid_: Case study, placeholder
 A route used to explore personal material before it is part of the public portfolio promise. It may be intentionally unlisted and excluded from search indexing.
 _Avoid_: Public page, finished page
 
+## Private apps
+
+**User**:
+A person who signs in to the private apps under `/apps` with a GitHub or
+Spotify account. App sign-in is separate from any provider connection an app
+makes, such as the music app's Spotify connection, even when both use the same
+account.
+_Avoid_: Member, account (an account is one sign-in method of a user)
+
+**App**:
+One private area under `/apps`: the music control area (`music`) or the back
+office (`backOffice`).
+
+**App access**:
+A user's permission to use one app. A user may hold access to any set of apps,
+including none. At least one user always has access to the back office.
+_Avoid_: Role, scope, permission
+
+**Back office**:
+The app for managing users: inviting them, choosing their app access, and
+removing them. Nobody can remove themselves or their own back office access.
+
+**Invitation**:
+An emailed link that lets one person become a user with the app access chosen
+when inviting them. It works for 7 days and only once. Accepting it while
+signed in, or by signing in with an account that already belongs to a user,
+gives that user the app access instead of creating another user.
+_Avoid_: Sign-up request, invite code
+
+**Removed user**:
+A user who can no longer sign in and has no app access. Their data stays. A
+new invitation restores them.
+_Avoid_: Deleted user
+
+**Owner accounts**:
+The sign-in accounts in `OWNER_ACCOUNTS`. While nobody has back office access,
+they may sign in without an invitation and receive every app, so the site can
+always be recovered.
+
 ## Music control area
 
 **Owner**:
-The single user allowed to use the private apps under `/apps`, such as the
-music control area. They sign in with one of the accounts listed in
-`OWNER_ACCOUNTS` (GitHub or Spotify). App sign-in is separate from the Spotify connection that gives music access, even
-when both use the same Spotify account.
+The user whose Spotify Liked Songs and playlists the music app is sorting. Any
+user with music access is the owner of their own music data.
 
 ### Pipeline
 
