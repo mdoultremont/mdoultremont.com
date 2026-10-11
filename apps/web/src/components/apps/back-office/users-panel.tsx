@@ -8,6 +8,15 @@ import type {
 import { appCatalog, appName } from "@/components/apps/catalog"
 import { providerNames } from "@/components/auth/auth-client"
 
+/**
+ * Spotify keeps apps in development mode for personal projects: only accounts
+ * added by hand in its dashboard may use them, and at most this many.
+ */
+const spotifyAllowlist = {
+  limit: 5,
+  dashboardUrl: "https://developer.spotify.com/dashboard",
+}
+
 type ViewState =
   | { readonly kind: "loading" }
   | { readonly kind: "error"; readonly message: string }
@@ -19,6 +28,8 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  /** Set after giving someone Music, which Spotify only allows once they are allowlisted. */
+  const [allowlistReminder, setAllowlistReminder] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -38,11 +49,13 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
     url: string,
     method: "POST" | "PUT" | "DELETE",
     body: unknown,
-    done?: string
+    done?: string,
+    grantsMusic = false
   ) {
     setBusy(true)
     setError(null)
     setNotice(null)
+    setAllowlistReminder(false)
     try {
       await readJson(url, {
         method,
@@ -50,6 +63,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         body: JSON.stringify(body),
       })
       if (done) setNotice(done)
+      setAllowlistReminder(grantsMusic)
       try {
         setView({
           kind: "ready",
@@ -81,6 +95,12 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
     )
 
   const { users, invitations } = view.directory
+  // Pending invitations count too: each will need a spot once accepted.
+  const musicSpots =
+    users.filter((user) => user.apps.includes("music")).length +
+    invitations.filter(
+      (invitation) => !invitation.expired && invitation.apps.includes("music")
+    ).length
 
   return (
     <>
@@ -92,15 +112,24 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
       {notice ? (
         <output className="mt-6 block text-sm text-ink/70">{notice}</output>
       ) : null}
+      {allowlistReminder ? (
+        <p className="mt-3 rounded-xl bg-ink/5 p-4 text-sm leading-6 text-ink/80">
+          Now add their Spotify account in the <SpotifyDashboardLink /> (your
+          app → User Management), with the email of their Spotify account.
+          Spotify refuses Music until you do.
+        </p>
+      ) : null}
 
       <InviteForm
         busy={busy}
+        musicSpots={musicSpots}
         onInvite={(email, apps) =>
           mutate(
             "/api/apps/back-office/invitations",
             "POST",
             { email, apps },
-            `Invitation sent to ${email}.`
+            `Invitation sent to ${email}.`,
+            apps.includes("music")
           )
         }
       />
@@ -110,6 +139,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         aria-label="Users"
       >
         <h2 className="text-lg font-semibold text-ink">Users</h2>
+        <SpotifySpots used={musicSpots} />
         <ul className="mt-4 space-y-3">
           {users.map((user) => (
             <UserRow
@@ -117,10 +147,13 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
               isCurrentUser={user.id === currentUserId}
               key={user.id}
               onAccess={(apps) =>
-                void mutate("/api/apps/back-office/users", "PUT", {
-                  userId: user.id,
-                  apps,
-                })
+                void mutate(
+                  "/api/apps/back-office/users",
+                  "PUT",
+                  { userId: user.id, apps },
+                  undefined,
+                  apps.includes("music") && !user.apps.includes("music")
+                )
               }
               onRemove={() => {
                 if (
@@ -182,9 +215,11 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
 
 function InviteForm({
   busy,
+  musicSpots,
   onInvite,
 }: {
   busy: boolean
+  musicSpots: number
   onInvite: (email: string, apps: ReadonlyArray<App>) => Promise<boolean>
 }) {
   const emailId = useId()
@@ -222,6 +257,19 @@ function InviteForm({
         <legend className="text-sm font-medium">Apps</legend>
         <AppCheckboxes onChange={setApps} selected={apps} />
       </fieldset>
+      {apps.includes("music") ? (
+        <p className="mt-3 text-sm leading-6 text-ink/70">
+          Music uses your Spotify app, which only works for accounts you add by
+          hand in the <SpotifyDashboardLink />. Once you send the invitation,
+          add their Spotify account there.{" "}
+          {musicSpots >= spotifyAllowlist.limit ? (
+            <strong className="font-medium text-red-800">
+              All {spotifyAllowlist.limit} spots are already taken, so they will
+              not be able to use Music.
+            </strong>
+          ) : null}
+        </p>
+      ) : null}
       <button
         className="mt-5 rounded-full bg-ink px-5 py-2 text-sm font-medium text-paper transition hover:bg-ink/80 disabled:opacity-50"
         disabled={busy || email.trim() === "" || apps.length === 0}
@@ -385,4 +433,35 @@ async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 function message(cause: unknown) {
   return cause instanceof Error ? cause.message : "Users could not be saved"
+}
+
+function SpotifyDashboardLink() {
+  return (
+    <a
+      className="underline underline-offset-4"
+      href={spotifyAllowlist.dashboardUrl}
+      rel="noreferrer"
+      target="_blank"
+    >
+      Spotify dashboard
+    </a>
+  )
+}
+
+/** How many of the Spotify allowlist's spots Music users and pending invitations take. */
+function SpotifySpots({ used }: { used: number }) {
+  const over = used > spotifyAllowlist.limit
+  return (
+    <p
+      className={`mt-2 text-sm leading-6 ${over ? "text-red-800" : "text-ink/60"}`}
+    >
+      Music: {used} of {spotifyAllowlist.limit} Spotify allowlist spots,
+      counting pending invitations.
+      {over
+        ? " Spotify only allows " +
+          spotifyAllowlist.limit +
+          " accounts in development mode, so some of these people cannot use Music."
+        : null}
+    </p>
+  )
 }
