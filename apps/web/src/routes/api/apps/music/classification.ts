@@ -4,7 +4,7 @@ import {
   postReclassify,
 } from "@/backend/entrypoints/http/music/classification.server"
 
-export const Route = createFileRoute("/api/music/classification")({
+export const Route = createFileRoute("/api/apps/music/classification")({
   server: {
     handlers: {
       GET: ({ request }) => getClassification(request),

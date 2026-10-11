@@ -4,7 +4,7 @@ import {
   postIngestion,
 } from "@/backend/entrypoints/http/music/ingestion.server"
 
-export const Route = createFileRoute("/api/music/ingestion")({
+export const Route = createFileRoute("/api/apps/music/ingestion")({
   server: {
     handlers: {
       GET: ({ request }) => getIngestion(request),

@@ -24,7 +24,7 @@ export function IngestionPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/ingestion")
+        const response = await fetch("/api/apps/music/ingestion")
         if (!response.ok)
           throw new Error("Ingestion status could not be loaded")
         const next = (await response.json()) as IngestionStatus
@@ -57,7 +57,7 @@ export function IngestionPanel({
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/ingestion", {
+      const response = await fetch("/api/apps/music/ingestion", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -25,7 +25,7 @@ export function DeliveryPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/delivery")
+        const response = await fetch("/api/apps/music/delivery")
         if (!response.ok) throw new Error("Delivery status could not be loaded")
         const next = (await response.json()) as DeliveryStatus
         if (!active) return
@@ -59,7 +59,7 @@ export function DeliveryPanel({
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/delivery", {
+      const response = await fetch("/api/apps/music/delivery", {
         ...init,
         headers: {
           "Content-Type": "application/json",

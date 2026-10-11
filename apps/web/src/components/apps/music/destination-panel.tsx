@@ -27,8 +27,10 @@ export function DestinationPanel() {
   useEffect(() => {
     let active = true
     Promise.all([
-      readJson<DestinationConfiguration>("/api/music/destinations"),
-      readJson<{ items: SpotifyPlaylist[] }>("/api/spotify/playlists"),
+      readJson<DestinationConfiguration>("/api/apps/music/destinations"),
+      readJson<{ items: SpotifyPlaylist[] }>(
+        "/api/apps/music/spotify/playlists"
+      ),
     ])
       .then(([config, playlists]) => {
         if (!active) return
@@ -45,10 +47,10 @@ export function DestinationPanel() {
 
   async function refresh() {
     const config = await readJson<DestinationConfiguration>(
-      "/api/music/destinations"
+      "/api/apps/music/destinations"
     )
     const playlists = await readJson<{ items: SpotifyPlaylist[] }>(
-      "/api/spotify/playlists"
+      "/api/apps/music/spotify/playlists"
     )
     setView({ kind: "ready", config, playlists: playlists.items })
     setReviewId(config.reviewPlaylistId ?? "")
@@ -88,7 +90,7 @@ export function DestinationPanel() {
   async function addSelectedPlaylist() {
     if (!selectedPlaylist) return
     if (
-      await mutate("/api/music/destinations", "PUT", {
+      await mutate("/api/apps/music/destinations", "PUT", {
         playlistId: selectedPlaylist.id,
         description: "",
         enabled: false,
@@ -102,7 +104,7 @@ export function DestinationPanel() {
 
   async function createPlaylist(name: string) {
     if (
-      await mutate("/api/music/destinations/create", "POST", {
+      await mutate("/api/apps/music/destinations/create", "POST", {
         name,
         description: "",
       })
@@ -196,7 +198,7 @@ export function DestinationPanel() {
                       className="underline disabled:opacity-50"
                       disabled={busy || (!destination.enabled && !canEnable)}
                       onClick={() =>
-                        mutate("/api/music/destinations", "PUT", {
+                        mutate("/api/apps/music/destinations", "PUT", {
                           playlistId: destination.playlistId,
                           description: destination.description,
                           enabled: !destination.enabled,
@@ -210,7 +212,7 @@ export function DestinationPanel() {
                       className="underline disabled:opacity-50"
                       disabled={busy}
                       onClick={() =>
-                        mutate("/api/music/destinations", "DELETE", {
+                        mutate("/api/apps/music/destinations", "DELETE", {
                           playlistId: destination.playlistId,
                         })
                       }
@@ -235,7 +237,7 @@ export function DestinationPanel() {
                       }
                       onClick={async () => {
                         if (
-                          await mutate("/api/music/destinations", "PUT", {
+                          await mutate("/api/apps/music/destinations", "PUT", {
                             playlistId: destination.playlistId,
                             description: editingDescription,
                             enabled:
@@ -328,7 +330,7 @@ export function DestinationPanel() {
           className="mt-3 rounded-full bg-ink px-4 py-2 text-sm text-paper disabled:opacity-50"
           disabled={busy || reviewId === (config.reviewPlaylistId ?? "")}
           onClick={() =>
-            mutate("/api/music/review-playlist", "PUT", {
+            mutate("/api/apps/music/review-playlist", "PUT", {
               playlistId: reviewId || null,
             })
           }

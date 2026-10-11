@@ -36,7 +36,7 @@ describe("private destination API", () => {
       putReviewPlaylist,
     ]) {
       const response = await handle(
-        new Request(`${base}/api/music/settings`, {
+        new Request(`${base}/api/apps/music/settings`, {
           method: handle === getDestinations ? "GET" : "PUT",
         })
       )
@@ -48,7 +48,7 @@ describe("private destination API", () => {
   test("refuses a change from another site before reading its input", async () => {
     auth.requireCurrentOwner.mockResolvedValue({ id: "owner" })
     const request = new Request(
-      "https://portfolio.example/api/music/destinations",
+      "https://portfolio.example/api/apps/music/destinations",
       {
         method: "PUT",
         headers: {

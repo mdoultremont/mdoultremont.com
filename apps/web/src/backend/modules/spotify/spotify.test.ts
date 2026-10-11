@@ -64,7 +64,8 @@ function testSetup() {
         ConfigProvider.fromUnknown({
           SPOTIFY_CLIENT_ID: "client",
           SPOTIFY_CLIENT_SECRET: "secret",
-          SPOTIFY_REDIRECT_URI: "https://example.com/api/spotify/callback",
+          SPOTIFY_REDIRECT_URI:
+            "https://example.com/api/apps/music/spotify/callback",
         })
       )
     )
@@ -183,7 +184,7 @@ describe("Spotify OAuth and connection", () => {
             "grant_type=authorization_code"
           )
           expect(requestBody(setup, 0)).toContain(
-            "redirect_uri=https%3A%2F%2Fexample.com%2Fapi%2Fspotify%2Fcallback"
+            "redirect_uri=https%3A%2F%2Fexample.com%2Fapi%2Fapps%2Fmusic%2Fspotify%2Fcallback"
           )
           expect(setup.getConnection()?.encryptedRefreshToken).not.toContain(
             "refresh-one"

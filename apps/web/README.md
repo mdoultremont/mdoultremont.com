@@ -52,15 +52,16 @@ The app currently targets Cloudflare Workers through the Cloudflare Vite plugin.
 
 ## Private music connection
 
-The `/music` route uses [Better Auth](https://www.better-auth.com) for app
-sign-in, with GitHub or Spotify, and a separate Spotify connection for music
-access. Apply the local D1 migrations before signing in:
+Private apps live under `/apps` (the music app at `/apps/music`). The `/apps`
+layout signs the owner in with [Better Auth](https://www.better-auth.com),
+through GitHub or Spotify; the music app adds a separate Spotify connection for
+music access. Apply the local D1 migrations before signing in:
 
 ```bash
 pnpm --filter @mdoultremont/portfolio db:migrate:local
 ```
 
-Open the local app at `http://127.0.0.1:3000/music`, not `localhost`: Spotify
+Open the local app at `http://127.0.0.1:3000/apps/music`, not `localhost`: Spotify
 rejects `localhost` callbacks, and every callback must use the same cookie
 host.
 
@@ -87,7 +88,7 @@ only when both accounts share an email address.
 
 Create a Spotify app with Web API access, and register two exact callback
 URLs, one for the music connection and one for sign-in:
-`http://127.0.0.1:3000/api/spotify/callback` and
+`http://127.0.0.1:3000/api/apps/music/spotify/callback` and
 `http://127.0.0.1:3000/api/auth/callback/spotify` for local use, or the same
 paths on `https://mdoultremont.com` in production. Spotify
 [allows HTTP loopback IP addresses](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
@@ -101,7 +102,7 @@ as Worker secrets for deployment, alongside the sign-in values above:
 ```text
 SPOTIFY_CLIENT_ID=<Spotify app client ID>
 SPOTIFY_CLIENT_SECRET=<Spotify app client secret>
-SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/apps/music/spotify/callback
 SPOTIFY_TOKEN_ENCRYPTION_KEY=<base64 encoding of 32 random bytes>
 ```
 
@@ -122,7 +123,7 @@ JEV_API_KEY=<TypeSafe API key>
 
 ## Music pipeline
 
-The private `/music` area runs four steps: ingestion of Liked Songs,
+The private `/apps/music` area runs four steps: ingestion of Liked Songs,
 enrichment from MusicBrainz and AcousticBrainz, classification with Jev once
 you mark your playlists **Ready**, and delivery to Spotify on **Write now** or
 automatically. See [music automation operation](../../docs/music-automation.md).

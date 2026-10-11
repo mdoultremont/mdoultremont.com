@@ -20,7 +20,7 @@ export function EnrichmentPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/enrichment")
+        const response = await fetch("/api/apps/music/enrichment")
         if (!response.ok)
           throw new Error("Enrichment status could not be loaded")
         const next = (await response.json()) as EnrichmentStatus
@@ -49,7 +49,7 @@ export function EnrichmentPanel({
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/enrichment", {
+      const response = await fetch("/api/apps/music/enrichment", {
         method: "POST",
       })
       const payload = (await response.json().catch(() => null)) as

@@ -31,7 +31,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
       collaborative: false,
     },
   ]
-  await page.route("**/api/music/destinations", async (route) => {
+  await page.route("**/api/apps/music/destinations", async (route) => {
     const request = route.request()
     if (request.method() === "GET") {
       await route.fulfill({ json: { destinations, reviewPlaylistId } })
@@ -58,7 +58,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     }
     await route.fulfill({ json: { ok: true } })
   })
-  await page.route("**/api/music/destinations/create", async (route) => {
+  await page.route("**/api/apps/music/destinations/create", async (route) => {
     const body = route.request().postDataJSON() as {
       name: string
       description: string
@@ -90,7 +90,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
       },
     })
   })
-  await page.route("**/api/music/review-playlist", async (route) => {
+  await page.route("**/api/apps/music/review-playlist", async (route) => {
     const request = route.request()
     const body = request.postDataJSON() as { playlistId: string | null }
     writes.push({
@@ -100,11 +100,11 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     reviewPlaylistId = body.playlistId
     await route.fulfill({ json: { reviewPlaylistId } })
   })
-  await page.route("**/api/spotify/playlists", async (route) => {
+  await page.route("**/api/apps/music/spotify/playlists", async (route) => {
     await route.fulfill({ json: { items: spotifyPlaylists } })
   })
 
-  await page.goto("/music")
+  await page.goto("/apps/music")
   await page.evaluate(async (modulePath) => {
     const module = await import(modulePath)
     module.mountDestinationPanel()

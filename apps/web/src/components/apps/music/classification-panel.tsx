@@ -32,7 +32,7 @@ export function ClassificationPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/classification")
+        const response = await fetch("/api/apps/music/classification")
         if (!response.ok)
           throw new Error("Classification status could not be loaded")
         const next = (await response.json()) as ClassificationStatus
@@ -61,7 +61,7 @@ export function ClassificationPanel({
   useEffect(() => {
     if (initialPlaylistNames) return
     let active = true
-    fetch("/api/spotify/playlists")
+    fetch("/api/apps/music/spotify/playlists")
       .then((response) =>
         response.ok
           ? (response.json() as Promise<{ items: SpotifyPlaylist[] }>)
@@ -108,7 +108,7 @@ export function ClassificationPanel({
 
   async function setReady(ready: boolean) {
     const result = await send(
-      "/api/music/ready",
+      "/api/apps/music/ready",
       { method: "PUT", body: JSON.stringify({ ready }) },
       "Classification could not be changed"
     )
@@ -117,7 +117,7 @@ export function ClassificationPanel({
 
   async function reclassify() {
     const result = await send(
-      "/api/music/classification",
+      "/api/apps/music/classification",
       { method: "POST" },
       "Reclassification could not start"
     )

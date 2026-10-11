@@ -7,8 +7,8 @@ import {
   verifySpotifyOAuthState,
 } from "@/backend/modules/spotify"
 import { MusicIngestion } from "@/backend/features/music/ingestion"
-import { platformLayer } from "../platform"
-import { readCookie } from "./cookies"
+import { platformLayer } from "../../platform"
+import { readCookie } from "../cookies"
 import {
   json,
   type RequestError,
@@ -16,7 +16,7 @@ import {
   requireOwner,
   respond,
   spotifyErrorResponse,
-} from "./http"
+} from "../http"
 
 const stateCookie = "spotify_oauth_state"
 
@@ -80,7 +80,7 @@ export const completeSpotifyConnection = (request: Request) => {
       headers: [
         [
           "Location",
-          new URL(`/music?spotify=${result}`, request.url).toString(),
+          new URL(`/apps/music?spotify=${result}`, request.url).toString(),
         ],
         ["Set-Cookie", clearCookie],
         ["Cache-Control", "no-store"],
@@ -176,7 +176,7 @@ function isSavedTracksCursor(value: string) {
 function cookie(name: string, value: string, maxAge: number, request: Request) {
   return [
     `${name}=${encodeURIComponent(value)}`,
-    "Path=/api/spotify",
+    "Path=/api/apps/music/spotify",
     `Max-Age=${maxAge}`,
     "SameSite=Lax",
     "HttpOnly",

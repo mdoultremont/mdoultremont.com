@@ -5,7 +5,7 @@ import {
   putDelivery,
 } from "@/backend/entrypoints/http/music/delivery.server"
 
-export const Route = createFileRoute("/api/music/delivery")({
+export const Route = createFileRoute("/api/apps/music/delivery")({
   server: {
     handlers: {
       GET: ({ request }) => getDelivery(request),

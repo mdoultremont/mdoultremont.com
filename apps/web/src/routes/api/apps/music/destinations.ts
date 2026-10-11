@@ -5,7 +5,7 @@ import {
   putDestination,
 } from "@/backend/entrypoints/http/music/destinations.server"
 
-export const Route = createFileRoute("/api/music/destinations")({
+export const Route = createFileRoute("/api/apps/music/destinations")({
   server: {
     handlers: {
       GET: ({ request }) => getDestinations(request),

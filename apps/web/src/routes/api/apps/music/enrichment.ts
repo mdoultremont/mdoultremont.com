@@ -4,7 +4,7 @@ import {
   retryEnrichment,
 } from "@/backend/entrypoints/http/music/enrichment.server"
 
-export const Route = createFileRoute("/api/music/enrichment")({
+export const Route = createFileRoute("/api/apps/music/enrichment")({
   server: {
     handlers: {
       GET: ({ request }) => getEnrichment(request),

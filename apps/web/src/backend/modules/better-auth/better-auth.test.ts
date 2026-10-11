@@ -91,8 +91,8 @@ const signInWithGitHub = Effect.fn(function* () {
       headers: { "Content-Type": "application/json", Origin: baseURL },
       body: JSON.stringify({
         provider: "github",
-        callbackURL: "/music",
-        errorCallbackURL: "/music",
+        callbackURL: "/apps/music",
+        errorCallbackURL: "/apps/music",
       }),
     })
   )
@@ -124,7 +124,7 @@ describe("Better Auth on D1", () => {
         Effect.gen(function* () {
           const callback = yield* signInWithGitHub()
           assert.strictEqual(callback.status, 302)
-          assert.strictEqual(callback.headers.get("Location"), "/music")
+          assert.strictEqual(callback.headers.get("Location"), "/apps/music")
 
           const auth = yield* BetterAuth
           const session = yield* auth.session(
@@ -157,7 +157,7 @@ describe("Better Auth on D1", () => {
           callback.headers.get("Location") ?? "",
           baseURL
         )
-        assert.strictEqual(location.pathname, "/music")
+        assert.strictEqual(location.pathname, "/apps/music")
         assert.strictEqual(location.searchParams.get("error"), "not_allowed")
         assert.strictEqual(
           t.d1.sqlite.prepare("SELECT count(*) AS users FROM auth_users").get()

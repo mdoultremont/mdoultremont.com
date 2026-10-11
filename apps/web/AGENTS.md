@@ -1,7 +1,11 @@
 # Portfolio web guide
 
 - Keep this app limited to the portfolio UI, routes, content loading, and
-  owner-operated music control area and its private backend.
+  the owner's private apps and their backend.
+- Put each private app under `/apps/<name>`: pages in `src/routes/apps/`,
+  APIs in `src/routes/api/apps/<name>/`, UI in `src/components/apps/<name>/`.
+  The `/apps` layout signs the owner in for every app; each API handler still
+  checks the owner itself.
 - Keep backend code under `src/backend/` in four layers: entrypoints →
   features → modules → primitives. Imports only point down; each unit is a
   directory whose `index.ts` is its public API. Features must not depend on

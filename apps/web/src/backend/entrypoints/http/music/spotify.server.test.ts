@@ -18,13 +18,13 @@ vi.mock("cloudflare:workers", () => ({
     DB: { prepare: mocks.prepare },
     SPOTIFY_CLIENT_ID: "client",
     SPOTIFY_CLIENT_SECRET: "secret",
-    SPOTIFY_REDIRECT_URI: "https://example.com/api/spotify/callback",
+    SPOTIFY_REDIRECT_URI: "https://example.com/api/apps/music/spotify/callback",
     SPOTIFY_TOKEN_ENCRYPTION_KEY: btoa(
       String.fromCharCode(...new Uint8Array(32).fill(7))
     ),
   },
 }))
-vi.mock("./auth.server", () => ({
+vi.mock("../auth.server", () => ({
   ownerFromRequest: (request: Request) =>
     Effect.promise(() =>
       mocks.owner(request).then(Option.some, () => Option.none())
@@ -48,28 +48,30 @@ describe("Spotify private entrypoint", () => {
     expect(
       (
         await beginSpotifyConnection(
-          new Request("https://example.com/api/spotify/connect")
+          new Request("https://example.com/api/apps/music/spotify/connect")
         )
       ).status
     ).toBe(401)
     expect(
       (
         await completeSpotifyConnection(
-          new Request("https://example.com/api/spotify/callback?state=s&code=c")
+          new Request(
+            "https://example.com/api/apps/music/spotify/callback?state=s&code=c"
+          )
         )
       ).status
     ).toBe(303)
     expect(
       (
         await spotifyStatus(
-          new Request("https://example.com/api/spotify/status")
+          new Request("https://example.com/api/apps/music/spotify/status")
         )
       ).status
     ).toBe(401)
     expect(
       (
         await disconnectSpotify(
-          new Request("https://example.com/api/spotify/disconnect", {
+          new Request("https://example.com/api/apps/music/spotify/disconnect", {
             method: "POST",
           })
         )
@@ -80,7 +82,7 @@ describe("Spotify private entrypoint", () => {
 
   test("binds OAuth callback to the same session and state cookie", async () => {
     const start = await beginSpotifyConnection(
-      new Request("https://example.com/api/spotify/connect", {
+      new Request("https://example.com/api/apps/music/spotify/connect", {
         headers: { Cookie: "session=session-a" },
       })
     )
@@ -92,7 +94,7 @@ describe("Spotify private entrypoint", () => {
     )
     expect(state).toBeTruthy()
     const stateCookie = start.headers.get("Set-Cookie")?.split(";")[0]
-    const callback = `https://example.com/api/spotify/callback?state=${encodeURIComponent(state ?? "")}&code=code`
+    const callback = `https://example.com/api/apps/music/spotify/callback?state=${encodeURIComponent(state ?? "")}&code=code`
     const wrongSession = await completeSpotifyConnection(
       new Request(callback, {
         headers: { Cookie: `session=session-b; ${stateCookie}` },
@@ -111,10 +113,13 @@ describe("Spotify private entrypoint", () => {
   })
 
   test("checks origin before disconnect", async () => {
-    const request = new Request("https://example.com/api/spotify/disconnect", {
-      method: "POST",
-      headers: { Origin: "https://attacker.example" },
-    })
+    const request = new Request(
+      "https://example.com/api/apps/music/spotify/disconnect",
+      {
+        method: "POST",
+        headers: { Origin: "https://attacker.example" },
+      }
+    )
     expect((await disconnectSpotify(request)).status).toBe(403)
     expect(mocks.prepare).not.toHaveBeenCalled()
   })

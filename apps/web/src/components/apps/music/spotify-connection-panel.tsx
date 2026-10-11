@@ -27,7 +27,7 @@ export function SpotifyConnectionPanel({
 
   useEffect(() => {
     let active = true
-    fetch("/api/spotify/status")
+    fetch("/api/apps/music/spotify/status")
       .then(async (response) => {
         if (!response.ok)
           throw new Error("Connection status could not be loaded")
@@ -55,7 +55,7 @@ export function SpotifyConnectionPanel({
     setBusy(true)
     setActionError(null)
     try {
-      const response = await fetch("/api/spotify/playlists")
+      const response = await fetch("/api/apps/music/spotify/playlists")
       if (response.status === 401) {
         await refreshStatus()
         return
@@ -76,7 +76,7 @@ export function SpotifyConnectionPanel({
     setBusy(true)
     setActionError(null)
     try {
-      const response = await fetch("/api/spotify/disconnect", {
+      const response = await fetch("/api/apps/music/spotify/disconnect", {
         method: "POST",
       })
       if (!response.ok) throw new Error("Spotify could not be disconnected")
@@ -94,7 +94,7 @@ export function SpotifyConnectionPanel({
   }
 
   async function refreshStatus() {
-    const response = await fetch("/api/spotify/status")
+    const response = await fetch("/api/apps/music/spotify/status")
     if (!response.ok) throw new Error("Connection status could not be loaded")
     const connection = (await response.json()) as SpotifyConnectionStatus
     setState({ kind: "ready", connection })
@@ -141,7 +141,7 @@ export function SpotifyConnectionPanel({
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <a
               className="inline-flex rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper"
-              href="/api/spotify/connect"
+              href="/api/apps/music/spotify/connect"
             >
               {connection.status === "reconnect_needed"
                 ? "Reconnect Spotify"
