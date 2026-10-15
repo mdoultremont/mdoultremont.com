@@ -1,0 +1,4 @@
+# Local files that git ignores but every worktree needs. Copied from the main
+# checkout by scripts/setup-worktree.sh (and by Claude Code's own worktrees).
+# One path per line, relative to the repository root.
+apps/web/.dev.vars

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 import metadata from "virtual:brand-images"
-import { imageUrl } from "../../features/images/images"
+import { imageUrl } from "@/features/images/images"
 import { imageCandidates, staticSource } from "./animations"
 import { useFacePlayback } from "./use-face-playback"
 import styles from "./face-animation.module.css"

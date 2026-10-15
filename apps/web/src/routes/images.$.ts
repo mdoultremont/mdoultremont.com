@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { imageRequestWidths } from "../features/images/images"
+import { imageRequestWidths } from "@/features/images/images"
 import metadata from "virtual:portfolio-images"
 
 export const Route = createFileRoute("/images/$")({
