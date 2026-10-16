@@ -2,13 +2,14 @@ import { Effect, Option } from "effect"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const auth = vi.hoisted(() => ({
-  requireCurrentOwner: vi.fn<() => Promise<{ id: string }>>(),
+  requireCurrentUser:
+    vi.fn<() => Promise<{ id: string; apps: ReadonlyArray<string> }>>(),
 }))
 vi.mock("cloudflare:workers", () => ({ env: {} }))
 vi.mock("../auth.server", () => ({
-  ownerFromRequest: () =>
+  userFromRequest: () =>
     Effect.promise(() =>
-      auth.requireCurrentOwner().then(Option.some, () => Option.none())
+      auth.requireCurrentUser().then(Option.some, () => Option.none())
     ),
 }))
 
@@ -22,11 +23,11 @@ import {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  auth.requireCurrentOwner.mockRejectedValue(new Error("No owner session"))
+  auth.requireCurrentUser.mockRejectedValue(new Error("No session"))
 })
 
 describe("private destination API", () => {
-  test("requires owner sign-in before every read or write", async () => {
+  test("requires sign-in before every read or write", async () => {
     const base = "https://portfolio.example"
     for (const handle of [
       getDestinations,
@@ -45,8 +46,19 @@ describe("private destination API", () => {
     }
   })
 
+  test("refuses users without music access", async () => {
+    auth.requireCurrentUser.mockResolvedValue({
+      id: "user",
+      apps: ["backOffice"],
+    })
+    const response = await getDestinations(
+      new Request("https://portfolio.example/api/apps/music/destinations")
+    )
+    expect(response.status).toBe(403)
+  })
+
   test("refuses a change from another site before reading its input", async () => {
-    auth.requireCurrentOwner.mockResolvedValue({ id: "owner" })
+    auth.requireCurrentUser.mockResolvedValue({ id: "owner", apps: ["music"] })
     const request = new Request(
       "https://portfolio.example/api/apps/music/destinations",
       {

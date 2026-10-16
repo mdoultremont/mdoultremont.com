@@ -13,7 +13,7 @@ import {
   json,
   type RequestError,
   requireMutation,
-  requireOwner,
+  requireApp,
   respond,
   spotifyErrorResponse,
 } from "../http"
@@ -32,7 +32,7 @@ const route = (
 ) =>
   respond(
     Effect.gen(function* () {
-      const owner = yield* requireOwner(request)
+      const owner = yield* requireApp(request, "music")
       if (options.mutation) yield* requireMutation(request)
       return yield* handler(owner.id).pipe(
         Effect.catchTag("SpotifyError", (error) =>
@@ -46,7 +46,7 @@ const route = (
 export const beginSpotifyConnection = (request: Request) =>
   respond(
     Effect.gen(function* () {
-      const owner = yield* requireOwner(request)
+      const owner = yield* requireApp(request, "music")
       const state = yield* createSpotifyOAuthState(owner.sessionId)
       const spotify = yield* Spotify
       return new Response(null, {
@@ -89,7 +89,7 @@ export const completeSpotifyConnection = (request: Request) => {
 
   return respond(
     Effect.gen(function* () {
-      const owner = yield* requireOwner(request)
+      const owner = yield* requireApp(request, "music")
       const state = url.searchParams.get("state")
       const code = url.searchParams.get("code")
       if (

@@ -1,9 +1,14 @@
 import { Cause, Data, Effect, Option, Schema } from "effect"
 import type { Config } from "effect"
+import type { App } from "@/backend/features/auth"
 import type { SpotifyError } from "@/backend/modules/spotify"
-import { ownerFromRequest } from "./auth.server"
+import { userFromRequest } from "./auth.server"
 
-export class OwnerRequired extends Data.TaggedError("OwnerRequired")<{}> {}
+export class SignInRequired extends Data.TaggedError("SignInRequired")<{}> {}
+
+export class AppAccessRequired extends Data.TaggedError(
+  "AppAccessRequired"
+)<{}> {}
 
 export class MutationRejected extends Data.TaggedError(
   "MutationRejected"
@@ -15,7 +20,8 @@ export class InvalidBody extends Data.TaggedError("InvalidBody")<{
 
 /** Errors every route may produce. `respond` turns them into responses. */
 export type RequestError =
-  | OwnerRequired
+  | SignInRequired
+  | AppAccessRequired
   | MutationRejected
   | InvalidBody
   | Config.ConfigError
@@ -42,8 +48,12 @@ export function respond(
   return Effect.runPromise(
     program.pipe(
       Effect.catchTags({
-        OwnerRequired: () =>
-          Effect.succeed(json({ error: "Owner sign-in required" }, 401)),
+        SignInRequired: () =>
+          Effect.succeed(json({ error: "Sign-in required" }, 401)),
+        AppAccessRequired: () =>
+          Effect.succeed(
+            json({ error: "You do not have access to this app" }, 403)
+          ),
         MutationRejected: () =>
           Effect.succeed(json({ error: "Request verification failed" }, 403)),
         InvalidBody: (error) =>
@@ -62,15 +72,19 @@ export function respond(
   )
 }
 
-/** The signed-in owner, or `OwnerRequired`. Checked on every private request. */
-export const requireOwner = (request: Request) =>
-  ownerFromRequest(request).pipe(
-    Effect.flatMap((owner) =>
-      Option.isSome(owner)
-        ? Effect.succeed(owner.value)
-        : Effect.fail(new OwnerRequired())
-    )
-  )
+/**
+ * The signed-in user, if they may use the app; otherwise `SignInRequired` or
+ * `AppAccessRequired`. Checked on every private request.
+ */
+export const requireApp = Effect.fn("requireApp")(function* (
+  request: Request,
+  app: App
+) {
+  const user = yield* userFromRequest(request)
+  if (Option.isNone(user)) return yield* new SignInRequired()
+  if (!user.value.apps.includes(app)) return yield* new AppAccessRequired()
+  return user.value
+})
 
 /**
  * Changes must come from this site's own pages. Browsers always send `Origin`

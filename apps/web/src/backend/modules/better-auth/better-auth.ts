@@ -28,6 +28,8 @@ export interface SignInAttempt {
   /** The provider's own account ID (GitHub numeric ID, Spotify user ID). */
   readonly accountId: string
   readonly action: "create-user" | "link-account" | "sign-in"
+  /** The request's headers, including its cookies. */
+  readonly headers: Headers
 }
 
 export class SignInRejected extends Data.TaggedError("SignInRejected")<{
@@ -38,14 +40,20 @@ export class SignInRejected extends Data.TaggedError("SignInRejected")<{
 
 /**
  * Decides who may sign in. Better Auth asks it before creating a user,
- * linking an account, or signing in again. This module only defines it;
- * the feature that owns the rule provides it.
+ * linking an account, or signing in again, and tells it when a session
+ * starts. This module only defines it; the feature that owns the rule
+ * provides it.
  */
 export class AuthGate extends Context.Service<
   AuthGate,
   {
     readonly admit: (
       attempt: SignInAttempt
+    ) => Effect.Effect<void, SignInRejected>
+    /** Runs before a sign-in's session is created; a rejection cancels the session. */
+    readonly sessionStarting: (
+      userId: string,
+      headers: Headers
     ) => Effect.Effect<void, SignInRejected>
   }
 >()("backend/modules/better-auth/AuthGate") {}
@@ -107,16 +115,36 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
       encryptOAuthTokens: true,
       accountLinking: {
         enabled: true,
-        // Spotify never marks emails as verified. Trusting both providers is
-        // safe only because the gate already decides who is admitted.
+        // Accounts are linked only from a signed-in session, never because a
+        // provider reports the same email: Spotify does not verify emails, so
+        // matching on them would let anyone take over a user.
+        disableImplicitLinking: true,
         trustedProviders: [...signInProviders],
         allowDifferentEmails: true,
+      },
+    },
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session, context) =>
+            Effect.runPromise(
+              gate
+                .sessionStarting(
+                  session.userId,
+                  context?.headers ?? new Headers()
+                )
+                .pipe(
+                  Effect.as(undefined),
+                  Effect.orElseSucceed(() => false as const)
+                )
+            ),
+        },
       },
     },
     verification: { storeIdentifier: "hashed" },
     advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
     user: {
-      validateUserInfo: ({ source }) => {
+      validateUserInfo: ({ source }, context) => {
         const profileId = source.oauth?.profile?.id
         const attempt: SignInAttempt = {
           provider: source.oauth?.providerId ?? source.method,
@@ -125,6 +153,7 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
               ? String(profileId)
               : "",
           action: source.action,
+          headers: context.headers ?? new Headers(),
         }
         return Effect.runPromise(
           gate.admit(attempt).pipe(

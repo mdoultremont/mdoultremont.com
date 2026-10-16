@@ -35,6 +35,7 @@
       },
     ],
   },
+  "send_email": [{ "name": "EMAIL" }],
   "images": {
     "binding": "IMAGES",
   },
