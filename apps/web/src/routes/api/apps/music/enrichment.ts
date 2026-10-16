@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import {
   getEnrichment,
   retryEnrichment,
-} from "@/backend/entrypoints/http/music/enrichment.server"
+} from "@/server/entrypoints/http/music/enrichment.server"
 
 export const Route = createFileRoute("/api/apps/music/enrichment")({
   server: {

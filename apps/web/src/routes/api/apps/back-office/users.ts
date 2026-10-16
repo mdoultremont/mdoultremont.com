@@ -3,7 +3,7 @@ import {
   deleteUser,
   getUsers,
   putUserAccess,
-} from "@/backend/entrypoints/http/back-office/users.server"
+} from "@/server/entrypoints/http/back-office/users.server"
 
 export const Route = createFileRoute("/api/apps/back-office/users")({
   server: {

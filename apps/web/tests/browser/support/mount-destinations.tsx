@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client"
-import { DestinationPanel } from "../../../src/components/apps/music/destination-panel"
+import { DestinationPanel } from "../../../src/features/music/destination-panel"
 
 export function mountDestinationPanel() {
   const element = document.createElement("div")

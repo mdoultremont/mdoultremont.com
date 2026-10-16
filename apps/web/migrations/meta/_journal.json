@@ -15,6 +15,13 @@
       "when": 1791743324361,
       "tag": "0001_app_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792149896550,
+      "tag": "0002_brave_calypso",
+      "breakpoints": true
     }
   ]
 }

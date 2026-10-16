@@ -57,13 +57,15 @@
         "patterns": [
           {
             "group": [
-              "@/backend/modules/*/*",
-              "!@/backend/modules/database/testing",
-              "@/backend/features/music/*/*",
-              "@/backend/features/back-office/*/*",
-              "@/backend/features/auth/*"
+              "@/server/modules/*/*",
+              "!@/server/modules/database/testing",
+              "!@/server/modules/object-storage/testing",
+              "@/server/actions/music/*/*",
+              "@/server/actions/flights/*/*",
+              "@/server/actions/back-office/*/*",
+              "@/server/actions/auth/*"
             ],
-            "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+            "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
           }
         ]
       }
@@ -71,7 +73,7 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/backend/modules/**"],
+      "files": ["apps/web/src/server/modules/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -79,17 +81,23 @@
             "patterns": [
               {
                 "group": [
-                  "@/backend/modules/*/*",
-                  "!@/backend/modules/database/testing",
-                  "@/backend/features/music/*/*",
-                  "@/backend/features/back-office/*/*",
-                  "@/backend/features/auth/*"
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
                 ],
-                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
               },
               {
-                "group": ["@/backend/features/**", "@/backend/entrypoints/**"],
-                "message": "Backend imports only point down: entrypoints → features → modules."
+                "group": [
+                  "@/server/actions/**",
+                  "@/server/entrypoints/**",
+                  "@/features/**"
+                ],
+                "message": "Backend imports only point down (entrypoints \u2192 actions \u2192 modules) and never into src/features."
               }
             ]
           }
@@ -98,7 +106,7 @@
       }
     },
     {
-      "files": ["apps/web/src/backend/features/**"],
+      "files": ["apps/web/src/server/actions/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -106,17 +114,155 @@
             "patterns": [
               {
                 "group": [
-                  "@/backend/modules/*/*",
-                  "!@/backend/modules/database/testing",
-                  "@/backend/features/music/*/*",
-                  "@/backend/features/back-office/*/*",
-                  "@/backend/features/auth/*"
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
                 ],
-                "message": "Import a backend unit through its index.ts (for example @/backend/modules/spotify), not its internal files."
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
               },
               {
-                "group": ["@/backend/entrypoints/**", "cloudflare:workers"],
-                "message": "Backend imports only point down: entrypoints → features → modules."
+                "group": ["@/server/entrypoints/**", "cloudflare:workers"],
+                "message": "Backend imports only point down: entrypoints \u2192 actions \u2192 modules."
+              },
+              {
+                "group": ["@/features/**"],
+                "message": "The backend must not import frontend code from src/features."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/entrypoints/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
+              },
+              {
+                "group": ["@/features/**"],
+                "message": "The backend must not import frontend code from src/features."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/features/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
+              },
+              {
+                "group": [
+                  "@/server/**",
+                  "!@/server/entrypoints/http/auth.server"
+                ],
+                "allowTypeImports": true,
+                "message": "Frontend code may only import types from the backend (import type). Share runtime code through src/shared, and call the backend over HTTP."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/routes/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
+              },
+              {
+                "group": [
+                  "@/server/**",
+                  "!@/server/entrypoints/http/auth.server"
+                ],
+                "allowTypeImports": true,
+                "message": "Frontend code may only import types from the backend (import type). Share runtime code through src/shared, and call the backend over HTTP."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/routes/api/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/server/modules/*/*",
+                  "!@/server/modules/database/testing",
+                  "!@/server/modules/object-storage/testing",
+                  "@/server/actions/music/*/*",
+                  "@/server/actions/flights/*/*",
+                  "@/server/actions/back-office/*/*",
+                  "@/server/actions/auth/*"
+                ],
+                "message": "Import a backend unit through its index.ts (for example @/server/modules/spotify), not its internal files."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/shared/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/server/**", "@/features/**", "@/routes/**"],
+                "message": "src/shared is isomorphic: it must not import backend, features, or routes."
               }
             ]
           }

@@ -26,8 +26,8 @@ account.
 _Avoid_: Member, account (an account is one sign-in method of a user)
 
 **App**:
-One private area under `/apps`: the music control area (`music`) or the back
-office (`backOffice`).
+One private area under `/apps`: the music control area (`music`), the back
+office (`backOffice`), or the flight logbook (`flights`).
 
 **App access**:
 A user's permission to use one app. A user may hold access to any set of apps,
@@ -127,3 +127,28 @@ _Avoid_: Approval queue
 The owner's statement that destinations are configured and classification may
 start. Ingestion and enrichment do not wait for it.
 _Avoid_: Automation enabled
+
+## Flight logbook
+
+**Flight**:
+A user's recorded paragliding outing, with its takeoff, landing, time in the
+air, sites, notes, and equipment. Its measurements come from an imported track.
+
+**Track**:
+The timestamped positions and altitude observations recorded by an instrument
+or phone. A track can include movement on the ground before or after a flight.
+_Avoid_: Route (a planned path), music track
+
+**Takeoff**:
+The beginning of the airborne part selected from a track, with its time,
+position, and an editable site name.
+_Avoid_: Start (the recording can start before takeoff)
+
+**Landing**:
+The end of the airborne part selected from a track, with its time, position,
+and an editable site name.
+_Avoid_: Finish (the recording can continue after landing)
+
+**Equipment**:
+A user's named flying gear that can be associated with their flights, such as
+a wing, harness, or reserve.

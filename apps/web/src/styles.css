@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @theme {
   --color-paper: #f8f7f4;
@@ -6,12 +8,106 @@
   --color-charcoal: #171717;
   --color-line: #dcdad5;
   --color-line-dark: #3c3c3c;
-  --color-muted: #66645f;
-  --color-accent: #f43f3c;
-  --color-accent-dark: #c82224;
+  --color-brand: #f43f3c;
+  --color-brand-dark: #c82224;
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+}
+
+/*
+ * shadcn/ui tokens (components live in src/features/ui). They are mapped onto
+ * the portfolio palette above and only read by shadcn components, so the
+ * public pages are unaffected. The app shell is always light; surfaces that
+ * follow the OS dark preference opt in with `.dark-surface`.
+ * Radius utilities stay at Tailwind defaults on purpose: shadcn's radius scale
+ * is not mapped into @theme because the portfolio uses rounded-* directly.
+ */
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-paper);
+  --secondary: #efede8;
+  --secondary-foreground: var(--color-ink);
+  --muted: #efede8;
+  --muted-foreground: #66645f;
+  --accent: #e9e7e1;
+  --accent-foreground: var(--color-ink);
+  --destructive: #b91c1c;
+  --border: #d6d4ce;
+  --input: #c9c7c1;
+  --ring: var(--color-ink);
+  --chart-1: var(--color-ink);
+  --chart-2: #15805d;
+  --chart-3: #2563a8;
+  --chart-4: #9b5b20;
+  --chart-5: var(--color-brand);
+  --radius: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dark-surface {
+    --background: var(--color-charcoal);
+    --foreground: var(--color-paper);
+    --card: #1f1f1f;
+    --card-foreground: var(--color-paper);
+    --popover: #1f1f1f;
+    --popover-foreground: var(--color-paper);
+    --primary: var(--color-paper);
+    --primary-foreground: var(--color-ink);
+    --secondary: #262626;
+    --secondary-foreground: var(--color-paper);
+    --muted: #262626;
+    --muted-foreground: #a8a6a0;
+    --accent: #2e2e2e;
+    --accent-foreground: var(--color-paper);
+    --destructive: #f87171;
+    --border: var(--color-line-dark);
+    --input: #4a4a4a;
+    --ring: var(--color-paper);
+    --chart-1: var(--color-paper);
+    color-scheme: dark;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+/* shadcn components rely on a global border colour; scope it to them instead of `*`. */
+@layer base {
+  [data-slot] {
+    border-color: var(--border);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 }
 
 ::view-transition-group(portfolio-underline) {

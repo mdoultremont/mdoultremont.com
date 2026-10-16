@@ -3,7 +3,7 @@ import {
   getDelivery,
   postDelivery,
   putDelivery,
-} from "@/backend/entrypoints/http/music/delivery.server"
+} from "@/server/entrypoints/http/music/delivery.server"
 
 export const Route = createFileRoute("/api/apps/music/delivery")({
   server: {

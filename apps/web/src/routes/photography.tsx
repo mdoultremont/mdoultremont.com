@@ -3,11 +3,11 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import { useHotkey } from "@tanstack/react-hotkeys"
-import { SiteShell } from "@/components/site-shell"
+import { SiteShell } from "@/features/site/site-shell"
 import { photographs, photographyCopy } from "@/content/photography"
 import type { Photograph } from "@/content/photography"
 import { profile } from "@/content/shared"
-import { CopyEmailButton } from "@/components/copy-email-button"
+import { CopyEmailButton } from "@/features/site/copy-email-button"
 import { ResponsiveImage } from "@/features/images/responsive-image"
 import photographyMetadata from "virtual:photography-images"
 import profileMetadata from "virtual:profile-images"
@@ -41,14 +41,14 @@ function PhotographyPage() {
           <section className="border-b border-line">
             <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-12 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-2 lg:items-stretch lg:gap-8">
               <div className="px-4 py-12 sm:px-6 sm:py-16 lg:py-24 lg:pl-8 lg:pr-0">
-                <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
+                <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">
                   {photographyCopy.hero.eyebrow}
                 </p>
                 <h1 className="mt-4 max-w-[9ch] text-[clamp(4rem,9vw,9rem)] leading-[0.9] font-medium tracking-[-0.065em]">
                   {photographyCopy.hero.title}
-                  <span className="text-accent">.</span>
+                  <span className="text-brand">.</span>
                 </h1>
-                <p className="mt-8 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
+                <p className="mt-8 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted-foreground">
                   {photographyCopy.hero.introduction}
                 </p>
                 <div className="mt-10 flex flex-wrap items-center gap-5">
@@ -56,7 +56,7 @@ function PhotographyPage() {
                     Get in touch
                   </CopyEmailButton>
                   <a
-                    className="border-b border-current py-1 text-sm font-semibold transition-colors hover:text-accent-dark"
+                    className="border-b border-current py-1 text-sm font-semibold transition-colors hover:text-brand-dark"
                     href="#collection"
                   >
                     See the collection
@@ -99,7 +99,7 @@ function PhotographyPage() {
                     onError={handleGalleryImageError}
                   />
                   {photographCaption(photo) && (
-                    <span className="block py-3 text-sm text-muted">
+                    <span className="block py-3 text-sm text-muted-foreground">
                       {photographCaption(photo)}
                     </span>
                   )}

@@ -1,0 +1,32 @@
+.flight-viewer {
+  --flight-altitude: #15805d;
+  --flight-speed: #2563a8;
+  --flight-vario: #9b5b20;
+  --flight-grid: #deddd8;
+}
+.flight-viewer ::selection {
+  background: #15805d33;
+}
+.flight-viewer :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+.flight-viewer .recharts-wrapper:focus-visible {
+  outline-offset: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .flight-viewer {
+    --color-ink: #f0eee8;
+    --color-paper: #171717;
+    --flight-altitude: #79d6b5;
+    --flight-speed: #80b9f3;
+    --flight-vario: #e8b47d;
+    --flight-grid: #3c3c3c;
+    background-color: var(--color-paper);
+    color-scheme: dark;
+  }
+  article.flight-viewer {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+}

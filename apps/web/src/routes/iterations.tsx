@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
-import { SiteShell } from "@/components/site-shell"
-import { CopyEmailButton } from "@/components/copy-email-button"
+import { SiteShell } from "@/features/site/site-shell"
+import { CopyEmailButton } from "@/features/site/copy-email-button"
 import { experiences, professionalCopy } from "@/content/professional"
 import { profile } from "@/content/shared"
 import { ResponsiveImage } from "@/features/images/responsive-image"
@@ -45,7 +45,9 @@ function Choices({
 }) {
   return (
     <fieldset className="my-5 min-w-0 border-0">
-      <legend className="mb-2 text-[0.8rem] text-muted">{label}</legend>
+      <legend className="mb-2 text-[0.8rem] text-muted-foreground">
+        {label}
+      </legend>
       <div className="flex flex-wrap gap-1.5">
         {values.map((name, index) => (
           <button
@@ -79,7 +81,7 @@ function Experiment({
         <h2 className="mb-2 text-[1.7rem] font-medium tracking-[-0.03em]">
           {title}
         </h2>
-        <p className="max-w-[70ch] text-base leading-[1.6] text-pretty text-muted">
+        <p className="max-w-[70ch] text-base leading-[1.6] text-pretty text-muted-foreground">
           {description}
         </p>
       </div>
@@ -99,7 +101,7 @@ function NavigationSample({ mode }: { mode: number }) {
         <button
           key={name}
           type="button"
-          className="min-h-11 cursor-pointer text-[0.85rem] text-muted aria-pressed:text-ink"
+          className="min-h-11 cursor-pointer text-[0.85rem] text-muted-foreground aria-pressed:text-ink"
           aria-pressed={active === index}
           onClick={() => setActive(index)}
         >
@@ -111,7 +113,7 @@ function NavigationSample({ mode }: { mode: number }) {
         aria-hidden="true"
       >
         <span
-          className={`mx-[18px] block h-full ${mode === 0 ? "bg-ink" : mode === 1 ? "mx-6 mb-[10px] bg-[linear-gradient(90deg,transparent,#666_12%,#666_88%,transparent)]" : "mx-7 bg-accent-dark"}`}
+          className={`mx-[18px] block h-full ${mode === 0 ? "bg-ink" : mode === 1 ? "mx-6 mb-[10px] bg-[linear-gradient(90deg,transparent,#666_12%,#666_88%,transparent)]" : "mx-7 bg-brand-dark"}`}
         />
       </span>
     </div>
@@ -178,7 +180,7 @@ function IterationsPage() {
     <SiteShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 sm:py-16">
         <header className="mb-20 max-w-[780px]">
-          <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted">
+          <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted-foreground">
             Design workbench
           </p>
           <h1 className="my-4 mb-6 text-[clamp(2.8rem,5vw,5rem)] leading-[1.04] font-medium tracking-[-0.05em]">
@@ -186,7 +188,7 @@ function IterationsPage() {
             <br />
             Different directions.
           </h1>
-          <p className="max-w-[70ch] text-base leading-[1.6] text-pretty text-muted">
+          <p className="max-w-[70ch] text-base leading-[1.6] text-pretty text-muted-foreground">
             Compare the treatments below. These experiments leave the
             professional and photography pages as they are.
           </p>
@@ -227,7 +229,7 @@ function IterationsPage() {
                 className="flex min-h-[170px] flex-col items-center justify-between gap-8 bg-[radial-gradient(ellipse_at_50%_0%,#fff8,transparent_75%)] p-6 not-first:border-l not-first:border-ink/12 max-lg:not-first:border-t max-lg:not-first:border-l-0 max-lg:min-h-[140px]"
                 key={mode}
               >
-                <p className="self-start text-[0.8rem] text-muted">
+                <p className="self-start text-[0.8rem] text-muted-foreground">
                   {
                     [
                       "1 · Fine sliding line",
@@ -252,7 +254,7 @@ function IterationsPage() {
                 className="flex min-h-[170px] flex-col items-center justify-between gap-8 bg-[radial-gradient(ellipse_at_50%_0%,#fff8,transparent_75%)] p-6 not-first:border-l not-first:border-ink/12 max-lg:not-first:border-t max-lg:not-first:border-l-0 max-lg:min-h-[140px]"
                 key={mode}
               >
-                <p className="self-start text-[0.8rem] text-muted">
+                <p className="self-start text-[0.8rem] text-muted-foreground">
                   {
                     [
                       "1 · Soft enamel",
@@ -277,7 +279,7 @@ function IterationsPage() {
                 className="flex min-h-[170px] flex-col items-center justify-between gap-8 bg-[radial-gradient(ellipse_at_50%_0%,#fff8,transparent_75%)] p-6 not-first:border-l not-first:border-ink/12 max-lg:not-first:border-t max-lg:not-first:border-l-0 max-lg:min-h-[140px]"
                 key={mode}
               >
-                <p className="self-start text-[0.8rem] text-muted">
+                <p className="self-start text-[0.8rem] text-muted-foreground">
                   {["1 · Soft bevel", "2 · Raised rim", "3 · Satin dome"][mode]}
                 </p>
                 <ButtonSample mode={mode} />
@@ -331,14 +333,14 @@ function IterationsPage() {
           >
             <div className="p-[clamp(1.5rem,3vw,3rem)]">
               <AvailabilitySample mode={availability} />
-              <p className="mt-8 text-[0.8rem] leading-6 font-medium text-muted">
+              <p className="mt-8 text-[0.8rem] leading-6 font-medium text-muted-foreground">
                 {professionalCopy.hero.eyebrow}
               </p>
               <h2 className="mt-4 text-[clamp(3.5rem,7.5vw,7.5rem)] leading-none font-medium tracking-[-0.055em]">
                 {profile.firstName}
-                <span className="text-accent">.</span>
+                <span className="text-brand">.</span>
               </h2>
-              <p className="mt-6 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted">
+              <p className="mt-6 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted-foreground">
                 {professionalCopy.hero.introduction}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -512,7 +514,7 @@ function IterationsPage() {
               })}
             </div>
           </div>
-          <p className="mt-4 max-w-[90ch] text-[0.8rem] leading-[1.6] text-muted [&_a]:underline">
+          <p className="mt-4 max-w-[90ch] text-[0.8rem] leading-[1.6] text-muted-foreground [&_a]:underline">
             App icons use{" "}
             <a href="https://www.atlassian.com/favicon.ico">
               Atlassian’s official favicon
@@ -526,7 +528,7 @@ function IterationsPage() {
           <h2 className="mb-2 text-[1.7rem] font-medium tracking-[-0.03em]">
             Your combination
           </h2>
-          <p className="my-4 leading-[1.6] text-muted">{summary}</p>
+          <p className="my-4 leading-[1.6] text-muted-foreground">{summary}</p>
           <button
             className="inline-flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border border-[#181818] bg-linear-to-b from-[#353535] to-[#141414] px-[1.4rem] py-[0.7rem] text-[0.9rem] font-medium text-white shadow-[inset_0_1px_1px_#ffffff4d,inset_0_-1px_1px_#000,0_2px_3px_#00000024] transition-[transform,box-shadow,filter] duration-150 hover:brightness-110 active:translate-y-px active:shadow-[inset_0_2px_3px_#0006,0_1px_1px_#0002]"
             type="button"
@@ -534,7 +536,7 @@ function IterationsPage() {
           >
             Copy choices
           </button>
-          <output className="mt-4 block text-[0.8rem] text-muted">
+          <output className="mt-4 block text-[0.8rem] text-muted-foreground">
             {copyFailed
               ? "Could not copy. Select and copy the combination text above."
               : copiedSummary === summary

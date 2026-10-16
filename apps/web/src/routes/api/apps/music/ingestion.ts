@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import {
   getIngestion,
   postIngestion,
-} from "@/backend/entrypoints/http/music/ingestion.server"
+} from "@/server/entrypoints/http/music/ingestion.server"
 
 export const Route = createFileRoute("/api/apps/music/ingestion")({
   server: {

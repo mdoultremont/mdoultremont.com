@@ -1,5 +1,5 @@
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router"
-import { appCatalog } from "@/components/apps/catalog"
+import { appCatalog } from "@/features/apps/catalog"
 
 export const Route = createFileRoute("/apps/")({
   component: AppsIndex,
