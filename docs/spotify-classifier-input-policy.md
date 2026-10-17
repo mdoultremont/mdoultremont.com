@@ -18,7 +18,7 @@ The [MusicBrainz API](https://musicbrainz.org/doc/MusicBrainz_API) supports ISRC
 **Decision:** 9 October 2026. The earlier launch gate, which kept Jev calls disabled until an owner-labeled evaluation, is replaced by owner review in the pipeline:
 
 - Classification runs only after the owner marks the setup **Ready**.
-- Decisions are listed on `/apps/music` with their yes-probabilities before anything is written.
+- Decisions are listed on the music page of tools with their yes-probabilities before anything is written.
 - Delivery writes only when the owner presses **Write now** or turns on **automatic delivery**, and it only adds tracks.
 
 The owner can therefore evaluate Jev on real decisions and reclassify after changing destination descriptions, without a separate evaluation harness.

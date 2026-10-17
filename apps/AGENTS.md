@@ -1,4 +1,4 @@
-# Portfolio app guide
+# Apps guide
 
-- Keep deployable portfolio applications in this directory.
+- Keep deployable applications in this directory.
 - Keep workspace orchestration and shared tooling at the repository root.

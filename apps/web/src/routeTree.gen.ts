@@ -11,40 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AppsRouteRouteImport } from './routes/apps/route'
 import { Route as IterationsRouteImport } from './routes/iterations'
 import { Route as PersonalRouteImport } from './routes/personal'
 import { Route as PhotographyRouteImport } from './routes/photography'
-import { Route as AppsIndexRouteImport } from './routes/apps/index'
-import { Route as AppsBackOfficeRouteImport } from './routes/apps/back-office'
-import { Route as AppsFlightsRouteRouteImport } from './routes/apps/flights/route'
-import { Route as AppsMusicRouteImport } from './routes/apps/music'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
-import { Route as AppsFlightsIndexRouteImport } from './routes/apps/flights/index'
-import { Route as AppsFlightsFlightIdRouteImport } from './routes/apps/flights/$flightId'
-import { Route as AppsFlightsEquipmentRouteImport } from './routes/apps/flights/equipment'
-import { Route as AppsFlightsImportRouteImport } from './routes/apps/flights/import'
-import { Route as AppsFlightsLogbookRouteImport } from './routes/apps/flights/logbook'
-import { Route as ApiAppsBackOfficeInvitationsRouteImport } from './routes/api/apps/back-office/invitations'
-import { Route as ApiAppsBackOfficeUsersRouteImport } from './routes/api/apps/back-office/users'
-import { Route as ApiAppsMusicClassificationRouteImport } from './routes/api/apps/music/classification'
-import { Route as ApiAppsMusicDeliveryRouteImport } from './routes/api/apps/music/delivery'
-import { Route as ApiAppsMusicDestinationsRouteImport } from './routes/api/apps/music/destinations'
-import { Route as ApiAppsMusicEnrichmentRouteImport } from './routes/api/apps/music/enrichment'
-import { Route as ApiAppsMusicIngestionRouteImport } from './routes/api/apps/music/ingestion'
-import { Route as ApiAppsMusicReadyRouteImport } from './routes/api/apps/music/ready'
-import { Route as ApiAppsMusicReviewPlaylistRouteImport } from './routes/api/apps/music/review-playlist'
-import { Route as AppsFlightsFlightIdEditRouteImport } from './routes/apps/flights/$flightId_.edit'
-import { Route as ApiAppsBackOfficeInvitationsResendRouteImport } from './routes/api/apps/back-office/invitations/resend'
-import { Route as ApiAppsMusicDestinationsCreateRouteImport } from './routes/api/apps/music/destinations/create'
-import { Route as ApiAppsMusicSpotifyCallbackRouteImport } from './routes/api/apps/music/spotify/callback'
-import { Route as ApiAppsMusicSpotifyConnectRouteImport } from './routes/api/apps/music/spotify/connect'
-import { Route as ApiAppsMusicSpotifyDisconnectRouteImport } from './routes/api/apps/music/spotify/disconnect'
-import { Route as ApiAppsMusicSpotifyLikedTracksRouteImport } from './routes/api/apps/music/spotify/liked-tracks'
-import { Route as ApiAppsMusicSpotifyPlaylistsRouteImport } from './routes/api/apps/music/spotify/playlists'
-import { Route as ApiAppsMusicSpotifyStatusRouteImport } from './routes/api/apps/music/spotify/status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -54,11 +24,6 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppsRouteRoute = AppsRouteRouteImport.update({
-  id: '/apps',
-  path: '/apps',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IterationsRoute = IterationsRouteImport.update({
@@ -76,206 +41,19 @@ const PhotographyRoute = PhotographyRouteImport.update({
   path: '/photography',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppsIndexRoute = AppsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppsRouteRoute,
-} as any)
-const AppsBackOfficeRoute = AppsBackOfficeRouteImport.update({
-  id: '/back-office',
-  path: '/back-office',
-  getParentRoute: () => AppsRouteRoute,
-} as any)
-const AppsFlightsRouteRoute = AppsFlightsRouteRouteImport.update({
-  id: '/flights',
-  path: '/flights',
-  getParentRoute: () => AppsRouteRoute,
-} as any)
-const AppsMusicRoute = AppsMusicRouteImport.update({
-  id: '/music',
-  path: '/music',
-  getParentRoute: () => AppsRouteRoute,
-} as any)
 const ImagesSplatRoute = ImagesSplatRouteImport.update({
   id: '/images/$',
   path: '/images/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiInvitationsAcceptRoute = ApiInvitationsAcceptRouteImport.update({
-  id: '/api/invitations/accept',
-  path: '/api/invitations/accept',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppsFlightsIndexRoute = AppsFlightsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const AppsFlightsFlightIdRoute = AppsFlightsFlightIdRouteImport.update({
-  id: '/$flightId',
-  path: '/$flightId',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const AppsFlightsEquipmentRoute = AppsFlightsEquipmentRouteImport.update({
-  id: '/equipment',
-  path: '/equipment',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const AppsFlightsImportRoute = AppsFlightsImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const AppsFlightsLogbookRoute = AppsFlightsLogbookRouteImport.update({
-  id: '/logbook',
-  path: '/logbook',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const ApiAppsBackOfficeInvitationsRoute =
-  ApiAppsBackOfficeInvitationsRouteImport.update({
-    id: '/api/apps/back-office/invitations',
-    path: '/api/apps/back-office/invitations',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsBackOfficeUsersRoute = ApiAppsBackOfficeUsersRouteImport.update({
-  id: '/api/apps/back-office/users',
-  path: '/api/apps/back-office/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAppsMusicClassificationRoute =
-  ApiAppsMusicClassificationRouteImport.update({
-    id: '/api/apps/music/classification',
-    path: '/api/apps/music/classification',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicDeliveryRoute = ApiAppsMusicDeliveryRouteImport.update({
-  id: '/api/apps/music/delivery',
-  path: '/api/apps/music/delivery',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAppsMusicDestinationsRoute =
-  ApiAppsMusicDestinationsRouteImport.update({
-    id: '/api/apps/music/destinations',
-    path: '/api/apps/music/destinations',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicEnrichmentRoute = ApiAppsMusicEnrichmentRouteImport.update({
-  id: '/api/apps/music/enrichment',
-  path: '/api/apps/music/enrichment',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAppsMusicIngestionRoute = ApiAppsMusicIngestionRouteImport.update({
-  id: '/api/apps/music/ingestion',
-  path: '/api/apps/music/ingestion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAppsMusicReadyRoute = ApiAppsMusicReadyRouteImport.update({
-  id: '/api/apps/music/ready',
-  path: '/api/apps/music/ready',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAppsMusicReviewPlaylistRoute =
-  ApiAppsMusicReviewPlaylistRouteImport.update({
-    id: '/api/apps/music/review-playlist',
-    path: '/api/apps/music/review-playlist',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AppsFlightsFlightIdEditRoute = AppsFlightsFlightIdEditRouteImport.update({
-  id: '/$flightId_/edit',
-  path: '/$flightId/edit',
-  getParentRoute: () => AppsFlightsRouteRoute,
-} as any)
-const ApiAppsBackOfficeInvitationsResendRoute =
-  ApiAppsBackOfficeInvitationsResendRouteImport.update({
-    id: '/resend',
-    path: '/resend',
-    getParentRoute: () => ApiAppsBackOfficeInvitationsRoute,
-  } as any)
-const ApiAppsMusicDestinationsCreateRoute =
-  ApiAppsMusicDestinationsCreateRouteImport.update({
-    id: '/create',
-    path: '/create',
-    getParentRoute: () => ApiAppsMusicDestinationsRoute,
-  } as any)
-const ApiAppsMusicSpotifyCallbackRoute =
-  ApiAppsMusicSpotifyCallbackRouteImport.update({
-    id: '/api/apps/music/spotify/callback',
-    path: '/api/apps/music/spotify/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicSpotifyConnectRoute =
-  ApiAppsMusicSpotifyConnectRouteImport.update({
-    id: '/api/apps/music/spotify/connect',
-    path: '/api/apps/music/spotify/connect',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicSpotifyDisconnectRoute =
-  ApiAppsMusicSpotifyDisconnectRouteImport.update({
-    id: '/api/apps/music/spotify/disconnect',
-    path: '/api/apps/music/spotify/disconnect',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicSpotifyLikedTracksRoute =
-  ApiAppsMusicSpotifyLikedTracksRouteImport.update({
-    id: '/api/apps/music/spotify/liked-tracks',
-    path: '/api/apps/music/spotify/liked-tracks',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicSpotifyPlaylistsRoute =
-  ApiAppsMusicSpotifyPlaylistsRouteImport.update({
-    id: '/api/apps/music/spotify/playlists',
-    path: '/api/apps/music/spotify/playlists',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAppsMusicSpotifyStatusRoute =
-  ApiAppsMusicSpotifyStatusRouteImport.update({
-    id: '/api/apps/music/spotify/status',
-    path: '/api/apps/music/spotify/status',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/apps': typeof AppsRouteRouteWithChildren
   '/admin': typeof AdminRoute
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
-  '/apps/flights': typeof AppsFlightsRouteRouteWithChildren
-  '/apps/back-office': typeof AppsBackOfficeRoute
-  '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
-  '/apps/': typeof AppsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/apps/flights/$flightId': typeof AppsFlightsFlightIdRoute
-  '/apps/flights/equipment': typeof AppsFlightsEquipmentRoute
-  '/apps/flights/import': typeof AppsFlightsImportRoute
-  '/apps/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/apps/flights/': typeof AppsFlightsIndexRoute
-  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
-  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
-  '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
-  '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
-  '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
-  '/api/apps/music/enrichment': typeof ApiAppsMusicEnrichmentRoute
-  '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
-  '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
-  '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
-  '/apps/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
-  '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
-  '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
-  '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
-  '/api/apps/music/spotify/disconnect': typeof ApiAppsMusicSpotifyDisconnectRoute
-  '/api/apps/music/spotify/liked-tracks': typeof ApiAppsMusicSpotifyLikedTracksRoute
-  '/api/apps/music/spotify/playlists': typeof ApiAppsMusicSpotifyPlaylistsRoute
-  '/api/apps/music/spotify/status': typeof ApiAppsMusicSpotifyStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -283,215 +61,41 @@ export interface FileRoutesByTo {
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
-  '/apps/back-office': typeof AppsBackOfficeRoute
-  '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
-  '/apps': typeof AppsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/apps/flights/$flightId': typeof AppsFlightsFlightIdRoute
-  '/apps/flights/equipment': typeof AppsFlightsEquipmentRoute
-  '/apps/flights/import': typeof AppsFlightsImportRoute
-  '/apps/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/apps/flights': typeof AppsFlightsIndexRoute
-  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
-  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
-  '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
-  '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
-  '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
-  '/api/apps/music/enrichment': typeof ApiAppsMusicEnrichmentRoute
-  '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
-  '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
-  '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
-  '/apps/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
-  '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
-  '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
-  '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
-  '/api/apps/music/spotify/disconnect': typeof ApiAppsMusicSpotifyDisconnectRoute
-  '/api/apps/music/spotify/liked-tracks': typeof ApiAppsMusicSpotifyLikedTracksRoute
-  '/api/apps/music/spotify/playlists': typeof ApiAppsMusicSpotifyPlaylistsRoute
-  '/api/apps/music/spotify/status': typeof ApiAppsMusicSpotifyStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/apps': typeof AppsRouteRouteWithChildren
   '/admin': typeof AdminRoute
   '/iterations': typeof IterationsRoute
   '/personal': typeof PersonalRoute
   '/photography': typeof PhotographyRoute
-  '/apps/flights': typeof AppsFlightsRouteRouteWithChildren
-  '/apps/back-office': typeof AppsBackOfficeRoute
-  '/apps/music': typeof AppsMusicRoute
   '/images/$': typeof ImagesSplatRoute
-  '/apps/': typeof AppsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/apps/flights/$flightId': typeof AppsFlightsFlightIdRoute
-  '/apps/flights/equipment': typeof AppsFlightsEquipmentRoute
-  '/apps/flights/import': typeof AppsFlightsImportRoute
-  '/apps/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/apps/flights/': typeof AppsFlightsIndexRoute
-  '/api/apps/back-office/invitations': typeof ApiAppsBackOfficeInvitationsRouteWithChildren
-  '/api/apps/back-office/users': typeof ApiAppsBackOfficeUsersRoute
-  '/api/apps/music/classification': typeof ApiAppsMusicClassificationRoute
-  '/api/apps/music/delivery': typeof ApiAppsMusicDeliveryRoute
-  '/api/apps/music/destinations': typeof ApiAppsMusicDestinationsRouteWithChildren
-  '/api/apps/music/enrichment': typeof ApiAppsMusicEnrichmentRoute
-  '/api/apps/music/ingestion': typeof ApiAppsMusicIngestionRoute
-  '/api/apps/music/ready': typeof ApiAppsMusicReadyRoute
-  '/api/apps/music/review-playlist': typeof ApiAppsMusicReviewPlaylistRoute
-  '/apps/flights/$flightId_/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/apps/back-office/invitations/resend': typeof ApiAppsBackOfficeInvitationsResendRoute
-  '/api/apps/music/destinations/create': typeof ApiAppsMusicDestinationsCreateRoute
-  '/api/apps/music/spotify/callback': typeof ApiAppsMusicSpotifyCallbackRoute
-  '/api/apps/music/spotify/connect': typeof ApiAppsMusicSpotifyConnectRoute
-  '/api/apps/music/spotify/disconnect': typeof ApiAppsMusicSpotifyDisconnectRoute
-  '/api/apps/music/spotify/liked-tracks': typeof ApiAppsMusicSpotifyLikedTracksRoute
-  '/api/apps/music/spotify/playlists': typeof ApiAppsMusicSpotifyPlaylistsRoute
-  '/api/apps/music/spotify/status': typeof ApiAppsMusicSpotifyStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/apps'
-    | '/admin'
-    | '/iterations'
-    | '/personal'
-    | '/photography'
-    | '/apps/flights'
-    | '/apps/back-office'
-    | '/apps/music'
-    | '/images/$'
-    | '/apps/'
-    | '/api/auth/$'
-    | '/api/invitations/accept'
-    | '/apps/flights/$flightId'
-    | '/apps/flights/equipment'
-    | '/apps/flights/import'
-    | '/apps/flights/logbook'
-    | '/apps/flights/'
-    | '/api/apps/back-office/invitations'
-    | '/api/apps/back-office/users'
-    | '/api/apps/music/classification'
-    | '/api/apps/music/delivery'
-    | '/api/apps/music/destinations'
-    | '/api/apps/music/enrichment'
-    | '/api/apps/music/ingestion'
-    | '/api/apps/music/ready'
-    | '/api/apps/music/review-playlist'
-    | '/apps/flights/$flightId/edit'
-    | '/api/apps/back-office/invitations/resend'
-    | '/api/apps/music/destinations/create'
-    | '/api/apps/music/spotify/callback'
-    | '/api/apps/music/spotify/connect'
-    | '/api/apps/music/spotify/disconnect'
-    | '/api/apps/music/spotify/liked-tracks'
-    | '/api/apps/music/spotify/playlists'
-    | '/api/apps/music/spotify/status'
+    '/' | '/admin' | '/iterations' | '/personal' | '/photography' | '/images/$'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/admin'
-    | '/iterations'
-    | '/personal'
-    | '/photography'
-    | '/apps/back-office'
-    | '/apps/music'
-    | '/images/$'
-    | '/apps'
-    | '/api/auth/$'
-    | '/api/invitations/accept'
-    | '/apps/flights/$flightId'
-    | '/apps/flights/equipment'
-    | '/apps/flights/import'
-    | '/apps/flights/logbook'
-    | '/apps/flights'
-    | '/api/apps/back-office/invitations'
-    | '/api/apps/back-office/users'
-    | '/api/apps/music/classification'
-    | '/api/apps/music/delivery'
-    | '/api/apps/music/destinations'
-    | '/api/apps/music/enrichment'
-    | '/api/apps/music/ingestion'
-    | '/api/apps/music/ready'
-    | '/api/apps/music/review-playlist'
-    | '/apps/flights/$flightId/edit'
-    | '/api/apps/back-office/invitations/resend'
-    | '/api/apps/music/destinations/create'
-    | '/api/apps/music/spotify/callback'
-    | '/api/apps/music/spotify/connect'
-    | '/api/apps/music/spotify/disconnect'
-    | '/api/apps/music/spotify/liked-tracks'
-    | '/api/apps/music/spotify/playlists'
-    | '/api/apps/music/spotify/status'
+    '/' | '/admin' | '/iterations' | '/personal' | '/photography' | '/images/$'
   id:
     | '__root__'
     | '/'
-    | '/apps'
     | '/admin'
     | '/iterations'
     | '/personal'
     | '/photography'
-    | '/apps/flights'
-    | '/apps/back-office'
-    | '/apps/music'
     | '/images/$'
-    | '/apps/'
-    | '/api/auth/$'
-    | '/api/invitations/accept'
-    | '/apps/flights/$flightId'
-    | '/apps/flights/equipment'
-    | '/apps/flights/import'
-    | '/apps/flights/logbook'
-    | '/apps/flights/'
-    | '/api/apps/back-office/invitations'
-    | '/api/apps/back-office/users'
-    | '/api/apps/music/classification'
-    | '/api/apps/music/delivery'
-    | '/api/apps/music/destinations'
-    | '/api/apps/music/enrichment'
-    | '/api/apps/music/ingestion'
-    | '/api/apps/music/ready'
-    | '/api/apps/music/review-playlist'
-    | '/apps/flights/$flightId_/edit'
-    | '/api/apps/back-office/invitations/resend'
-    | '/api/apps/music/destinations/create'
-    | '/api/apps/music/spotify/callback'
-    | '/api/apps/music/spotify/connect'
-    | '/api/apps/music/spotify/disconnect'
-    | '/api/apps/music/spotify/liked-tracks'
-    | '/api/apps/music/spotify/playlists'
-    | '/api/apps/music/spotify/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppsRouteRoute: typeof AppsRouteRouteWithChildren
   AdminRoute: typeof AdminRoute
   IterationsRoute: typeof IterationsRoute
   PersonalRoute: typeof PersonalRoute
   PhotographyRoute: typeof PhotographyRoute
   ImagesSplatRoute: typeof ImagesSplatRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiInvitationsAcceptRoute: typeof ApiInvitationsAcceptRoute
-  ApiAppsBackOfficeInvitationsRoute: typeof ApiAppsBackOfficeInvitationsRouteWithChildren
-  ApiAppsBackOfficeUsersRoute: typeof ApiAppsBackOfficeUsersRoute
-  ApiAppsMusicClassificationRoute: typeof ApiAppsMusicClassificationRoute
-  ApiAppsMusicDeliveryRoute: typeof ApiAppsMusicDeliveryRoute
-  ApiAppsMusicDestinationsRoute: typeof ApiAppsMusicDestinationsRouteWithChildren
-  ApiAppsMusicEnrichmentRoute: typeof ApiAppsMusicEnrichmentRoute
-  ApiAppsMusicIngestionRoute: typeof ApiAppsMusicIngestionRoute
-  ApiAppsMusicReadyRoute: typeof ApiAppsMusicReadyRoute
-  ApiAppsMusicReviewPlaylistRoute: typeof ApiAppsMusicReviewPlaylistRoute
-  ApiAppsMusicSpotifyCallbackRoute: typeof ApiAppsMusicSpotifyCallbackRoute
-  ApiAppsMusicSpotifyConnectRoute: typeof ApiAppsMusicSpotifyConnectRoute
-  ApiAppsMusicSpotifyDisconnectRoute: typeof ApiAppsMusicSpotifyDisconnectRoute
-  ApiAppsMusicSpotifyLikedTracksRoute: typeof ApiAppsMusicSpotifyLikedTracksRoute
-  ApiAppsMusicSpotifyPlaylistsRoute: typeof ApiAppsMusicSpotifyPlaylistsRoute
-  ApiAppsMusicSpotifyStatusRoute: typeof ApiAppsMusicSpotifyStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -508,13 +112,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/apps': {
-      id: '/apps'
-      path: '/apps'
-      fullPath: '/apps'
-      preLoaderRoute: typeof AppsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/iterations': {
@@ -538,34 +135,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PhotographyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/apps/': {
-      id: '/apps/'
-      path: '/'
-      fullPath: '/apps/'
-      preLoaderRoute: typeof AppsIndexRouteImport
-      parentRoute: typeof AppsRouteRoute
-    }
-    '/apps/back-office': {
-      id: '/apps/back-office'
-      path: '/back-office'
-      fullPath: '/apps/back-office'
-      preLoaderRoute: typeof AppsBackOfficeRouteImport
-      parentRoute: typeof AppsRouteRoute
-    }
-    '/apps/flights': {
-      id: '/apps/flights'
-      path: '/flights'
-      fullPath: '/apps/flights'
-      preLoaderRoute: typeof AppsFlightsRouteRouteImport
-      parentRoute: typeof AppsRouteRoute
-    }
-    '/apps/music': {
-      id: '/apps/music'
-      path: '/music'
-      fullPath: '/apps/music'
-      preLoaderRoute: typeof AppsMusicRouteImport
-      parentRoute: typeof AppsRouteRoute
-    }
     '/images/$': {
       id: '/images/$'
       path: '/images/$'
@@ -573,278 +142,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImagesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/invitations/accept': {
-      id: '/api/invitations/accept'
-      path: '/api/invitations/accept'
-      fullPath: '/api/invitations/accept'
-      preLoaderRoute: typeof ApiInvitationsAcceptRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/apps/flights/': {
-      id: '/apps/flights/'
-      path: '/'
-      fullPath: '/apps/flights/'
-      preLoaderRoute: typeof AppsFlightsIndexRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/apps/flights/$flightId': {
-      id: '/apps/flights/$flightId'
-      path: '/$flightId'
-      fullPath: '/apps/flights/$flightId'
-      preLoaderRoute: typeof AppsFlightsFlightIdRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/apps/flights/equipment': {
-      id: '/apps/flights/equipment'
-      path: '/equipment'
-      fullPath: '/apps/flights/equipment'
-      preLoaderRoute: typeof AppsFlightsEquipmentRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/apps/flights/import': {
-      id: '/apps/flights/import'
-      path: '/import'
-      fullPath: '/apps/flights/import'
-      preLoaderRoute: typeof AppsFlightsImportRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/apps/flights/logbook': {
-      id: '/apps/flights/logbook'
-      path: '/logbook'
-      fullPath: '/apps/flights/logbook'
-      preLoaderRoute: typeof AppsFlightsLogbookRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/api/apps/back-office/invitations': {
-      id: '/api/apps/back-office/invitations'
-      path: '/api/apps/back-office/invitations'
-      fullPath: '/api/apps/back-office/invitations'
-      preLoaderRoute: typeof ApiAppsBackOfficeInvitationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/back-office/users': {
-      id: '/api/apps/back-office/users'
-      path: '/api/apps/back-office/users'
-      fullPath: '/api/apps/back-office/users'
-      preLoaderRoute: typeof ApiAppsBackOfficeUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/classification': {
-      id: '/api/apps/music/classification'
-      path: '/api/apps/music/classification'
-      fullPath: '/api/apps/music/classification'
-      preLoaderRoute: typeof ApiAppsMusicClassificationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/delivery': {
-      id: '/api/apps/music/delivery'
-      path: '/api/apps/music/delivery'
-      fullPath: '/api/apps/music/delivery'
-      preLoaderRoute: typeof ApiAppsMusicDeliveryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/destinations': {
-      id: '/api/apps/music/destinations'
-      path: '/api/apps/music/destinations'
-      fullPath: '/api/apps/music/destinations'
-      preLoaderRoute: typeof ApiAppsMusicDestinationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/enrichment': {
-      id: '/api/apps/music/enrichment'
-      path: '/api/apps/music/enrichment'
-      fullPath: '/api/apps/music/enrichment'
-      preLoaderRoute: typeof ApiAppsMusicEnrichmentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/ingestion': {
-      id: '/api/apps/music/ingestion'
-      path: '/api/apps/music/ingestion'
-      fullPath: '/api/apps/music/ingestion'
-      preLoaderRoute: typeof ApiAppsMusicIngestionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/ready': {
-      id: '/api/apps/music/ready'
-      path: '/api/apps/music/ready'
-      fullPath: '/api/apps/music/ready'
-      preLoaderRoute: typeof ApiAppsMusicReadyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/review-playlist': {
-      id: '/api/apps/music/review-playlist'
-      path: '/api/apps/music/review-playlist'
-      fullPath: '/api/apps/music/review-playlist'
-      preLoaderRoute: typeof ApiAppsMusicReviewPlaylistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/apps/flights/$flightId_/edit': {
-      id: '/apps/flights/$flightId_/edit'
-      path: '/$flightId/edit'
-      fullPath: '/apps/flights/$flightId/edit'
-      preLoaderRoute: typeof AppsFlightsFlightIdEditRouteImport
-      parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/api/apps/back-office/invitations/resend': {
-      id: '/api/apps/back-office/invitations/resend'
-      path: '/resend'
-      fullPath: '/api/apps/back-office/invitations/resend'
-      preLoaderRoute: typeof ApiAppsBackOfficeInvitationsResendRouteImport
-      parentRoute: typeof ApiAppsBackOfficeInvitationsRoute
-    }
-    '/api/apps/music/destinations/create': {
-      id: '/api/apps/music/destinations/create'
-      path: '/create'
-      fullPath: '/api/apps/music/destinations/create'
-      preLoaderRoute: typeof ApiAppsMusicDestinationsCreateRouteImport
-      parentRoute: typeof ApiAppsMusicDestinationsRoute
-    }
-    '/api/apps/music/spotify/callback': {
-      id: '/api/apps/music/spotify/callback'
-      path: '/api/apps/music/spotify/callback'
-      fullPath: '/api/apps/music/spotify/callback'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/spotify/connect': {
-      id: '/api/apps/music/spotify/connect'
-      path: '/api/apps/music/spotify/connect'
-      fullPath: '/api/apps/music/spotify/connect'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyConnectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/spotify/disconnect': {
-      id: '/api/apps/music/spotify/disconnect'
-      path: '/api/apps/music/spotify/disconnect'
-      fullPath: '/api/apps/music/spotify/disconnect'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyDisconnectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/spotify/liked-tracks': {
-      id: '/api/apps/music/spotify/liked-tracks'
-      path: '/api/apps/music/spotify/liked-tracks'
-      fullPath: '/api/apps/music/spotify/liked-tracks'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyLikedTracksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/spotify/playlists': {
-      id: '/api/apps/music/spotify/playlists'
-      path: '/api/apps/music/spotify/playlists'
-      fullPath: '/api/apps/music/spotify/playlists'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyPlaylistsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/apps/music/spotify/status': {
-      id: '/api/apps/music/spotify/status'
-      path: '/api/apps/music/spotify/status'
-      fullPath: '/api/apps/music/spotify/status'
-      preLoaderRoute: typeof ApiAppsMusicSpotifyStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
-
-interface AppsFlightsRouteRouteChildren {
-  AppsFlightsFlightIdRoute: typeof AppsFlightsFlightIdRoute
-  AppsFlightsEquipmentRoute: typeof AppsFlightsEquipmentRoute
-  AppsFlightsImportRoute: typeof AppsFlightsImportRoute
-  AppsFlightsLogbookRoute: typeof AppsFlightsLogbookRoute
-  AppsFlightsIndexRoute: typeof AppsFlightsIndexRoute
-  AppsFlightsFlightIdEditRoute: typeof AppsFlightsFlightIdEditRoute
-}
-
-const AppsFlightsRouteRouteChildren: AppsFlightsRouteRouteChildren = {
-  AppsFlightsFlightIdRoute: AppsFlightsFlightIdRoute,
-  AppsFlightsEquipmentRoute: AppsFlightsEquipmentRoute,
-  AppsFlightsImportRoute: AppsFlightsImportRoute,
-  AppsFlightsLogbookRoute: AppsFlightsLogbookRoute,
-  AppsFlightsIndexRoute: AppsFlightsIndexRoute,
-  AppsFlightsFlightIdEditRoute: AppsFlightsFlightIdEditRoute,
-}
-
-const AppsFlightsRouteRouteWithChildren =
-  AppsFlightsRouteRoute._addFileChildren(AppsFlightsRouteRouteChildren)
-
-interface AppsRouteRouteChildren {
-  AppsFlightsRouteRoute: typeof AppsFlightsRouteRouteWithChildren
-  AppsBackOfficeRoute: typeof AppsBackOfficeRoute
-  AppsMusicRoute: typeof AppsMusicRoute
-  AppsIndexRoute: typeof AppsIndexRoute
-}
-
-const AppsRouteRouteChildren: AppsRouteRouteChildren = {
-  AppsFlightsRouteRoute: AppsFlightsRouteRouteWithChildren,
-  AppsBackOfficeRoute: AppsBackOfficeRoute,
-  AppsMusicRoute: AppsMusicRoute,
-  AppsIndexRoute: AppsIndexRoute,
-}
-
-const AppsRouteRouteWithChildren = AppsRouteRoute._addFileChildren(
-  AppsRouteRouteChildren,
-)
-
-interface ApiAppsBackOfficeInvitationsRouteChildren {
-  ApiAppsBackOfficeInvitationsResendRoute: typeof ApiAppsBackOfficeInvitationsResendRoute
-}
-
-const ApiAppsBackOfficeInvitationsRouteChildren: ApiAppsBackOfficeInvitationsRouteChildren =
-  {
-    ApiAppsBackOfficeInvitationsResendRoute:
-      ApiAppsBackOfficeInvitationsResendRoute,
-  }
-
-const ApiAppsBackOfficeInvitationsRouteWithChildren =
-  ApiAppsBackOfficeInvitationsRoute._addFileChildren(
-    ApiAppsBackOfficeInvitationsRouteChildren,
-  )
-
-interface ApiAppsMusicDestinationsRouteChildren {
-  ApiAppsMusicDestinationsCreateRoute: typeof ApiAppsMusicDestinationsCreateRoute
-}
-
-const ApiAppsMusicDestinationsRouteChildren: ApiAppsMusicDestinationsRouteChildren =
-  {
-    ApiAppsMusicDestinationsCreateRoute: ApiAppsMusicDestinationsCreateRoute,
-  }
-
-const ApiAppsMusicDestinationsRouteWithChildren =
-  ApiAppsMusicDestinationsRoute._addFileChildren(
-    ApiAppsMusicDestinationsRouteChildren,
-  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppsRouteRoute: AppsRouteRouteWithChildren,
   AdminRoute: AdminRoute,
   IterationsRoute: IterationsRoute,
   PersonalRoute: PersonalRoute,
   PhotographyRoute: PhotographyRoute,
   ImagesSplatRoute: ImagesSplatRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiInvitationsAcceptRoute: ApiInvitationsAcceptRoute,
-  ApiAppsBackOfficeInvitationsRoute:
-    ApiAppsBackOfficeInvitationsRouteWithChildren,
-  ApiAppsBackOfficeUsersRoute: ApiAppsBackOfficeUsersRoute,
-  ApiAppsMusicClassificationRoute: ApiAppsMusicClassificationRoute,
-  ApiAppsMusicDeliveryRoute: ApiAppsMusicDeliveryRoute,
-  ApiAppsMusicDestinationsRoute: ApiAppsMusicDestinationsRouteWithChildren,
-  ApiAppsMusicEnrichmentRoute: ApiAppsMusicEnrichmentRoute,
-  ApiAppsMusicIngestionRoute: ApiAppsMusicIngestionRoute,
-  ApiAppsMusicReadyRoute: ApiAppsMusicReadyRoute,
-  ApiAppsMusicReviewPlaylistRoute: ApiAppsMusicReviewPlaylistRoute,
-  ApiAppsMusicSpotifyCallbackRoute: ApiAppsMusicSpotifyCallbackRoute,
-  ApiAppsMusicSpotifyConnectRoute: ApiAppsMusicSpotifyConnectRoute,
-  ApiAppsMusicSpotifyDisconnectRoute: ApiAppsMusicSpotifyDisconnectRoute,
-  ApiAppsMusicSpotifyLikedTracksRoute: ApiAppsMusicSpotifyLikedTracksRoute,
-  ApiAppsMusicSpotifyPlaylistsRoute: ApiAppsMusicSpotifyPlaylistsRoute,
-  ApiAppsMusicSpotifyStatusRoute: ApiAppsMusicSpotifyStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

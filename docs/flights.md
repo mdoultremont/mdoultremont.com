@@ -1,14 +1,14 @@
 # Flight logbook
 
-Flights brings the paragliding prototype into the portfolio's private apps at
-`/apps/flights`. The prototype's README, implementation plan, and import research
+Flights brings the paragliding prototype into the private apps, at `/flights`
+on `tools.mdoultremont.com`. The prototype's README, implementation plan, and import research
 in `apps/flights/` in the source checkout are the historical references. Its
 standalone PostgreSQL server, password authentication, Docker deployment, and
 public `/flights` routes are not the web integration architecture.
 
 ## Shared track processing
 
-`apps/web/src/shared/flight-track/index.ts` is the public API for both browser and
+`apps/tools/src/shared/flight-track/index.ts` is the public API for both browser and
 backend callers. The library contains no React, database, authentication,
 Cloudflare bindings, or Node runtime APIs. GPX parsing uses `fast-xml-parser`;
 IGC parsing is the prototype's fixed-width parser. MapLibre GL JS and Recharts
@@ -26,9 +26,9 @@ The complete prototype track tests and fixtures live beside the implementation.
 Run them through the web Vitest configuration from the repository root:
 
 ```sh
-pnpm --filter @mdoultremont/portfolio test src/shared/flight-track
-pnpm exec oxlint --deny-warnings apps/web/src/shared/flight-track
-pnpm exec oxfmt --check apps/web/src/shared/flight-track docs/flights.md CONTEXT.md
+pnpm --filter @mdoultremont/tools test src/shared/flight-track
+pnpm exec oxlint --deny-warnings apps/tools/src/shared/flight-track
+pnpm exec oxfmt --check apps/tools/src/shared/flight-track docs/flights.md CONTEXT.md
 ```
 
 ## Import research carried forward
@@ -113,7 +113,7 @@ into a continuous recording, and may affect measurements.
 ## Private web integration
 
 Use the portfolio's existing Better Auth sign-in and app access. The integration
-places pages under `src/routes/apps/`, the API in the Hono/oRPC shell
+places pages under `src/routes/_apps/`, the API in the Hono/oRPC shell
 (`src/server/entrypoints/http/hono` and `.../flights`, contract in
 `src/shared/flights/contract`), and UI under `src/features/flights/`.
 Register `flights` in the app access catalog and private-app launcher, and wrap
@@ -206,9 +206,9 @@ conditional flight insert so concurrent uploads cannot both win. A duplicate
 returns the existing flight ID and leaves its original unchanged.
 
 The API is contract-first [oRPC](https://orpc.dev) behind Hono. The contract
-lives in `apps/web/src/shared/flights/contract` (Effect Schema through its
+lives in `apps/tools/src/shared/flights/contract` (Effect Schema through its
 Standard Schema adapter) and the browser calls it through the typed client in
-`apps/web/src/features/flights/api.ts`; the DTO types come from the contract.
+`apps/tools/src/features/flights/api.ts`; the DTO types come from the contract.
 Procedures are served at `POST /api/rpc/flights/<name>`, for example
 `/api/rpc/flights/list` and `/api/rpc/flights/equipment/create` (oRPC RPC protocol, body
 `{ "json": input }`), require Flights access, and verify the request Origin. A
@@ -240,7 +240,7 @@ topSites }`. Totals contain flights, hours, and distanceM. UTC activity buckets
   Name length is 1-200, notes allow 5,000 characters, and kind is wing,
   harness, reserve, instrument, or other. `equipment.delete({ equipmentId })`
   returns `{ id }`.
-- `GET /api/apps/flights/files/:fileId` is a plain Hono route (binary, not a
+- `GET /api/flights/files/:fileId` is a plain Hono route (binary, not a
   procedure): it checks ownership in D1, then streams the original from R2 as an
   attachment (with its content type, `Content-Length`, and filename) and
   returns `{ error: string }` on failure.
@@ -256,7 +256,7 @@ returns 404; access to the app alone grants no access to another user's data.
 Run these commands from the worktree root:
 
 ```sh
-pnpm --filter @mdoultremont/portfolio db:migrate:local
+pnpm --filter @mdoultremont/tools db:migrate:local
 pnpm dev
 pnpm check
 pnpm build
@@ -269,12 +269,12 @@ bucket is needed. Flights is unmerged, so its migration was regenerated as
 reset local D1 and re-run the migrations:
 
 ```sh
-rm -rf apps/web/.wrangler/state/v3/d1 apps/web/.wrangler/state/v3/r2
-pnpm --filter @mdoultremont/portfolio db:migrate:local
+rm -rf apps/tools/.wrangler/state/v3/d1 apps/tools/.wrangler/state/v3/r2
+pnpm --filter @mdoultremont/tools db:migrate:local
 ```
 
-Open `http://127.0.0.1:3000/apps/flights` and continue with GitHub or Spotify.
-The existing `apps/web/.dev.vars` provides OAuth configuration; it is not
+Open `http://127.0.0.1:3000/flights` and continue with GitHub or Spotify.
+The existing `apps/tools/.dev.vars` provides OAuth configuration; it is not
 committed. GitHub's local callback is
 `http://127.0.0.1:3000/api/auth/callback/github`. Use the same loopback host for
 the whole sign-in flow. On a fresh local database, an account configured in

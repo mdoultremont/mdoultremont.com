@@ -8,15 +8,17 @@
   },
   "repository": "https://github.com/matthieudou/mdoultremont.com.git",
   "scripts": {
-    "build": "pnpm --filter @mdoultremont/portfolio build",
+    "build": "pnpm -r run build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "dev": "pnpm --filter @mdoultremont/portfolio dev",
-    "deploy": "pnpm --filter @mdoultremont/portfolio deploy",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:tools": "pnpm --filter @mdoultremont/tools dev",
+    "dev:web": "pnpm --filter @mdoultremont/portfolio dev",
+    "deploy": "pnpm -r run deploy",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint": "pnpm --filter @mdoultremont/portfolio lint",
-    "test": "pnpm --filter @mdoultremont/portfolio test",
-    "typecheck": "pnpm --filter @mdoultremont/portfolio typecheck"
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck"
   },
   "devDependencies": {
     "oxfmt": "^0.64.0",

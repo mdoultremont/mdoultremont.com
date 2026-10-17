@@ -1,8 +1,8 @@
 # Music automation operation
 
-The private `/apps/music` area sorts the owner's Spotify Liked Songs into playlists.
+The private music area (`/music` on `tools.mdoultremont.com`) sorts the owner's Spotify Liked Songs into playlists.
 Vocabulary is defined in `CONTEXT.md` (Music control area); code structure and
-Effect patterns are in `apps/web/src/server/README.md`.
+Effect patterns are in `apps/tools/src/server/README.md`.
 
 ## Pipeline
 
@@ -59,7 +59,7 @@ step with pending work.
 Worker variables and secrets: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
 `OWNER_ACCOUNTS`, `EMAIL_FROM`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`,
 `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`,
-`SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/web/README.md` for
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/tools/README.md` for
 how to obtain each. A missing variable returns 503 from the routes that need it.
 
 Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, and the hourly
@@ -67,7 +67,7 @@ cron. Production deploys apply migrations automatically (see
 [deploying](deploy-to-cloudflare.md)); locally, run:
 
 ```sh
-pnpm --filter @mdoultremont/portfolio db:migrate:local
+pnpm --filter @mdoultremont/tools db:migrate:local
 ```
 
 Disconnecting Spotify deletes the connection and, through foreign keys, every
@@ -79,5 +79,5 @@ Recording data is kept, since it is shared CC0 data keyed by ISRC.
 Run `pnpm check` and `pnpm build` at the repository root. Stores are tested
 against in-memory SQLite with the real migrations; provider modules against
 mocked `fetch` responses shaped like recorded live responses. Browser tests
-(`pnpm --filter @mdoultremont/portfolio exec playwright test`) mount the UI
+(`pnpm --filter @mdoultremont/tools exec playwright test`) mount the UI
 with controlled API responses; they do not perform a live OAuth round trip.

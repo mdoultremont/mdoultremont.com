@@ -18,16 +18,22 @@ _Avoid_: Public page, finished page
 
 ## Private apps
 
+**Tools**:
+The private part of the site, at `tools.mdoultremont.com` (`apps/tools`),
+deployed apart from the portfolio (`apps/web`). It holds every app and their
+shared sign-in. Its home page lists the apps a user can open.
+_Avoid_: Apps area, `/apps`
+
 **User**:
-A person who signs in to the private apps under `/apps` with a GitHub or
+A person who signs in to tools with a GitHub or
 Spotify account. App sign-in is separate from any provider connection an app
 makes, such as the music app's Spotify connection, even when both use the same
 account.
 _Avoid_: Member, account (an account is one sign-in method of a user)
 
 **App**:
-One private area under `/apps`: the music control area (`music`), the back
-office (`backOffice`), or the flight logbook (`flights`).
+One private area of tools, at `/<name>`: the music control area (`music`), the
+back office (`backOffice`), or the flight logbook (`flights`).
 
 **App access**:
 A user's permission to use one app. A user may hold access to any set of apps,
