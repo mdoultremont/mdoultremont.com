@@ -1,42 +1,83 @@
 # Deploy to Cloudflare
 
-Cloudflare Workers Builds deploys `apps/web` from the GitHub repository. A
-push to `main` starts the production build: it applies pending D1 migrations
-to `mdoultremont-data`, then deploys the Worker. Pushes to other branches
-create preview builds, which never migrate.
+The repository deploys two Workers, each from its own Cloudflare Workers
+Builds configuration on the same GitHub repository:
 
-GitHub Actions checks formatting, linting, types, and the production build. It
-does not deploy.
+| App          | Worker                   | Domain                   |
+| ------------ | ------------------------ | ------------------------ |
+| `apps/web`   | `mdoultremont-portfolio` | `mdoultremont.com`       |
+| `apps/tools` | `mdoultremont-me`        | `tools.mdoultremont.com` |
+
+The tools Worker keeps its original name, `mdoultremont-me`, because its
+secrets (sign-in, Spotify, Jev) are stored on it and cannot be read back.
+
+A push to `main` starts both production builds. The tools build applies
+pending D1 migrations to `mdoultremont-data` before it deploys; the portfolio
+has no database. Pushes to other branches create preview builds, which never
+migrate.
+
+GitHub Actions checks formatting, linting, types, and the production builds.
+It does not deploy.
 
 ## Cloudflare build configuration
 
-Configure the Worker with these values:
+Both Workers use:
 
 - Git repository: `matthieudou/mdoultremont.com`
 - Production branch: `main`
 - Root directory: `/`
-- Build command: `pnpm build`
+
+The portfolio (`mdoultremont-portfolio`):
+
+- Build command: `pnpm --filter @mdoultremont/portfolio build`
 - Deploy command: `pnpm --filter @mdoultremont/portfolio deploy:production`
 - Version command: `pnpm --filter @mdoultremont/portfolio exec wrangler versions upload`
 
-`deploy:production` runs `wrangler d1 migrations apply mdoultremont-data
---remote` and then `wrangler deploy`. Wrangler records applied migrations in
-the database, so a deploy without new migrations only deploys. A failed
-migration stops the build before the deploy, leaving the previous Worker
-running. Wrangler answers its confirmation prompt with yes in the build.
+The tools (`mdoultremont-me`):
+
+- Build command: `pnpm --filter @mdoultremont/tools build`
+- Deploy command: `pnpm --filter @mdoultremont/tools deploy:production`
+- Version command: `pnpm --filter @mdoultremont/tools exec wrangler versions upload`
+
+To skip builds that cannot change a Worker, set its build watch paths to its
+app directory (`apps/web/*` or `apps/tools/*`) plus the root `package.json`,
+`pnpm-lock.yaml`, and `pnpm-workspace.yaml`.
+
+For the tools, `deploy:production` runs `wrangler d1 migrations apply
+mdoultremont-data --remote` and then `wrangler deploy`. Wrangler records
+applied migrations in the database, so a deploy without new migrations only
+deploys. A failed migration stops the build before the deploy, leaving the
+previous Worker running. Wrangler answers its confirmation prompt with yes in
+the build.
 
 Preview versions share the production database binding, so the version
 command must not apply migrations.
 
-The build's API token needs **D1: Edit** for the migration step. If the
+The tools build's API token needs **D1: Edit** for the migration step. If the
 migration step fails with an authentication error, add that permission to the
 token in **Workers & Pages > mdoultremont-me > Settings > Build**.
 
+## Tools secrets
+
+Set these on `mdoultremont-me` with `wrangler secret put` (from `apps/tools`)
+or in **Settings > Variables and Secrets**. `apps/tools/README.md` explains
+each one.
+
+- `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (`https://tools.mdoultremont.com`)
+- `OWNER_ACCOUNTS`
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+- `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_TOKEN_ENCRYPTION_KEY`
+- `SPOTIFY_REDIRECT_URI`
+  (`https://tools.mdoultremont.com/api/music/spotify/callback`)
+- `JEV_API_KEY`
+
+The portfolio needs no secrets.
+
 ## R2 bucket
 
-The Worker binds the R2 bucket `mdoultremont-files` as `FILES` (flight tracks
-and original files; see `docs/flights.md`). Create it once, before the first
-deploy that includes the binding, or the deploy fails:
+The tools Worker binds the R2 bucket `mdoultremont-files` as `FILES` (flight
+tracks and original files; see `docs/flights.md`). Create it once, before the
+first deploy that includes the binding, or the deploy fails:
 
 ```sh
 wrangler r2 bucket create mdoultremont-files
@@ -55,29 +96,31 @@ nullable columns, or columns with defaults is safe. To rename or drop a column,
 first deploy code that no longer uses it, then remove it in a later migration.
 
 The repository-root pnpm workspace installs the app dependencies. Wrangler
-reads `apps/web/wrangler.jsonc`, which declares the Worker name and custom
+reads each app's `wrangler.jsonc`, which declares the Worker name and custom
 domain.
 
 ## Check a deployment
 
-Open **Workers & Pages > mdoultremont-me > Deployments** in Cloudflare. A
-successful production deployment shows the `main` commit and its build log.
+Open **Workers & Pages > _Worker_ > Deployments** in Cloudflare. A successful
+production deployment shows the `main` commit and its build log.
 
-Then check the live response:
+Then check the live responses:
 
 ```bash
 curl --fail --head https://mdoultremont.com
+curl --fail --head https://tools.mdoultremont.com
 ```
 
 ## Deploy from your computer
 
-Authenticate Wrangler once, then run the root deployment command. It builds,
-applies pending migrations, and deploys, like the production build:
+Authenticate Wrangler once, then run the root deployment command. It builds
+and deploys both apps, applying pending tools migrations first, like the
+production builds:
 
 ```bash
-pnpm --dir apps/web exec wrangler login
+pnpm --dir apps/tools exec wrangler login
 pnpm deploy
 ```
 
-Run `pnpm --dir apps/web exec wrangler whoami` to check the active Cloudflare
+Run `pnpm --dir apps/tools exec wrangler whoami` to check the active Cloudflare
 account before a local deployment.

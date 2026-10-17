@@ -26,7 +26,7 @@
     ".tanstack/**",
     "**/dist/**",
     "**/node_modules/**",
-    "apps/web/src/routeTree.gen.ts",
+    "apps/*/src/routeTree.gen.ts",
     "apps/web/content/**",
     "coverage/**"
   ],
@@ -73,7 +73,7 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/server/modules/**"],
+      "files": ["apps/tools/src/server/modules/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -106,7 +106,7 @@
       }
     },
     {
-      "files": ["apps/web/src/server/actions/**"],
+      "files": ["apps/tools/src/server/actions/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -138,7 +138,7 @@
       }
     },
     {
-      "files": ["apps/web/src/server/entrypoints/**"],
+      "files": ["apps/tools/src/server/entrypoints/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -166,7 +166,7 @@
       }
     },
     {
-      "files": ["apps/web/src/features/**"],
+      "files": ["apps/tools/src/features/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -198,7 +198,7 @@
       }
     },
     {
-      "files": ["apps/web/src/routes/**"],
+      "files": ["apps/tools/src/routes/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -230,7 +230,7 @@
       }
     },
     {
-      "files": ["apps/web/src/routes/api/**"],
+      "files": ["apps/tools/src/routes/api/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -254,7 +254,7 @@
       }
     },
     {
-      "files": ["apps/web/src/shared/**"],
+      "files": ["apps/tools/src/shared/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",

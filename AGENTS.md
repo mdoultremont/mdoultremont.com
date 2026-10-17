@@ -1,6 +1,8 @@
 # Repository guide
 
-- Keep deployable applications under `apps/`.
+- Keep deployable applications under `apps/`: the portfolio in `apps/web`
+  (`mdoultremont.com`) and the private apps in `apps/tools`
+  (`tools.mdoultremont.com`).
 - Put code shared by more than one app under `packages/`.
 - Run `pnpm dev`, `pnpm check`, and `pnpm build` from the repository root.
 - Keep Pages CMS configuration in the repository-root `.pages.yml`. Update it
