@@ -85,7 +85,7 @@ export function ShareImage({
         Share image
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flight-viewer dark-surface max-h-[95dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="flight-viewer max-h-[95dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
               Share your flight

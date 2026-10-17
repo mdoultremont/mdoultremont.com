@@ -19,7 +19,7 @@
     "lib": "@/features/ui/lib",
     "hooks": "@/features/ui/hooks"
   },
-  "menuColor": "default",
+  "menuColor": "default-translucent",
   "menuAccent": "subtle",
   "registries": {}
 }

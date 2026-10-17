@@ -1,5 +1,7 @@
 import { Link, useRouter } from "@tanstack/react-router"
+import { CircleAlertIcon } from "lucide-react"
 import { useCallback, useState } from "react"
+import { PageHeader } from "@/features/apps/shell"
 import {
   deleteFlight,
   getFlight,
@@ -25,8 +27,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/features/ui/alert-dialog"
+import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Button, buttonVariants } from "@/features/ui/button"
 import { Checkbox } from "@/features/ui/checkbox"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/features/ui/field"
 import { Input } from "@/features/ui/input"
 import { Label } from "@/features/ui/label"
 import { Textarea } from "@/features/ui/textarea"
@@ -49,9 +60,10 @@ export function FlightEdit({ flightId }: { flightId: string }) {
   const { data, error, reload } = useFlightResource(load)
   return (
     <section>
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-        Edit flight
-      </h1>
+      <PageHeader
+        title="Edit flight"
+        description="Add the places, kit, and details you want to remember."
+      />
       {data ? (
         <EditForm detail={data.detail} equipment={data.equipment} />
       ) : (
@@ -93,10 +105,7 @@ function EditForm({
   }
   return (
     <>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        Add the places, kit, and details you want to remember.
-      </p>
-      <p className="mt-4 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Takeoff: {formatDateTime(flight.takeoffAt ?? flight.startedAt)}
       </p>
       <form
@@ -114,103 +123,98 @@ function EditForm({
           )
         }}
       >
-        <fieldset disabled={busy} className="space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="takeoffName">Takeoff site</Label>
-              <Input
-                id="takeoffName"
-                name="takeoffName"
-                maxLength={200}
-                defaultValue={flight.takeoffName ?? ""}
-                className="mt-1"
-              />
+        <fieldset disabled={busy}>
+          <FieldGroup>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="takeoffName">Takeoff site</FieldLabel>
+                <Input
+                  id="takeoffName"
+                  name="takeoffName"
+                  maxLength={200}
+                  defaultValue={flight.takeoffName ?? ""}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="landingName">Landing site</FieldLabel>
+                <Input
+                  id="landingName"
+                  name="landingName"
+                  maxLength={200}
+                  defaultValue={flight.landingName ?? ""}
+                />
+              </Field>
             </div>
-            <div>
-              <Label htmlFor="landingName">Landing site</Label>
-              <Input
-                id="landingName"
-                name="landingName"
-                maxLength={200}
-                defaultValue={flight.landingName ?? ""}
-                className="mt-1"
+            <Field>
+              <FieldLabel htmlFor="flight-notes">Notes</FieldLabel>
+              <Textarea
+                id="flight-notes"
+                name="notes"
+                rows={5}
+                maxLength={10000}
+                defaultValue={flight.notes ?? ""}
               />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="flight-notes">Notes</Label>
-            <Textarea
-              id="flight-notes"
-              name="notes"
-              rows={5}
-              maxLength={10000}
-              defaultValue={flight.notes ?? ""}
-              className="mt-1"
-            />
-          </div>
-          <fieldset>
-            <legend className="text-sm font-medium">Equipment</legend>
-            {equipment.length ? (
-              <div className="mt-3 space-y-3">
-                {equipment.map((item) => (
-                  <Label
-                    aria-label={item.name}
-                    key={item.id}
-                    className="items-start gap-3 font-normal"
-                  >
-                    <Checkbox
-                      className="mt-0.5"
-                      checked={selected.includes(item.id)}
-                      onCheckedChange={(checked) =>
-                        setSelected((previous) =>
-                          checked
-                            ? [...previous, item.id]
-                            : previous.filter((id) => id !== item.id)
-                        )
-                      }
-                    />
-                    <span className="min-w-0 break-words">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="ml-2 text-muted-foreground">
-                        {item.kind}
-                        {item.retired ? " · Retired" : ""}
+            </Field>
+            <FieldSet>
+              <FieldLegend variant="label">Equipment</FieldLegend>
+              {equipment.length ? (
+                <div className="space-y-3">
+                  {equipment.map((item) => (
+                    <Label
+                      key={item.id}
+                      aria-label={item.name}
+                      className="items-start gap-3 font-normal"
+                    >
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={selected.includes(item.id)}
+                        onCheckedChange={(checked) =>
+                          setSelected((previous) =>
+                            checked
+                              ? [...previous, item.id]
+                              : previous.filter((id) => id !== item.id)
+                          )
+                        }
+                      />
+                      <span className="min-w-0 break-words">
+                        <span className="font-medium">{item.name}</span>
+                        <span className="ml-2 text-muted-foreground">
+                          {item.kind}
+                          {item.retired ? " · Retired" : ""}
+                        </span>
                       </span>
-                    </span>
-                  </Label>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                No active equipment.{" "}
-                <Link
-                  to="/apps/flights/equipment"
-                  className="underline underline-offset-4"
-                >
-                  Add your kit
-                </Link>{" "}
-                to attach it to flights.
-              </p>
-            )}
-          </fieldset>
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit">{busy ? "Saving…" : "Save changes"}</Button>
-            <Link
-              to="/apps/flights/$flightId"
-              params={{ flightId: flight.id }}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              Cancel
-            </Link>
-          </div>
+                    </Label>
+                  ))}
+                </div>
+              ) : (
+                <FieldDescription>
+                  No active equipment.{" "}
+                  <Link to="/apps/flights/equipment">Add your kit</Link> to
+                  attach it to flights.
+                </FieldDescription>
+              )}
+            </FieldSet>
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit">{busy ? "Saving…" : "Save changes"}</Button>
+              <Link
+                to="/apps/flights/$flightId"
+                params={{ flightId: flight.id }}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                Cancel
+              </Link>
+            </div>
+          </FieldGroup>
         </fieldset>
       </form>
       {error ? (
-        <p role="alert" className="mt-5 text-sm text-destructive">
-          {error}
-        </p>
+        <Alert variant="destructive" className="mt-5">
+          <CircleAlertIcon />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
       <section className="mt-10 border-t border-border pt-6">
-        <h2 className="font-medium">Delete this flight</h2>
+        <h2 className="font-heading font-medium">Delete this flight</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Permanently remove its track and original files.
         </p>

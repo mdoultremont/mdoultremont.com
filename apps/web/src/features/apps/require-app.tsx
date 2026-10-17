@@ -1,6 +1,14 @@
 import { getRouteApi } from "@tanstack/react-router"
+import { LockIcon } from "lucide-react"
 import type { ReactNode } from "react"
 import type { App } from "@/server/actions/auth"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/features/ui/empty"
 
 const appsLayout = getRouteApi("/apps")
 
@@ -15,8 +23,14 @@ export function RequireApp({
   const user = appsLayout.useLoaderData()
   if (user?.apps.includes(app)) return children
   return (
-    <p className="mt-3 text-base leading-7 text-ink/70">
-      You do not have access to this app.
-    </p>
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <LockIcon />
+        </EmptyMedia>
+        <EmptyTitle>No access</EmptyTitle>
+        <EmptyDescription>You do not have access to this app.</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   )
 }

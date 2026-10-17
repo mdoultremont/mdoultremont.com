@@ -1,4 +1,17 @@
+import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Badge } from "@/features/ui/badge"
+import { Button } from "@/features/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/ui/card"
+import { Spinner } from "@/features/ui/spinner"
 import type { EnrichmentStatus } from "@/server/actions/music/enrichment"
 
 const pollMilliseconds = 5000
@@ -72,76 +85,86 @@ export function EnrichmentPanel({
     : 0
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Enrichment"
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">Enrichment</h2>
-        {status ? (
-          <p className="text-sm text-ink/70">
-            {status.enriched} with recording data
-          </p>
-        ) : null}
-      </div>
-      <p className="mt-1 text-sm text-ink/60">
-        Looks up each liked track on MusicBrainz and AcousticBrainz. This
-        recording data is the only thing classification reads.
-      </p>
-
-      {status === null && !error ? (
-        <p className="mt-3 text-sm text-ink/70">Loading…</p>
-      ) : null}
-      {status ? (
-        <>
-          <output className="mt-3 block text-sm text-ink/80">
-            {pending > 0
-              ? `Looking up recordings: ${pending} waiting…`
-              : "All liked tracks have been looked up."}
-          </output>
-          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-ink/70 sm:grid-cols-3">
-            <Count
-              label="With AcousticBrainz analysis"
-              value={status.withAnalysis}
-            />
-            <Count label="Not on MusicBrainz" value={status.notFound} />
-            <Count
-              label="Several possible recordings"
-              value={status.ambiguous}
-            />
-            <Count label="Lookup failed" value={status.failed} />
-            <Count label="No ISRC from Spotify" value={status.withoutIsrc} />
-          </dl>
-          <p className="mt-3 text-xs text-ink/50">
-            Tracks without recording data go to the review playlist.
-          </p>
-        </>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-          disabled={busy || unresolved === 0}
-          onClick={() => void retry()}
-          type="button"
-        >
-          Look up unresolved tracks again
-        </button>
-      </div>
+    <section aria-label="Enrichment">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Enrichment</h2>
+          </CardTitle>
+          <CardDescription>
+            Looks up each liked track on MusicBrainz and AcousticBrainz. This
+            recording data is the only thing classification reads.
+          </CardDescription>
+          {status ? (
+            <CardAction>
+              <Badge variant="secondary">
+                {status.enriched} with recording data
+              </Badge>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {status === null && !error ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Loading…
+            </p>
+          ) : null}
+          {status ? (
+            <>
+              <output className="block">
+                {pending > 0
+                  ? `Looking up recordings: ${pending} waiting…`
+                  : "All liked tracks have been looked up."}
+              </output>
+              <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <Count
+                  label="With AcousticBrainz analysis"
+                  value={status.withAnalysis}
+                />
+                <Count label="Not on MusicBrainz" value={status.notFound} />
+                <Count
+                  label="Several possible recordings"
+                  value={status.ambiguous}
+                />
+                <Count label="Lookup failed" value={status.failed} />
+                <Count
+                  label="No ISRC from Spotify"
+                  value={status.withoutIsrc}
+                />
+              </dl>
+              <p className="text-xs text-muted-foreground">
+                Tracks without recording data go to the review playlist.
+              </p>
+            </>
+          ) : null}
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={busy || unresolved === 0}
+              onClick={() => void retry()}
+              type="button"
+              variant="outline"
+            >
+              Look up unresolved tracks again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   )
 }
 
 function Count({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt>{label}</dt>
-      <dd className="font-medium text-ink">{value}</dd>
+    <div className="flex flex-col gap-0.5 rounded-lg bg-muted/50 px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-heading text-lg font-medium tabular-nums">{value}</dd>
     </div>
   )
 }

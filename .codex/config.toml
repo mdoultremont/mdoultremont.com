@@ -1,2 +1,6 @@
 [mcp_servers.penpot]
 enabled = true
+
+[mcp_servers.shadcn]
+command = "pnpm"
+args = ["dlx", "shadcn@latest", "mcp", "--cwd", "apps/web"]

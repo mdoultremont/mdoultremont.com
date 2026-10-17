@@ -7,8 +7,10 @@
   shell: contract in `src/shared/flights/contract`, router in
   `src/server/entrypoints/http/flights`), UI in `src/features/<name>/`.
   Add the app to `apps` in `src/server/actions/auth/apps.ts` and to
-  `src/features/apps/catalog.ts`, wrap its page in `RequireApp`, and grant
-  it to existing users in the migration that ships it. The `/apps` layout
+  `src/features/apps/catalog.ts` (its `pages` are the sidebar links of the
+  `/apps` shell in `src/features/apps/shell`), wrap its page in `RequireApp`,
+  start it with `PageHeader`, and grant it to existing users in the
+  migration that ships it. The `/apps` layout
   signs users in for every app; each API handler still checks access itself.
 - Keep backend code under `src/server/` in three layers: entrypoints →
   actions → modules. Imports only point down; each unit is a
@@ -37,6 +39,9 @@
   `pnpm dlx shadcn@latest add <name>`. Afterwards check that `cn` is imported
   from `@/features/ui/lib/utils` (the CLI sometimes writes `from "cn"` and adds
   a bogus `cn` dependency) and that portfolio styling uses the `brand` and
-  `muted-foreground` tokens, not shadcn's `accent`/`muted`.
+  `muted-foreground` tokens, not shadcn's `accent`/`muted`. The private apps
+  use their own shadcn preset theme (`b6RdcmXsFG`), scoped in `src/styles.css`
+  to pages that render the `[data-app-shell]` shell; `dark:` only applies
+  there.
 - Generate `src/routeTree.gen.ts` with TanStack Router tooling.
 - Run `pnpm check` and `pnpm build` from the repository root.

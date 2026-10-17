@@ -11,6 +11,7 @@ import {
   formatVario,
 } from "@/features/flights/format"
 import type { FlightDetail } from "@/features/flights/api"
+import { PageHeader } from "@/features/apps/shell"
 import { buttonVariants } from "@/features/ui/button"
 import { Card } from "@/features/ui/card"
 import { ShareImage } from "../share-image"
@@ -88,34 +89,36 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
     ],
   ]
   return (
-    <article className="flight-viewer dark-surface @container space-y-7 text-foreground">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Link
-            to="/apps/flights/logbook"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← All flights
-          </Link>
-          <h1 className="mt-3 break-words text-3xl font-semibold tracking-tight">
-            {flight.takeoffName || "Flight"}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
+    <article className="flight-viewer @container text-foreground">
+      <Link
+        to="/apps/flights/logbook"
+        className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← All flights
+      </Link>
+      <PageHeader
+        title={
+          <span className="break-words">{flight.takeoffName || "Flight"}</span>
+        }
+        description={
+          <>
             {formatDate(flight.takeoffAt ?? flight.startedAt)}
             {flight.landingName ? ` · To ${flight.landingName}` : ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            to="/apps/flights/$flightId/edit"
-            params={{ flightId: flight.id }}
-          >
-            Edit
-          </Link>
-          <ShareImage detail={detail} map={map} />
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Link
+              className={buttonVariants({ variant: "outline" })}
+              to="/apps/flights/$flightId/edit"
+              params={{ flightId: flight.id }}
+            >
+              Edit
+            </Link>
+            <ShareImage detail={detail} map={map} />
+          </>
+        }
+      />
       <div className="grid items-start gap-7 @min-[900px]:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0 space-y-6">
           {points.length >= 2 && series.metrics ? (
@@ -180,7 +183,7 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
                   <input
                     id="track-position"
                     aria-label="Track position"
-                    className="mt-2 w-full accent-foreground"
+                    className="mt-2 w-full accent-primary"
                     type="range"
                     min={0}
                     max={points.length - 1}

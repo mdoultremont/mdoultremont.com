@@ -1,6 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router"
 import { UsersPanel } from "@/features/back-office/users-panel"
 import { RequireApp } from "@/features/apps/require-app"
+import { PageHeader } from "@/features/apps/shell"
 
 const appsLayout = getRouteApi("/apps")
 
@@ -16,9 +17,10 @@ function BackOfficePage() {
   const user = appsLayout.useLoaderData()
   return (
     <RequireApp app="backOffice">
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-        Back office
-      </h1>
+      <PageHeader
+        description="Invite people and choose the apps they may use."
+        title="Users"
+      />
       {user ? <UsersPanel currentUserId={user.id} /> : null}
     </RequireApp>
   )

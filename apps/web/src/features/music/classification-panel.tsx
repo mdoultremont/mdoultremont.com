@@ -1,9 +1,22 @@
+import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import type {
   ClassificationStatus,
   DecisionSummary,
 } from "@/server/actions/music/classification"
 import type { SpotifyPlaylist } from "@/server/modules/spotify"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Badge } from "@/features/ui/badge"
+import { Button } from "@/features/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/ui/card"
+import { Spinner } from "@/features/ui/spinner"
 
 const pollMilliseconds = 5000
 
@@ -125,95 +138,105 @@ export function ClassificationPanel({
   }
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Classification"
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">Classification</h2>
-        {status ? (
-          <p className="text-sm text-ink/70">{status.decided} decided</p>
-        ) : null}
-      </div>
-      <p className="mt-1 text-sm text-ink/60">
-        Jev reads each track's recording data and your playlist descriptions,
-        and picks the playlists it belongs to. Nothing is written to Spotify
-        here.
-      </p>
-
-      {status === null && !error ? (
-        <p className="mt-3 text-sm text-ink/70">Loading…</p>
-      ) : null}
-      {status ? (
-        <>
-          <output className="mt-3 block text-sm text-ink/80">
-            {describe(status)}
-          </output>
-          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-ink/70 sm:grid-cols-3">
-            <Count label="To playlists" value={status.toDestinations} />
-            <Count label="To review" value={status.toReview} />
-            <Count
-              label="No recording data"
-              value={status.withoutRecordingData}
-            />
-            <Count
-              label="Waiting for enrichment"
-              value={status.waitingForEnrichment}
-            />
-          </dl>
-          {status.outdated > 0 ? (
-            <p className="mt-3 text-sm text-amber-800">
-              {status.outdated} decisions were made before your playlists
-              changed. Reclassify to update them.
+    <section aria-label="Classification">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Classification</h2>
+          </CardTitle>
+          <CardDescription>
+            Jev reads each track's recording data and your playlist
+            descriptions, and picks the playlists it belongs to. Nothing is
+            written to Spotify here.
+          </CardDescription>
+          {status ? (
+            <CardAction>
+              <Badge variant="secondary">{status.decided} decided</Badge>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {status === null && !error ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Loading…
             </p>
           ) : null}
-        </>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
+          {status ? (
+            <>
+              <output className="block">{describe(status)}</output>
+              <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <Count label="To playlists" value={status.toDestinations} />
+                <Count label="To review" value={status.toReview} />
+                <Count
+                  label="No recording data"
+                  value={status.withoutRecordingData}
+                />
+                <Count
+                  label="Waiting for enrichment"
+                  value={status.waitingForEnrichment}
+                />
+              </dl>
+              {status.outdated > 0 ? (
+                <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-amber-800 dark:text-amber-300">
+                  <TriangleAlertIcon
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  <span>
+                    {status.outdated} decisions were made before your playlists
+                    changed. Reclassify to update them.
+                  </span>
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
 
-      {status ? (
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            className={
-              status.ready
-                ? "rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-                : "rounded-full bg-ink px-5 py-2 text-sm font-medium text-paper disabled:opacity-50"
-            }
-            disabled={busy}
-            onClick={() => void setReady(!status.ready)}
-            type="button"
-          >
-            {status.ready ? "Pause classification" : "Ready: start classifying"}
-          </button>
-          <button
-            className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={busy || !status.ready || status.decided === 0}
-            onClick={() => void reclassify()}
-            type="button"
-          >
-            Reclassify all tracks
-          </button>
-        </div>
-      ) : null}
+          {status ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={busy}
+                onClick={() => void setReady(!status.ready)}
+                type="button"
+                variant={status.ready ? "outline" : "default"}
+              >
+                {status.ready
+                  ? "Pause classification"
+                  : "Ready: start classifying"}
+              </Button>
+              <Button
+                disabled={busy || !status.ready || status.decided === 0}
+                onClick={() => void reclassify()}
+                type="button"
+                variant="outline"
+              >
+                Reclassify all tracks
+              </Button>
+            </div>
+          ) : null}
 
-      {status && status.recent.length > 0 ? (
-        <div className="mt-5">
-          <h3 className="text-sm font-medium text-ink">Latest decisions</h3>
-          <ul className="mt-2 max-h-80 divide-y divide-ink/5 overflow-auto text-sm">
-            {status.recent.map((decision) => (
-              <Decision
-                decision={decision}
-                key={decision.trackId}
-                playlistNames={playlistNames}
-              />
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {status && status.recent.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <h3 className="font-heading font-medium">Latest decisions</h3>
+              <ul className="max-h-80 divide-y overflow-auto rounded-lg border">
+                {status.recent.map((decision) => (
+                  <Decision
+                    decision={decision}
+                    key={decision.trackId}
+                    playlistNames={playlistNames}
+                  />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </section>
   )
 }
@@ -230,15 +253,17 @@ function Decision({
     [string, number] | undefined
   >((top, entry) => (top && top[1] >= entry[1] ? top : entry), undefined)
   return (
-    <li className="flex flex-wrap items-baseline justify-between gap-x-4 py-2">
-      <span className="text-ink">
+    <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2">
+      <span className="font-medium">
         {decision.name}
-        <span className="text-ink/50">
+        <span className="font-normal text-muted-foreground">
           {" "}
           · {decision.artistNames.join(", ")}
         </span>
       </span>
-      <span className="text-ink/70">
+      <span
+        className={decision.review ? "text-muted-foreground" : "tabular-nums"}
+      >
         {decision.review
           ? decision.reason === "no_recording_data"
             ? "Review (no recording data)"
@@ -274,9 +299,9 @@ function percent(probability: number) {
 
 function Count({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt>{label}</dt>
-      <dd className="font-medium text-ink">{value}</dd>
+    <div className="flex flex-col gap-0.5 rounded-lg bg-muted/50 px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-heading text-lg font-medium tabular-nums">{value}</dd>
     </div>
   )
 }

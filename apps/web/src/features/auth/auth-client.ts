@@ -5,6 +5,11 @@ export const authClient = createAuthClient()
 
 export type SignInProvider = "github" | "spotify"
 
+export const signInProviders: ReadonlyArray<SignInProvider> = [
+  "github",
+  "spotify",
+]
+
 export const providerNames: Record<SignInProvider, string> = {
   github: "GitHub",
   spotify: "Spotify",
