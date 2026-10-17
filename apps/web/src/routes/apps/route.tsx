@@ -2,13 +2,13 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { useState } from "react"
-import { currentUser } from "@/backend/entrypoints/http/auth.server"
+import { currentUser } from "@/server/entrypoints/http/auth.server"
 import {
   authClient,
   providerNames,
   type SignInProvider,
   signInErrorMessage,
-} from "@/components/auth/auth-client"
+} from "@/features/auth/auth-client"
 
 const loadCurrentUser = createServerFn({ method: "GET" }).handler(() =>
   currentUser(getRequest())

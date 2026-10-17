@@ -17,6 +17,7 @@
       "migrations_dir": "migrations",
     },
   ],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "mdoultremont-files" }],
   "triggers": { "crons": ["0 * * * *"] },
   "queues": {
     "producers": [

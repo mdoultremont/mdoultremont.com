@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { CopyEmailButton } from "@/components/copy-email-button"
-import { SiteShell } from "@/components/site-shell"
+import { CopyEmailButton } from "@/features/site/copy-email-button"
+import { SiteShell } from "@/features/site/site-shell"
 import { experiences, professionalCopy } from "@/content/professional"
 import { profile } from "@/content/shared"
 import { ResponsiveImage } from "@/features/images/responsive-image"
@@ -31,14 +31,14 @@ function ProfessionalPage() {
                   {profile.availabilityLabel}
                 </span>
               )}
-              <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted">
+              <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted-foreground">
                 {professionalCopy.hero.eyebrow}
               </p>
               <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.055em]">
                 {profile.firstName}
-                <span className="text-accent">.</span>
+                <span className="text-brand">.</span>
               </h1>
-              <p className="mt-7 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted">
+              <p className="mt-7 max-w-[48ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.65] text-pretty text-muted-foreground">
                 {professionalCopy.hero.introduction}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-5">

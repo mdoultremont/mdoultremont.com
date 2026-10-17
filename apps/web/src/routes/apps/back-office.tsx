@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router"
-import { UsersPanel } from "@/components/apps/back-office/users-panel"
-import { RequireApp } from "@/components/apps/require-app"
+import { UsersPanel } from "@/features/back-office/users-panel"
+import { RequireApp } from "@/features/apps/require-app"
 
 const appsLayout = getRouteApi("/apps")
 

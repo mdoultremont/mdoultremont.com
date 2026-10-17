@@ -1,7 +1,7 @@
 import { Switch } from "@base-ui/react/switch"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
-import { SiteShell } from "@/components/site-shell"
+import { SiteShell } from "@/features/site/site-shell"
 import { flights, lifeEvents, personalCopy, places } from "@/content/personal"
 import type { Flight } from "@/content/personal"
 
@@ -34,14 +34,14 @@ function PersonalPage() {
         <section className="border-b border-line">
           <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] items-end gap-10 border-x border-line px-4 py-16 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-20 lg:w-[calc(100%-6rem)] lg:grid-cols-[1fr_minmax(17rem,0.5fr)] lg:gap-24 lg:px-8 lg:py-24">
             <div>
-              <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
+              <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">
                 {personalCopy.hero.eyebrow}
               </p>
               <h1 className="mt-4 max-w-[9ch] text-[clamp(4rem,9vw,9rem)] leading-[0.9] font-medium tracking-[-0.065em]">
                 {personalCopy.hero.title}
               </h1>
             </div>
-            <p className="text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
+            <p className="text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted-foreground">
               {personalCopy.hero.introduction}
             </p>
           </div>
@@ -50,17 +50,17 @@ function PersonalPage() {
           <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-line px-4 py-16 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-20 lg:w-[calc(100%-6rem)] lg:px-8 lg:py-24">
             <header className="flex flex-col items-start justify-between gap-8 border-b border-line pb-8 sm:flex-row sm:items-end">
               <div>
-                <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted uppercase">
+                <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">
                   {personalCopy.timeline.eyebrow}
                 </p>
                 <h2 className="mt-4 text-[clamp(2.5rem,5vw,5.8rem)] leading-[0.9] font-medium tracking-[-0.065em]">
                   {personalCopy.timeline.title}
                 </h2>
-                <p className="mt-5 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted">
+                <p className="mt-5 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted-foreground">
                   {personalCopy.timeline.introduction}
                 </p>
               </div>
-              <div className="inline-flex items-center gap-3 text-xs font-semibold text-muted">
+              <div className="inline-flex items-center gap-3 text-xs font-semibold text-muted-foreground">
                 Show flights
                 <Switch.Root
                   aria-label="Show flights in the timeline"
@@ -79,7 +79,7 @@ function PersonalPage() {
                   key={item.id}
                 >
                   <summary className="grid min-h-24 cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-5 px-4 py-5 marker:hidden sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:px-6">
-                    <span className="hidden text-xs text-muted sm:block">
+                    <span className="hidden text-xs text-muted-foreground sm:block">
                       <time dateTime={item.date || undefined}>
                         {formatDate(item.date)}
                       </time>
@@ -88,19 +88,19 @@ function PersonalPage() {
                       <strong className="block text-base font-bold">
                         {item.title}
                       </strong>
-                      <span className="mt-1 block text-sm text-muted">
+                      <span className="mt-1 block text-sm text-muted-foreground">
                         {timelineLabels[item.kind]}
                         {item.location && ` · ${item.location}`}
                       </span>
                     </span>
                     <span
-                      className="text-lg text-accent-dark group-open:rotate-45"
+                      className="text-lg text-brand-dark group-open:rotate-45"
                       aria-hidden="true"
                     >
                       +
                     </span>
                   </summary>
-                  <div className="px-4 pb-7 leading-[1.55] text-muted sm:pl-[10.75rem]">
+                  <div className="px-4 pb-7 leading-[1.55] text-muted-foreground sm:pl-[10.75rem]">
                     <p className="max-w-2xl">{item.description}</p>
                     {item.flight && (
                       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-3 text-sm text-ink">

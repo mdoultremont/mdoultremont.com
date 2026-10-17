@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { ClassificationPanel } from "@/components/apps/music/classification-panel"
-import { DeliveryPanel } from "@/components/apps/music/delivery-panel"
-import { DestinationPanel } from "@/components/apps/music/destination-panel"
-import { EnrichmentPanel } from "@/components/apps/music/enrichment-panel"
-import { IngestionPanel } from "@/components/apps/music/ingestion-panel"
-import { SpotifyConnectionPanel } from "@/components/apps/music/spotify-connection-panel"
-import { RequireApp } from "@/components/apps/require-app"
+import { ClassificationPanel } from "@/features/music/classification-panel"
+import { DeliveryPanel } from "@/features/music/delivery-panel"
+import { DestinationPanel } from "@/features/music/destination-panel"
+import { EnrichmentPanel } from "@/features/music/enrichment-panel"
+import { IngestionPanel } from "@/features/music/ingestion-panel"
+import { SpotifyConnectionPanel } from "@/features/music/spotify-connection-panel"
+import { RequireApp } from "@/features/apps/require-app"
 
 /** Rendered only for signed-in users with music access: the /apps layout signs them in. */
 export const Route = createFileRoute("/apps/music")({

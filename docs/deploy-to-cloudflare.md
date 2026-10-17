@@ -32,6 +32,21 @@ The build's API token needs **D1: Edit** for the migration step. If the
 migration step fails with an authentication error, add that permission to the
 token in **Workers & Pages > mdoultremont-me > Settings > Build**.
 
+## R2 bucket
+
+The Worker binds the R2 bucket `mdoultremont-files` as `FILES` (flight tracks
+and original files; see `docs/flights.md`). Create it once, before the first
+deploy that includes the binding, or the deploy fails:
+
+```sh
+wrangler r2 bucket create mdoultremont-files
+```
+
+The build's API token needs **Workers R2 Storage: Edit** only for creating the
+bucket by hand; deploying a Worker with an existing bucket binding needs no
+extra permission. Preview versions share the production bucket, like the
+database.
+
 ## Writing migrations
 
 Migrations run a few seconds before the new Worker replaces the old one, so

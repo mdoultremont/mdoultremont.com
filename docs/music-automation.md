@@ -2,7 +2,7 @@
 
 The private `/apps/music` area sorts the owner's Spotify Liked Songs into playlists.
 Vocabulary is defined in `CONTEXT.md` (Music control area); code structure and
-Effect patterns are in `apps/web/src/backend/README.md`.
+Effect patterns are in `apps/web/src/server/README.md`.
 
 ## Pipeline
 

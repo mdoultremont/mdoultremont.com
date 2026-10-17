@@ -3,7 +3,7 @@ import {
   deleteDestination,
   getDestinations,
   putDestination,
-} from "@/backend/entrypoints/http/music/destinations.server"
+} from "@/server/entrypoints/http/music/destinations.server"
 
 export const Route = createFileRoute("/api/apps/music/destinations")({
   server: {
