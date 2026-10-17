@@ -8,9 +8,9 @@ import {
   SlidersHorizontalIcon,
   UploadIcon,
   UsersIcon,
-  WindIcon,
 } from "lucide-react"
 import type { App } from "@/server/actions/auth"
+import { ParagliderIcon } from "@/features/flights/icon"
 
 /** The public portfolio, which lives on its own domain. */
 export const portfolioUrl = "https://mdoultremont.com"
@@ -33,7 +33,7 @@ export const appCatalog = [
     to: "/flights",
     name: "Flights",
     description: "Paragliding flight logbook.",
-    icon: WindIcon,
+    icon: ParagliderIcon,
     pages: [
       { to: "/flights", label: "Dashboard", icon: LayoutDashboardIcon },
       { to: "/flights/logbook", label: "Logbook", icon: BookOpenIcon },

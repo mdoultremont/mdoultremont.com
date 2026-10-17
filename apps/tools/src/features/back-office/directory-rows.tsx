@@ -19,15 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/features/ui/avatar"
 import { Badge } from "@/features/ui/badge"
 import { Button } from "@/features/ui/button"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemFooter,
-  ItemMedia,
-  ItemTitle,
-} from "@/features/ui/item"
+import { TableCell, TableRow } from "@/features/ui/table"
 import { AppCheckboxes } from "./app-checkboxes"
 
 export function UserRow({
@@ -45,32 +37,41 @@ export function UserRow({
   onRemove: () => void
 }) {
   return (
-    <Item className="items-start" render={<li />} variant="outline">
-      <ItemMedia>
-        <Avatar>
-          {user.image ? <AvatarImage alt="" src={user.image} /> : null}
-          <AvatarFallback>{initials(user.name)}</AvatarFallback>
-        </Avatar>
-      </ItemMedia>
-      <ItemContent className="min-w-0">
-        <ItemTitle className="line-clamp-none break-words">
-          {user.name}
-          {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
-        </ItemTitle>
-        <ItemDescription className="break-all">{user.email}</ItemDescription>
-        <p className="text-xs text-muted-foreground">
-          Signs in with{" "}
-          {user.providers
-            .map((provider) =>
-              provider in providerNames
-                ? providerNames[provider as keyof typeof providerNames]
-                : provider
-            )
-            .join(", ") || "no account yet"}
-        </p>
-      </ItemContent>
-      {isCurrentUser ? null : (
-        <ItemActions>
+    <TableRow>
+      <TableCell className="py-3">
+        <div className="flex items-center gap-3">
+          <Avatar>
+            {user.image ? <AvatarImage alt="" src={user.image} /> : null}
+            <AvatarFallback>{initials(user.name)}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="flex items-center gap-2 font-medium">
+              {user.name}
+              {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
+            </span>
+            <span className="text-muted-foreground">{user.email}</span>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {user.providers
+          .map((provider) =>
+            provider in providerNames
+              ? providerNames[provider as keyof typeof providerNames]
+              : provider
+          )
+          .join(", ") || "No account yet"}
+      </TableCell>
+      <TableCell>
+        <AppCheckboxes
+          disabled={busy}
+          locked={isCurrentUser ? ["backOffice"] : []}
+          onChange={onAccess}
+          selected={user.apps}
+        />
+      </TableCell>
+      <TableCell className="text-right">
+        {isCurrentUser ? null : (
           <AlertDialog>
             <AlertDialogTrigger
               disabled={busy}
@@ -99,17 +100,9 @@ export function UserRow({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </ItemActions>
-      )}
-      <ItemFooter className="border-t pt-3">
-        <AppCheckboxes
-          disabled={busy}
-          locked={isCurrentUser ? ["backOffice"] : []}
-          onChange={onAccess}
-          selected={user.apps}
-        />
-      </ItemFooter>
-    </Item>
+        )}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -125,37 +118,42 @@ export function InvitationRow({
   onRevoke: () => void
 }) {
   return (
-    <Item render={<li />} variant="outline">
-      <ItemContent className="min-w-0">
-        <ItemTitle className="line-clamp-none break-all">
-          {invitation.email}
-        </ItemTitle>
-        <ItemDescription className="flex flex-wrap items-center gap-2 text-xs">
-          {invitation.apps.map(appName).join(", ")}
-          {invitation.expired ? (
-            <Badge variant="destructive">Expired</Badge>
-          ) : (
-            <Badge variant="outline">
-              Expires {new Date(invitation.expiresAt).toLocaleDateString()}
-            </Badge>
-          )}
-        </ItemDescription>
-      </ItemContent>
-      <ItemActions>
-        <Button disabled={busy} onClick={onResend} size="sm" variant="outline">
-          Send a new link
-        </Button>
-        <Button
-          className="text-muted-foreground hover:text-destructive"
-          disabled={busy}
-          onClick={onRevoke}
-          size="sm"
-          variant="ghost"
-        >
-          Revoke
-        </Button>
-      </ItemActions>
-    </Item>
+    <TableRow>
+      <TableCell className="py-3 font-medium">{invitation.email}</TableCell>
+      <TableCell className="text-muted-foreground">
+        {invitation.apps.map(appName).join(", ")}
+      </TableCell>
+      <TableCell>
+        {invitation.expired ? (
+          <Badge variant="destructive">Expired</Badge>
+        ) : (
+          <Badge variant="outline">
+            {new Date(invitation.expiresAt).toLocaleDateString()}
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            disabled={busy}
+            onClick={onResend}
+            size="sm"
+            variant="outline"
+          >
+            Send a new link
+          </Button>
+          <Button
+            className="text-muted-foreground hover:text-destructive"
+            disabled={busy}
+            onClick={onRevoke}
+            size="sm"
+            variant="ghost"
+          >
+            Revoke
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   )
 }
 
