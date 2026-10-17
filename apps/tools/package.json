@@ -19,8 +19,8 @@
     "format:check": "oxfmt --check .",
     "test": "vitest run --config vitest.config.ts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
-    "deploy": "pnpm run build && pnpm run deploy:production",
-    "deploy:production": "pnpm run db:migrate:remote && wrangler deploy"
+    "deploy:production": "pnpm run build && pnpm run db:migrate:remote && wrangler deploy",
+    "deploy:preview": "pnpm run build && wrangler versions upload"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

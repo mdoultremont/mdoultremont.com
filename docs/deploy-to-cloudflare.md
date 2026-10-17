@@ -31,29 +31,33 @@ Both Workers use:
 
 The portfolio (`mdoultremont-portfolio`):
 
-- Build command: `pnpm --filter @mdoultremont/portfolio build`
+- Build command: none
 - Deploy command: `pnpm --filter @mdoultremont/portfolio deploy:production`
-- Version command: `pnpm --filter @mdoultremont/portfolio exec wrangler versions upload`
+- Version command: `pnpm --filter @mdoultremont/portfolio deploy:preview`
 
 The tools (`mdoultremont-tools`):
 
-- Build command: `pnpm --filter @mdoultremont/tools build`
+- Build command: none
 - Deploy command: `pnpm --filter @mdoultremont/tools deploy:production`
-- Version command: `pnpm --filter @mdoultremont/tools exec wrangler versions upload`
+- Version command: `pnpm --filter @mdoultremont/tools deploy:preview`
+
+Each app's `deploy:production` and `deploy:preview` scripts build the app
+themselves, so the same command works in Workers Builds and on your computer.
+Leave the build command empty; setting one would build twice.
 
 To skip builds that cannot change a Worker, set its build watch paths to its
 app directory (`apps/web/*` or `apps/tools/*`) plus the root `package.json`,
 `pnpm-lock.yaml`, and `pnpm-workspace.yaml`.
 
-For the tools, `deploy:production` runs `wrangler d1 migrations apply
-mdoultremont-data --remote` and then `wrangler deploy`. Wrangler records
-applied migrations in the database, so a deploy without new migrations only
-deploys. A failed migration stops the build before the deploy, leaving the
-previous Worker running. Wrangler answers its confirmation prompt with yes in
+For the tools, `deploy:production` builds the app, runs `wrangler d1
+migrations apply mdoultremont-data --remote`, and then `wrangler deploy`.
+Wrangler records applied migrations in the database, so a deploy without new
+migrations only builds and deploys. A failed build or migration stops the
+command before the deploy, leaving the previous Worker running. Wrangler answers its confirmation prompt with yes in
 the build.
 
 Preview versions share the production database binding, so the version
-command must not apply migrations.
+command (`deploy:preview`) must not apply migrations.
 
 The tools build's API token needs **D1: Edit** for the migration step. If the
 migration step fails with an authentication error, add that permission to the
@@ -115,14 +119,16 @@ curl --fail --head https://tools.mdoultremont.com
 
 ## Deploy from your computer
 
-Authenticate Wrangler once, then run the root deployment command. It builds
-and deploys both apps, applying pending tools migrations first, like the
-production builds:
+Authenticate Wrangler once, then run the root deployment command. It runs
+each app's `deploy:production`, exactly like the production builds:
 
 ```bash
 pnpm --dir apps/tools exec wrangler login
-pnpm deploy
+pnpm deploy:production
 ```
+
+To deploy one app, run `pnpm --filter @mdoultremont/tools deploy:production`
+(or `@mdoultremont/portfolio`).
 
 Run `pnpm --dir apps/tools exec wrangler whoami` to check the active Cloudflare
 account before a local deployment.
