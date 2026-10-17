@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
+import { PageHeader } from "@/features/apps/shell"
 import { listFlights } from "@/features/flights/api"
 import {
   formatAltitude,
@@ -7,10 +8,13 @@ import {
   formatDistance,
   formatDuration,
 } from "@/features/flights/format"
-import { LoadState, useFlightResource } from "@/features/flights/layout/ui"
+import {
+  EmptyState,
+  LoadState,
+  useFlightResource,
+} from "@/features/flights/layout/ui"
 import { Badge } from "@/features/ui/badge"
 import { buttonVariants } from "@/features/ui/button"
-import { Card } from "@/features/ui/card"
 import { Label } from "@/features/ui/label"
 import {
   Select,
@@ -48,37 +52,29 @@ export function FlightLogbook() {
   )
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Logbook
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Your time in the air, one flight at a time.
-          </p>
-        </div>
-        <Link to="/apps/flights/import" className={buttonVariants()}>
-          Import flights
-        </Link>
-      </div>
+      <PageHeader
+        title="Logbook"
+        description="Your time in the air, one flight at a time."
+        actions={
+          <Link to="/apps/flights/import" className={buttonVariants()}>
+            Import flights
+          </Link>
+        }
+      />
       {!data ? (
         <LoadState error={error} reload={reload} label="flights" />
       ) : flights.length === 0 ? (
-        <Card className="mt-6 border border-dashed border-border bg-transparent px-6 ring-0">
-          <h2 className="text-lg font-semibold">Your logbook starts here</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Import a GPX or IGC file to add your first flight.
-          </p>
-          <Link
-            to="/apps/flights/import"
-            className={buttonVariants({ className: "mt-5" })}
-          >
+        <EmptyState
+          title="Your logbook starts here"
+          description="Import a GPX or IGC file to add your first flight."
+        >
+          <Link to="/apps/flights/import" className={buttonVariants()}>
             Import your first flight
           </Link>
-        </Card>
+        </EmptyState>
       ) : (
         <>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Label htmlFor="flight-year">Year</Label>
             <Select
               value={year}

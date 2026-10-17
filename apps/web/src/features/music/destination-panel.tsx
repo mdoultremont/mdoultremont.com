@@ -1,7 +1,24 @@
 import { Combobox } from "@base-ui/react/combobox"
+import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useId, useState } from "react"
 import type { SpotifyPlaylist } from "@/server/modules/spotify"
 import type { DestinationConfiguration } from "@/server/actions/music/destinations"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Button } from "@/features/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/ui/card"
+import { FieldDescription, FieldLabel } from "@/features/ui/field"
+import { Input } from "@/features/ui/input"
+import { Item, ItemActions, ItemContent, ItemTitle } from "@/features/ui/item"
+import { NativeSelect, NativeSelectOption } from "@/features/ui/native-select"
+import { Separator } from "@/features/ui/separator"
+import { Spinner } from "@/features/ui/spinner"
+import { Textarea } from "@/features/ui/textarea"
 
 type ViewState =
   | { readonly kind: "loading" }
@@ -117,17 +134,33 @@ export function DestinationPanel() {
 
   if (view.kind === "loading")
     return (
-      <section className="mt-6" aria-label="Playlist settings">
-        <p>Loading playlist settings…</p>
+      <section aria-label="Playlist settings">
+        <Card>
+          <CardContent>
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Loading playlist settings…
+            </p>
+          </CardContent>
+        </Card>
       </section>
     )
   if (view.kind === "error")
     return (
-      <section className="mt-6" aria-label="Playlist settings">
-        <h2 className="text-lg font-semibold">Playlists</h2>
-        <p className="mt-3 text-sm text-red-800" role="alert">
-          {view.message}
-        </p>
+      <section aria-label="Playlist settings">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Playlists</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{view.message}</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       </section>
     )
 
@@ -141,203 +174,253 @@ export function DestinationPanel() {
   const available = playlists.filter((playlist) => !configured.has(playlist.id))
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Playlists"
-    >
-      <h2 className="text-lg font-semibold text-ink">Playlists</h2>
-      <p className="mt-2 text-sm leading-6 text-ink/70">
-        Add a playlist, then describe the tracks that belong in it.
-      </p>
-      {error ? (
-        <p className="mt-3 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
+    <section aria-label="Playlists">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Playlists</h2>
+          </CardTitle>
+          <CardDescription>
+            Add a playlist, then describe the tracks that belong in it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
 
-      <h3 className="mt-6 font-medium">Your playlists</h3>
-      {config.destinations.length === 0 ? (
-        <p className="mt-2 text-sm text-ink/60">No playlists added yet.</p>
-      ) : (
-        <ul className="mt-2 space-y-3">
-          {config.destinations.map((destination) => {
-            const name =
-              names.get(destination.playlistId) ?? destination.playlistId
-            const isEditing = editingId === destination.playlistId
-            const canEnable = Boolean(destination.description.trim())
-            return (
-              <li
-                className="rounded-xl border border-ink/10 p-4"
-                key={destination.playlistId}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{name}</p>
-                    <p className="text-xs text-ink/50">
-                      {destination.enabled
-                        ? "Ready for new tracks"
-                        : canEnable
-                          ? "Paused"
-                          : "Add a track description to use this playlist"}
-                    </p>
-                  </div>
-                  <div className="flex gap-3 text-sm">
-                    <button
-                      type="button"
-                      className="underline disabled:opacity-50"
-                      disabled={busy}
-                      onClick={() => {
-                        setEditingId(isEditing ? null : destination.playlistId)
-                        setEditingDescription(destination.description)
-                      }}
+          <div className="flex flex-col gap-3">
+            <h3 className="font-heading font-medium">Your playlists</h3>
+            {config.destinations.length === 0 ? (
+              <p className="rounded-lg border border-dashed px-3 py-6 text-center text-muted-foreground">
+                No playlists added yet.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {config.destinations.map((destination) => {
+                  const name =
+                    names.get(destination.playlistId) ?? destination.playlistId
+                  const isEditing = editingId === destination.playlistId
+                  const canEnable = Boolean(destination.description.trim())
+                  return (
+                    <Item
+                      key={destination.playlistId}
+                      render={<li />}
+                      variant="outline"
                     >
-                      {isEditing ? "Cancel" : "Edit description"}
-                    </button>
-                    <button
-                      type="button"
-                      className="underline disabled:opacity-50"
-                      disabled={busy || (!destination.enabled && !canEnable)}
-                      onClick={() =>
-                        mutate("/api/apps/music/destinations", "PUT", {
-                          playlistId: destination.playlistId,
-                          description: destination.description,
-                          enabled: !destination.enabled,
-                        })
-                      }
-                    >
-                      {destination.enabled ? "Pause" : "Use playlist"}
-                    </button>
-                    <button
-                      type="button"
-                      className="underline disabled:opacity-50"
-                      disabled={busy}
-                      onClick={() =>
-                        mutate("/api/apps/music/destinations", "DELETE", {
-                          playlistId: destination.playlistId,
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-                {isEditing ? (
-                  <div className="mt-3">
-                    <TrackDescription
-                      id={`description-${destination.playlistId}`}
-                      value={editingDescription}
-                      onChange={setEditingDescription}
-                    />
-                    <button
-                      type="button"
-                      className="mt-2 rounded-full bg-ink px-4 py-2 text-sm text-paper disabled:opacity-50"
-                      disabled={
-                        busy ||
-                        (destination.enabled && !editingDescription.trim())
-                      }
-                      onClick={async () => {
-                        if (
-                          await mutate("/api/apps/music/destinations", "PUT", {
-                            playlistId: destination.playlistId,
-                            description: editingDescription,
-                            enabled:
-                              destination.enabled ||
-                              (!destination.description.trim() &&
-                                Boolean(editingDescription.trim())),
-                          })
-                        )
-                          setEditingId(null)
-                      }}
-                    >
-                      Save description
-                    </button>
-                  </div>
-                ) : destination.description ? (
-                  <p className="mt-3 whitespace-pre-wrap text-sm text-ink/70">
-                    {destination.description}
-                  </p>
-                ) : null}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                      <ItemContent>
+                        <ItemTitle>{name}</ItemTitle>
+                        <p
+                          className={
+                            destination.enabled
+                              ? "flex items-center gap-1.5 text-xs text-foreground"
+                              : "flex items-center gap-1.5 text-xs text-muted-foreground"
+                          }
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={
+                              destination.enabled
+                                ? "size-1.5 rounded-full bg-primary"
+                                : "size-1.5 rounded-full bg-muted-foreground/50"
+                            }
+                          />
+                          {destination.enabled
+                            ? "Ready for new tracks"
+                            : canEnable
+                              ? "Paused"
+                              : "Add a track description to use this playlist"}
+                        </p>
+                      </ItemContent>
+                      <ItemActions className="flex-wrap">
+                        <Button
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingId(
+                              isEditing ? null : destination.playlistId
+                            )
+                            setEditingDescription(destination.description)
+                          }}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          {isEditing ? "Cancel" : "Edit description"}
+                        </Button>
+                        <Button
+                          disabled={
+                            busy || (!destination.enabled && !canEnable)
+                          }
+                          onClick={() =>
+                            mutate("/api/apps/music/destinations", "PUT", {
+                              playlistId: destination.playlistId,
+                              description: destination.description,
+                              enabled: !destination.enabled,
+                            })
+                          }
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          {destination.enabled ? "Pause" : "Use playlist"}
+                        </Button>
+                        <Button
+                          disabled={busy}
+                          onClick={() =>
+                            mutate("/api/apps/music/destinations", "DELETE", {
+                              playlistId: destination.playlistId,
+                            })
+                          }
+                          size="sm"
+                          type="button"
+                          variant="destructive"
+                        >
+                          Remove
+                        </Button>
+                      </ItemActions>
+                      {isEditing ? (
+                        <div className="flex basis-full flex-col gap-3">
+                          <TrackDescription
+                            id={`description-${destination.playlistId}`}
+                            value={editingDescription}
+                            onChange={setEditingDescription}
+                          />
+                          <Button
+                            className="w-fit"
+                            disabled={
+                              busy ||
+                              (destination.enabled &&
+                                !editingDescription.trim())
+                            }
+                            onClick={async () => {
+                              if (
+                                await mutate(
+                                  "/api/apps/music/destinations",
+                                  "PUT",
+                                  {
+                                    playlistId: destination.playlistId,
+                                    description: editingDescription,
+                                    enabled:
+                                      destination.enabled ||
+                                      (!destination.description.trim() &&
+                                        Boolean(editingDescription.trim())),
+                                  }
+                                )
+                              )
+                                setEditingId(null)
+                            }}
+                            type="button"
+                          >
+                            Save description
+                          </Button>
+                        </div>
+                      ) : destination.description ? (
+                        <p className="basis-full whitespace-pre-wrap text-muted-foreground">
+                          {destination.description}
+                        </p>
+                      ) : null}
+                    </Item>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
 
-      <div className="mt-7 border-t border-ink/10 pt-6">
-        <h3 className="font-medium">Add playlist</h3>
-        <p className="mt-1 text-sm text-ink/70">
-          Search your Spotify playlists or create a private one.
-        </p>
-        <PlaylistCombobox
-          playlists={available}
-          value={playlistQuery}
-          selected={selectedPlaylist}
-          open={menuOpen}
-          disabled={busy}
-          onValueChange={(value) => {
-            setPlaylistQuery(value)
-            setSelectedPlaylist(null)
-            setMenuOpen(true)
-          }}
-          onOpenChange={setMenuOpen}
-          onSelect={(playlist) => {
-            setSelectedPlaylist(playlist)
-            setPlaylistQuery(playlist.name)
-            setMenuOpen(false)
-          }}
-          onCreate={(name) => createPlaylist(name)}
-        />
-        <button
-          type="button"
-          className="mt-3 rounded-full bg-ink px-4 py-2 text-sm text-paper disabled:opacity-50"
-          disabled={busy || !selectedPlaylist}
-          onClick={addSelectedPlaylist}
-        >
-          Add playlist
-        </button>
-      </div>
+          <Separator />
 
-      <div className="mt-7 border-t border-ink/10 pt-6">
-        <h3 className="font-medium">Tracks needing review</h3>
-        <p className="mt-1 text-sm text-ink/70">
-          Tracks that do not match a playlist description go here.
-        </p>
-        <label className="mt-3 block text-sm" htmlFor="review-playlist">
-          Spotify playlist
-        </label>
-        <select
-          id="review-playlist"
-          className="mt-1 w-full rounded-lg border border-ink/20 bg-white p-2 text-sm"
-          value={reviewId}
-          onChange={(event) => setReviewId(event.target.value)}
-        >
-          <option value="">No review playlist</option>
-          {playlists.map((playlist) => (
-            <option
-              key={playlist.id}
-              value={playlist.id}
-              disabled={config.destinations.some(
-                (destination) =>
-                  destination.enabled && destination.playlistId === playlist.id
-              )}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h3 className="font-heading font-medium">Add playlist</h3>
+              <p className="text-muted-foreground">
+                Search your Spotify playlists or create a private one.
+              </p>
+            </div>
+            <PlaylistCombobox
+              playlists={available}
+              value={playlistQuery}
+              selected={selectedPlaylist}
+              open={menuOpen}
+              disabled={busy}
+              onValueChange={(value) => {
+                setPlaylistQuery(value)
+                setSelectedPlaylist(null)
+                setMenuOpen(true)
+              }}
+              onOpenChange={setMenuOpen}
+              onSelect={(playlist) => {
+                setSelectedPlaylist(playlist)
+                setPlaylistQuery(playlist.name)
+                setMenuOpen(false)
+              }}
+              onCreate={(name) => createPlaylist(name)}
+            />
+            <Button
+              className="w-fit"
+              disabled={busy || !selectedPlaylist}
+              onClick={addSelectedPlaylist}
+              type="button"
             >
-              {playlist.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="mt-3 rounded-full bg-ink px-4 py-2 text-sm text-paper disabled:opacity-50"
-          disabled={busy || reviewId === (config.reviewPlaylistId ?? "")}
-          onClick={() =>
-            mutate("/api/apps/music/review-playlist", "PUT", {
-              playlistId: reviewId || null,
-            })
-          }
-        >
-          Save playlist
-        </button>
-      </div>
+              Add playlist
+            </Button>
+          </div>
+
+          <Separator />
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h3 className="font-heading font-medium">
+                Tracks needing review
+              </h3>
+              <p className="text-muted-foreground">
+                Tracks that do not match a playlist description go here.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <FieldLabel htmlFor="review-playlist">
+                Spotify playlist
+              </FieldLabel>
+              <NativeSelect
+                className="w-full"
+                id="review-playlist"
+                value={reviewId}
+                onChange={(event) => setReviewId(event.target.value)}
+              >
+                <NativeSelectOption value="">
+                  No review playlist
+                </NativeSelectOption>
+                {playlists.map((playlist) => (
+                  <NativeSelectOption
+                    key={playlist.id}
+                    value={playlist.id}
+                    disabled={config.destinations.some(
+                      (destination) =>
+                        destination.enabled &&
+                        destination.playlistId === playlist.id
+                    )}
+                  >
+                    {playlist.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
+            <Button
+              className="w-fit"
+              disabled={busy || reviewId === (config.reviewPlaylistId ?? "")}
+              onClick={() =>
+                mutate("/api/apps/music/review-playlist", "PUT", {
+                  playlistId: reviewId || null,
+                })
+              }
+              type="button"
+            >
+              Save playlist
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   )
 }
@@ -352,24 +435,21 @@ function TrackDescription({
   readonly onChange: (value: string) => void
 }) {
   return (
-    <>
-      <label className="block text-sm" htmlFor={id}>
-        Which tracks belong here?
-      </label>
-      <textarea
+    <div className="flex flex-col gap-2">
+      <FieldLabel htmlFor={id}>Which tracks belong here?</FieldLabel>
+      <Textarea
         id={id}
-        className="mt-1 w-full rounded-lg border border-ink/20 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         maxLength={2000}
         rows={3}
         value={value}
         placeholder="For example: mellow acoustic songs for a quiet evening."
         onChange={(event) => onChange(event.target.value)}
       />
-      <p className="mt-1 text-xs text-ink/60">
+      <FieldDescription className="text-xs">
         Describe the sound, mood, or setting. A description is required before
         this playlist can be used.
-      </p>
-    </>
+      </FieldDescription>
+    </div>
   )
 }
 
@@ -438,19 +518,17 @@ function PlaylistCombobox({
       open={open}
       value={selectedOption}
     >
-      <div className="relative mt-3">
-        <label className="block text-sm" htmlFor={inputId}>
-          Search Spotify playlists
-        </label>
+      <div className="relative flex flex-col gap-2">
+        <FieldLabel htmlFor={inputId}>Search Spotify playlists</FieldLabel>
         <Combobox.Input
           id={inputId}
-          className="mt-1 w-full rounded-lg border border-ink/20 bg-white p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           placeholder="Type a playlist name"
+          render={<Input />}
         />
         <Combobox.Portal>
-          <Combobox.Positioner className="z-10 outline-none" sideOffset={4}>
-            <Combobox.Popup className="max-h-60 w-[var(--anchor-width)] overflow-auto rounded-lg border border-ink/20 bg-white py-1 shadow-lg">
-              <Combobox.Empty className="px-3 py-2 text-sm text-ink/60">
+          <Combobox.Positioner className="z-50 outline-none" sideOffset={4}>
+            <Combobox.Popup className="max-h-60 w-(--anchor-width) overflow-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10">
+              <Combobox.Empty className="px-2 py-1.5 text-sm text-muted-foreground">
                 No matching playlists
               </Combobox.Empty>
               <Combobox.List>
@@ -462,7 +540,7 @@ function PlaylistCombobox({
                         : option.playlist.id
                     }
                     value={option}
-                    className="cursor-pointer px-3 py-2 text-sm outline-none hover:bg-ink/5 data-highlighted:bg-ink/5"
+                    className="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-muted data-highlighted:bg-muted"
                     onClick={() => {
                       if (option.kind === "create") onCreate(option.name)
                       else onSelect(option.playlist)

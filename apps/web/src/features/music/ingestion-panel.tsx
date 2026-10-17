@@ -1,4 +1,17 @@
+import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Badge } from "@/features/ui/badge"
+import { Button } from "@/features/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/ui/card"
+import { Spinner } from "@/features/ui/spinner"
 import type {
   IngestionKind,
   IngestionStatus,
@@ -86,63 +99,69 @@ export function IngestionPanel({
   }
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Ingestion"
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">Ingestion</h2>
-        {status ? (
-          <p className="text-sm text-ink/70">
-            {status.liked} liked
-            {status.unliked > 0 ? ` · ${status.unliked} un-liked` : ""}
-          </p>
-        ) : null}
-      </div>
-      <p className="mt-1 text-sm text-ink/60">
-        Reads your Spotify Liked Songs. New likes are checked every hour, and
-        every like once a day.
-      </p>
-
-      {status === null && !error ? (
-        <p className="mt-3 text-sm text-ink/70">Loading…</p>
-      ) : null}
-      {latest ? (
-        <output className="mt-3 block text-sm text-ink/80">
-          {describe(latest)}
-        </output>
-      ) : status ? (
-        <p className="mt-3 text-sm text-ink/80">No likes ingested yet.</p>
-      ) : null}
-      {latest?.status === "failed" && latest.error ? (
-        <p className="mt-2 text-sm text-red-800" role="alert">
-          {latest.error}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-          disabled={busy || inProgress}
-          onClick={() => void start("incremental")}
-          type="button"
-        >
-          Check for new likes
-        </button>
-        <button
-          className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-          disabled={busy || inProgress}
-          onClick={() => void start("full")}
-          type="button"
-        >
-          Re-read all likes
-        </button>
-      </div>
+    <section aria-label="Ingestion">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Ingestion</h2>
+          </CardTitle>
+          <CardDescription>
+            Reads your Spotify Liked Songs. New likes are checked every hour,
+            and every like once a day.
+          </CardDescription>
+          {status ? (
+            <CardAction>
+              <Badge variant="secondary">
+                {status.liked} liked
+                {status.unliked > 0 ? ` · ${status.unliked} un-liked` : ""}
+              </Badge>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {status === null && !error ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Loading…
+            </p>
+          ) : null}
+          {latest ? (
+            <output className="block">{describe(latest)}</output>
+          ) : status ? (
+            <p className="text-muted-foreground">No likes ingested yet.</p>
+          ) : null}
+          {latest?.status === "failed" && latest.error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{latest.error}</AlertDescription>
+            </Alert>
+          ) : null}
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={busy || inProgress}
+              onClick={() => void start("incremental")}
+              type="button"
+              variant="outline"
+            >
+              Check for new likes
+            </Button>
+            <Button
+              disabled={busy || inProgress}
+              onClick={() => void start("full")}
+              type="button"
+              variant="outline"
+            >
+              Re-read all likes
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   )
 }

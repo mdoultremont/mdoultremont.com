@@ -1,5 +1,23 @@
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router"
+import { ChevronRightIcon, LayoutGridIcon } from "lucide-react"
 import { appCatalog } from "@/features/apps/catalog"
+import { PageHeader } from "@/features/apps/shell"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/features/ui/empty"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/features/ui/item"
 
 export const Route = createFileRoute("/apps/")({
   component: AppsIndex,
@@ -12,29 +30,36 @@ function AppsIndex() {
   const apps = appCatalog.filter((app) => user?.apps.includes(app.id))
   return (
     <>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-        Apps
-      </h1>
+      <PageHeader title="Apps" description="Everything you have access to." />
       {apps.length === 0 ? (
-        <p className="mt-8 text-base leading-7 text-ink/70">
-          You do not have access to any app yet.
-        </p>
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <LayoutGridIcon />
+            </EmptyMedia>
+            <EmptyTitle>No apps yet</EmptyTitle>
+            <EmptyDescription>
+              You do not have access to any app yet.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <ul className="mt-8 grid gap-3">
+        <ItemGroup className="gap-3">
           {apps.map((app) => (
-            <li key={app.to}>
-              <Link
-                className="block rounded-2xl border border-ink/10 p-5 transition hover:bg-ink/5"
-                to={app.to}
-              >
-                <span className="font-semibold text-ink">{app.name}</span>
-                <span className="mt-1 block text-sm text-ink/70">
-                  {app.description}
-                </span>
-              </Link>
-            </li>
+            <Item key={app.id} variant="outline" render={<Link to={app.to} />}>
+              <ItemMedia variant="icon">
+                <app.icon />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle className="font-heading">{app.name}</ItemTitle>
+                <ItemDescription>{app.description}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <ChevronRightIcon className="size-4 text-muted-foreground" />
+              </ItemActions>
+            </Item>
           ))}
-        </ul>
+        </ItemGroup>
       )}
     </>
   )

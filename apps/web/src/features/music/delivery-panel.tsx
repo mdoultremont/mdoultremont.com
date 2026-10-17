@@ -1,5 +1,18 @@
+import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import type { DeliveryStatus } from "@/server/actions/music/delivery"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Badge } from "@/features/ui/badge"
+import { Button } from "@/features/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/ui/card"
+import { Spinner } from "@/features/ui/spinner"
 
 const pollMilliseconds = 5000
 /** Polls without progress before giving up, e.g. while Spotify rate-limits. */
@@ -87,83 +100,101 @@ export function DeliveryPanel({
   }
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Delivery"
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">Delivery</h2>
-        {status ? (
-          <p className="text-sm text-ink/70">{status.delivered} written</p>
-        ) : null}
-      </div>
-      <p className="mt-1 text-sm text-ink/60">
-        Adds tracks to the playlists their decisions name. Tracks are only ever
-        added, never removed, and un-liked tracks are skipped.
-      </p>
+    <section aria-label="Delivery">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Delivery</h2>
+          </CardTitle>
+          <CardDescription>
+            Adds tracks to the playlists their decisions name. Tracks are only
+            ever added, never removed, and un-liked tracks are skipped.
+          </CardDescription>
+          {status ? (
+            <CardAction>
+              <Badge variant="secondary">{status.delivered} written</Badge>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {status === null && !error ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Loading…
+            </p>
+          ) : null}
+          {status ? (
+            <output className="block">
+              {status.toWrite > 0
+                ? writing || status.automatic
+                  ? `Writing to Spotify: ${status.toWrite} left…`
+                  : `${status.toWrite} tracks are decided and ready to write.`
+                : status.delivered > 0
+                  ? `Everything decided is in your playlists${since(status.lastDeliveredAt)}.`
+                  : "Nothing to write yet."}
+            </output>
+          ) : null}
+          {status && status.refused > 0 ? (
+            <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-amber-800 dark:text-amber-300">
+              <TriangleAlertIcon
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0"
+              />
+              <span>
+                Spotify refused {status.refused} writes, for example to a
+                playlist you can no longer edit. Fix the playlist, then press
+                Write now to try again.
+              </span>
+            </p>
+          ) : null}
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
 
-      {status === null && !error ? (
-        <p className="mt-3 text-sm text-ink/70">Loading…</p>
-      ) : null}
-      {status ? (
-        <output className="mt-3 block text-sm text-ink/80">
-          {status.toWrite > 0
-            ? writing || status.automatic
-              ? `Writing to Spotify: ${status.toWrite} left…`
-              : `${status.toWrite} tracks are decided and ready to write.`
-            : status.delivered > 0
-              ? `Everything decided is in your playlists${since(status.lastDeliveredAt)}.`
-              : "Nothing to write yet."}
-        </output>
-      ) : null}
-      {status && status.refused > 0 ? (
-        <p className="mt-2 text-sm text-amber-800">
-          Spotify refused {status.refused} writes, for example to a playlist you
-          can no longer edit. Fix the playlist, then press Write now to try
-          again.
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {status ? (
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <button
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-paper disabled:opacity-50"
-            disabled={
-              busy || writing || (status.toWrite === 0 && status.refused === 0)
-            }
-            onClick={() => void writeNow()}
-            type="button"
-          >
-            Write now
-          </button>
-          <label
-            className="flex items-center gap-2 text-sm text-ink"
-            htmlFor={automaticId}
-          >
-            <input
-              checked={status.automatic}
-              disabled={busy}
-              id={automaticId}
-              onChange={(event) =>
-                void send(
-                  {
-                    method: "PUT",
-                    body: JSON.stringify({ automatic: event.target.checked }),
-                  },
-                  "The setting could not be saved"
-                )
-              }
-              type="checkbox"
-            />
-            Write automatically after each classification
-          </label>
-        </div>
-      ) : null}
+          {status ? (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button
+                disabled={
+                  busy ||
+                  writing ||
+                  (status.toWrite === 0 && status.refused === 0)
+                }
+                onClick={() => void writeNow()}
+                type="button"
+              >
+                Write now
+              </Button>
+              <label
+                className="flex items-center gap-2 text-sm has-disabled:opacity-50"
+                htmlFor={automaticId}
+              >
+                <input
+                  checked={status.automatic}
+                  className="size-4 accent-primary"
+                  disabled={busy}
+                  id={automaticId}
+                  onChange={(event) =>
+                    void send(
+                      {
+                        method: "PUT",
+                        body: JSON.stringify({
+                          automatic: event.target.checked,
+                        }),
+                      },
+                      "The setting could not be saved"
+                    )
+                  }
+                  type="checkbox"
+                />
+                Write automatically after each classification
+              </label>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </section>
   )
 }

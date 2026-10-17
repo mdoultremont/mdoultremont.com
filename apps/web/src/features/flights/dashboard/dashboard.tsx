@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import type { Dashboard as DashboardData } from "../api"
 import { formatDate, formatDistance, formatDuration } from "../format"
+import { PageHeader } from "@/features/apps/shell"
+import { EmptyState } from "@/features/flights/layout/ui"
 import { buttonVariants } from "@/features/ui/button"
 import { Card } from "@/features/ui/card"
 import { ActivityChart } from "./activity-chart"
@@ -19,46 +21,37 @@ export function Dashboard({
   const activity = shapeActivity(data, now)
   const records = shapeRecords(data.records)
   return (
-    <div className="dark-surface space-y-8 text-foreground dark:-mx-3 dark:rounded-2xl dark:p-3">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Flight dashboard
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your time in the air, at a glance.
-          </p>
-        </div>
-        {data.totals.flights > 0 ? (
-          <Link
-            to="/apps/flights/import"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Import flights
-          </Link>
-        ) : null}
-      </div>
-      {data.totals.flights === 0 ? (
-        <section>
-          <Card className="items-center border border-dashed border-border bg-transparent px-5 py-16 text-center ring-0">
-            <h2 className="text-xl font-semibold">Your logbook starts here</h2>
-            <p className="mx-auto max-w-md text-sm leading-6 text-muted-foreground">
-              Import a GPX or IGC track to see your flight time, personal
-              records, and flying history.
-            </p>
+    <div>
+      <PageHeader
+        title="Flight dashboard"
+        description="Your time in the air, at a glance."
+        actions={
+          data.totals.flights > 0 ? (
             <Link
               to="/apps/flights/import"
-              className={buttonVariants({
-                variant: "outline",
-                className: "mt-2",
-              })}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Import flights
+            </Link>
+          ) : null
+        }
+      />
+      {data.totals.flights === 0 ? (
+        <section>
+          <EmptyState
+            title="Your logbook starts here"
+            description="Import a GPX or IGC track to see your flight time, personal records, and flying history."
+          >
+            <Link
+              to="/apps/flights/import"
+              className={buttonVariants({ variant: "outline" })}
             >
               Import your first flight
             </Link>
-          </Card>
+          </EmptyState>
         </section>
       ) : (
-        <>
+        <div className="space-y-8">
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
               {
@@ -89,7 +82,10 @@ export function Dashboard({
           <ActivityChart monthly={activity.monthly} yearly={activity.yearly} />
           {records.length > 0 ? (
             <section aria-labelledby="records-heading">
-              <h2 id="records-heading" className="text-lg font-semibold">
+              <h2
+                id="records-heading"
+                className="font-heading text-lg font-semibold"
+              >
                 Personal records
               </h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -122,7 +118,10 @@ export function Dashboard({
           <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <section aria-labelledby="recent-heading" className="min-w-0">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 id="recent-heading" className="text-lg font-semibold">
+                <h2
+                  id="recent-heading"
+                  className="font-heading text-lg font-semibold"
+                >
                   Recent flights
                 </h2>
                 <Link
@@ -168,7 +167,10 @@ export function Dashboard({
               </Card>
             </section>
             <section aria-labelledby="sites-heading" className="min-w-0">
-              <h2 id="sites-heading" className="text-lg font-semibold">
+              <h2
+                id="sites-heading"
+                className="font-heading text-lg font-semibold"
+              >
                 Top sites
               </h2>
               {data.topSites.length === 0 ? (
@@ -203,7 +205,7 @@ export function Dashboard({
               )}
             </section>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

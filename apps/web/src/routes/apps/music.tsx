@@ -6,6 +6,7 @@ import { EnrichmentPanel } from "@/features/music/enrichment-panel"
 import { IngestionPanel } from "@/features/music/ingestion-panel"
 import { SpotifyConnectionPanel } from "@/features/music/spotify-connection-panel"
 import { RequireApp } from "@/features/apps/require-app"
+import { PageHeader } from "@/features/apps/shell"
 
 /** Rendered only for signed-in users with music access: the /apps layout signs them in. */
 export const Route = createFileRoute("/apps/music")({
@@ -18,18 +19,18 @@ export const Route = createFileRoute("/apps/music")({
 function MusicControlPage() {
   return (
     <RequireApp app="music">
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-        Music control
-      </h1>
-      <p className="mt-5 rounded-2xl bg-ink/5 p-5 text-sm leading-6 text-ink/70">
-        Connect Spotify to configure music automation.
-      </p>
-      <SpotifyConnectionPanel />
-      <IngestionPanel />
-      <EnrichmentPanel />
-      <DestinationPanel />
-      <ClassificationPanel />
-      <DeliveryPanel />
+      <PageHeader
+        title="Music control"
+        description="Connect Spotify to configure music automation."
+      />
+      <div className="flex flex-col gap-6">
+        <SpotifyConnectionPanel />
+        <IngestionPanel />
+        <EnrichmentPanel />
+        <DestinationPanel />
+        <ClassificationPanel />
+        <DeliveryPanel />
+      </div>
     </RequireApp>
   )
 }

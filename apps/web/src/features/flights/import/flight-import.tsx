@@ -1,9 +1,18 @@
 import { Link } from "@tanstack/react-router"
 import { useRef, useState } from "react"
+import { PageHeader } from "@/features/apps/shell"
 import { importFlight } from "@/features/flights/api"
 import { message } from "@/features/flights/layout/ui"
 import { Button } from "@/features/ui/button"
 import { Input } from "@/features/ui/input"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/features/ui/item"
+import { cn } from "@/features/ui/lib/utils"
 
 type Result = { key: number; filename: string } & (
   | { status: "imported" | "duplicate"; flightId: string }
@@ -61,15 +70,15 @@ export function FlightImport() {
   }
   return (
     <section>
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-        Import flights
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        Bring your recorded tracks into your logbook. GPX is preferred; IGC
-        works too.
-      </p>
+      <PageHeader
+        title="Import flights"
+        description="Bring your recorded tracks into your logbook. GPX is preferred; IGC works too."
+      />
       <div
-        className={`mt-6 rounded-2xl border border-dashed p-6 text-center sm:p-10 ${dragging ? "border-foreground bg-muted" : "border-border bg-card"}`}
+        className={cn(
+          "rounded-xl border border-dashed p-6 text-center transition-colors sm:p-10",
+          dragging ? "border-primary bg-primary/5" : "border-border bg-card"
+        )}
         onDragOver={(event) => {
           event.preventDefault()
           if (!busy) setDragging(true)
@@ -84,7 +93,9 @@ export function FlightImport() {
           void upload(Array.from(event.dataTransfer.files))
         }}
       >
-        <h2 className="text-lg font-semibold">Drop your flight files here</h2>
+        <h2 className="font-heading text-lg font-semibold">
+          Drop your flight files here
+        </h2>
         <p
           id="flight-file-help"
           className="mt-2 text-sm leading-6 text-muted-foreground"
@@ -116,18 +127,18 @@ export function FlightImport() {
       </div>
       <div aria-live="polite" aria-busy={busy}>
         {results.length ? (
-          <ul className="mt-6 divide-y divide-border">
+          <ul className="mt-6 space-y-2">
             {results.map((result) => (
-              <li
-                key={result.key}
-                className="flex flex-wrap items-center justify-between gap-3 py-4"
-              >
-                <div className="min-w-0">
-                  <p className="break-all text-sm font-medium">
+              <Item key={result.key} variant="outline" render={<li />}>
+                <ItemContent className="min-w-0">
+                  <ItemTitle className="line-clamp-none break-all">
                     {result.filename}
-                  </p>
-                  <p
-                    className={`mt-1 text-sm ${result.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+                  </ItemTitle>
+                  <ItemDescription
+                    className={cn(
+                      "line-clamp-none",
+                      result.status === "error" && "text-destructive"
+                    )}
                   >
                     {result.status === "imported"
                       ? "Imported successfully"
@@ -136,18 +147,20 @@ export function FlightImport() {
                         : "message" in result
                           ? result.message
                           : ""}
-                  </p>
-                </div>
+                  </ItemDescription>
+                </ItemContent>
                 {"flightId" in result ? (
-                  <Link
-                    className="text-sm underline underline-offset-4"
-                    to="/apps/flights/$flightId"
-                    params={{ flightId: result.flightId }}
-                  >
-                    View flight
-                  </Link>
+                  <ItemActions>
+                    <Link
+                      className="text-sm underline underline-offset-4"
+                      to="/apps/flights/$flightId"
+                      params={{ flightId: result.flightId }}
+                    >
+                      View flight
+                    </Link>
+                  </ItemActions>
                 ) : null}
-              </li>
+              </Item>
             ))}
           </ul>
         ) : null}
@@ -156,7 +169,10 @@ export function FlightImport() {
         className="mt-8 space-y-3 text-sm leading-6 text-muted-foreground"
         aria-labelledby="track-help"
       >
-        <h2 id="track-help" className="text-lg font-semibold text-foreground">
+        <h2
+          id="track-help"
+          className="font-heading text-lg font-semibold text-foreground"
+        >
           Getting your tracks
         </h2>
         <p>

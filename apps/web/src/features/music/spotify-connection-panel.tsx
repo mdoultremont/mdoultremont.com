@@ -1,4 +1,9 @@
+import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Alert, AlertDescription } from "@/features/ui/alert"
+import { Button, buttonVariants } from "@/features/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/features/ui/card"
+import { Spinner } from "@/features/ui/spinner"
 import type {
   SpotifyConnectionStatus,
   SpotifyPlaylist,
@@ -107,97 +112,113 @@ export function SpotifyConnectionPanel({
       : new URLSearchParams(window.location.search).get("spotify")
 
   return (
-    <section
-      className="mt-6 rounded-2xl border border-ink/10 p-5"
-      aria-label="Spotify connection"
-    >
-      <h2 className="text-lg font-semibold text-ink">Spotify</h2>
-      {message === "failed" || message === "denied" ? (
-        <p className="mt-3 text-sm text-red-800" role="alert">
-          Spotify authorization could not be completed. Please try again.
-        </p>
-      ) : null}
-      {state.kind === "loading" ? (
-        <p className="mt-3 text-sm text-ink/70">Checking connection…</p>
-      ) : null}
-      {state.kind === "error" ? (
-        <p className="mt-3 text-sm text-red-800" role="alert">
-          {state.message}
-        </p>
-      ) : null}
-      {actionError ? (
-        <p className="mt-3 text-sm text-red-800" role="alert">
-          {actionError}
-        </p>
-      ) : null}
-      {connection?.status === "disconnected" ||
-      connection?.status === "reconnect_needed" ? (
-        <div className="mt-3">
-          <p className="text-sm text-ink/70">
-            {connection.status === "reconnect_needed"
-              ? "Spotify authorization has expired or been revoked."
-              : "No Spotify account is connected."}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <a
-              className="inline-flex rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper"
-              href="/api/apps/music/spotify/connect"
-            >
-              {connection.status === "reconnect_needed"
-                ? "Reconnect Spotify"
-                : "Connect Spotify"}
-            </a>
-            {connection.status === "reconnect_needed" ? (
-              <button
-                className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-                disabled={busy}
-                onClick={disconnect}
-                type="button"
-              >
-                Disconnect Spotify
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-      {connection?.status === "connected" ? (
-        <div className="mt-3">
-          <p className="text-sm text-ink/70">
-            Connected as{" "}
-            <strong>{connection.displayName ?? connection.accountId}</strong>.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-              disabled={busy}
-              onClick={loadPlaylists}
-              type="button"
-            >
-              View playlists
-            </button>
-            <button
-              className="rounded-full border border-ink/20 px-4 py-2 text-sm disabled:opacity-50"
-              disabled={busy}
-              onClick={disconnect}
-              type="button"
-            >
-              Disconnect Spotify
-            </button>
-          </div>
-          {playlists ? (
-            <div className="mt-5">
-              <h3 className="font-medium">Playlists</h3>
-              <ul className="mt-2 max-h-72 overflow-auto text-sm">
-                {playlists.map((playlist) => (
-                  <li className="py-1" key={playlist.id}>
-                    {playlist.name}
-                  </li>
-                ))}
-              </ul>
+    <section aria-label="Spotify connection">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Spotify</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {message === "failed" || message === "denied" ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>
+                Spotify authorization could not be completed. Please try again.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {state.kind === "loading" ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Spinner aria-hidden="true" />
+              Checking connection…
+            </p>
+          ) : null}
+          {state.kind === "error" ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {actionError ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertDescription>{actionError}</AlertDescription>
+            </Alert>
+          ) : null}
+          {connection?.status === "disconnected" ||
+          connection?.status === "reconnect_needed" ? (
+            <div className="flex flex-col gap-4">
+              <p className="text-muted-foreground">
+                {connection.status === "reconnect_needed"
+                  ? "Spotify authorization has expired or been revoked."
+                  : "No Spotify account is connected."}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  className={buttonVariants()}
+                  href="/api/apps/music/spotify/connect"
+                >
+                  {connection.status === "reconnect_needed"
+                    ? "Reconnect Spotify"
+                    : "Connect Spotify"}
+                </a>
+                {connection.status === "reconnect_needed" ? (
+                  <Button
+                    disabled={busy}
+                    onClick={disconnect}
+                    type="button"
+                    variant="outline"
+                  >
+                    Disconnect Spotify
+                  </Button>
+                ) : null}
+              </div>
             </div>
           ) : null}
-        </div>
-      ) : null}
+          {connection?.status === "connected" ? (
+            <div className="flex flex-col gap-4">
+              <p className="text-muted-foreground">
+                Connected as{" "}
+                <strong className="font-medium text-foreground">
+                  {connection.displayName ?? connection.accountId}
+                </strong>
+                .
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={busy}
+                  onClick={loadPlaylists}
+                  type="button"
+                  variant="outline"
+                >
+                  View playlists
+                </Button>
+                <Button
+                  disabled={busy}
+                  onClick={disconnect}
+                  type="button"
+                  variant="outline"
+                >
+                  Disconnect Spotify
+                </Button>
+              </div>
+              {playlists ? (
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-heading font-medium">Playlists</h3>
+                  <ul className="max-h-72 divide-y overflow-auto rounded-lg border">
+                    {playlists.map((playlist) => (
+                      <li className="px-3 py-2" key={playlist.id}>
+                        {playlist.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </section>
   )
 }

@@ -197,20 +197,20 @@ export const FlightMap = memo(function FlightMap({
   }, [activeIndex, points])
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-ink/10 bg-ink/5">
+    <div className="relative overflow-hidden rounded-2xl border bg-muted">
       <section
         ref={container}
         className="h-[360px] w-full sm:h-[460px]"
         aria-label="Flight track map"
       />
       {status !== "ready" && (
-        <output className="absolute left-3 top-14 max-w-[75%] rounded-md border bg-paper px-3 py-2 text-xs text-ink">
+        <output className="absolute left-3 top-14 max-w-[75%] rounded-md border bg-background px-3 py-2 text-xs text-foreground">
           {status === "loading"
             ? "Loading flight map…"
             : "Map tiles unavailable. Flight profiles remain available below."}
         </output>
       )}
-      <div className="absolute top-3 left-3 flex gap-4 rounded-md bg-paper/95 px-3 py-2 text-xs text-ink shadow-sm">
+      <div className="absolute top-3 left-3 flex gap-4 rounded-md bg-background/95 px-3 py-2 text-xs text-foreground shadow-sm">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-green-700" />
           Takeoff

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { getFlight, type FlightDetail } from "@/features/flights/api"
+import { PageHeader } from "@/features/apps/shell"
+import { ErrorState } from "@/features/flights/layout/ui"
 import { FlightViewer } from "@/features/flights/viewer"
-import { Button } from "@/features/ui/button"
 import { Skeleton } from "@/features/ui/skeleton"
 
 export const Route = createFileRoute("/apps/flights/$flightId")({
@@ -37,36 +38,28 @@ function FlightDetailPage() {
   }, [flightId, attempt])
   if (error)
     return (
-      <div className="mt-6 space-y-4 text-foreground">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Flight unavailable
-        </h1>
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setAttempt((value) => value + 1)}
-          >
-            Try again
-          </Button>
+      <section>
+        <PageHeader title="Flight unavailable" />
+        <ErrorState
+          error={error}
+          reload={() => setAttempt((value) => value + 1)}
+        >
           <Link
             to="/apps/flights/logbook"
             className="underline underline-offset-4"
           >
             All flights
           </Link>
-        </div>
-      </div>
+        </ErrorState>
+      </section>
     )
   if (!detail)
     return (
-      <div className="mt-6 space-y-4">
+      <div className="space-y-4">
         <output className="block text-sm text-muted-foreground">
           Loading flight…
         </output>
+        <Skeleton className="h-9 w-64" />
         <Skeleton className="h-80 w-full rounded-xl" />
       </div>
     )
