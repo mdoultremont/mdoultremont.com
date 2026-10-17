@@ -15,11 +15,11 @@ stylesheet, so the apps' shadcn theme had to be scoped to pages that rendered a
   each app sits at `/<name>`, and its API at `/api/<name>/...`. A pathless
   `_apps` layout signs users in for every page.
 - **Old `/apps` URLs are not redirected.** Only the owner used them.
-- **The tools Worker keeps the name `mdoultremont-me`.** Its secrets cannot be
-  read back from Cloudflare, so moving the backend to a new Worker would mean
-  re-entering every one, and a changed `BETTER_AUTH_SECRET` or
-  `SPOTIFY_TOKEN_ENCRYPTION_KEY` would sign everyone out and drop the Spotify
-  connection. The portfolio moves to a new Worker, `mdoultremont-portfolio`,
+- **The tools Worker is the existing `mdoultremont-me` Worker, renamed
+  `mdoultremont-tools`.** Its secrets cannot be read back from Cloudflare, so
+  moving the backend to a new Worker would mean re-entering every one, and a
+  changed `BETTER_AUTH_SECRET` or `SPOTIFY_TOKEN_ENCRYPTION_KEY` would sign
+  everyone out and drop the Spotify connection. The portfolio moves to a new Worker, `mdoultremont-portfolio`,
   which needs no secrets.
 - **Nothing is shared through `packages/` yet.** The two apps have no code in
   common; the shadcn components moved to tools with the apps.

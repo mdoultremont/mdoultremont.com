@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "mdoultremont-me",
+  "name": "mdoultremont-tools",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./src/server.ts",

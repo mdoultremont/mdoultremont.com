@@ -6,10 +6,12 @@ Builds configuration on the same GitHub repository:
 | App          | Worker                   | Domain                   |
 | ------------ | ------------------------ | ------------------------ |
 | `apps/web`   | `mdoultremont-portfolio` | `mdoultremont.com`       |
-| `apps/tools` | `mdoultremont-me`        | `tools.mdoultremont.com` |
+| `apps/tools` | `mdoultremont-tools`     | `tools.mdoultremont.com` |
 
-The tools Worker keeps its original name, `mdoultremont-me`, because its
-secrets (sign-in, Spotify, Jev) are stored on it and cannot be read back.
+The tools Worker is the original `mdoultremont-me` Worker, renamed in the
+dashboard (**Settings > General**), because its secrets (sign-in, Spotify,
+Jev) are stored on it and cannot be read back. Renaming keeps its secrets,
+bindings, domains, and build configuration.
 
 A push to `main` starts both production builds. The tools build applies
 pending D1 migrations to `mdoultremont-data` before it deploys; the portfolio
@@ -33,7 +35,7 @@ The portfolio (`mdoultremont-portfolio`):
 - Deploy command: `pnpm --filter @mdoultremont/portfolio deploy:production`
 - Version command: `pnpm --filter @mdoultremont/portfolio exec wrangler versions upload`
 
-The tools (`mdoultremont-me`):
+The tools (`mdoultremont-tools`):
 
 - Build command: `pnpm --filter @mdoultremont/tools build`
 - Deploy command: `pnpm --filter @mdoultremont/tools deploy:production`
@@ -55,11 +57,11 @@ command must not apply migrations.
 
 The tools build's API token needs **D1: Edit** for the migration step. If the
 migration step fails with an authentication error, add that permission to the
-token in **Workers & Pages > mdoultremont-me > Settings > Build**.
+token in **Workers & Pages > mdoultremont-tools > Settings > Build**.
 
 ## Tools secrets
 
-Set these on `mdoultremont-me` with `wrangler secret put` (from `apps/tools`)
+Set these on `mdoultremont-tools` with `wrangler secret put` (from `apps/tools`)
 or in **Settings > Variables and Secrets**. `apps/tools/README.md` explains
 each one.
 
