@@ -1,13 +1,11 @@
 import { Link } from "@tanstack/react-router"
-import { ArrowLeftIcon } from "lucide-react"
-import { type CatalogApp, pageAt, portfolioUrl } from "@/features/apps/catalog"
+import { type CatalogApp, pageAt } from "@/features/apps/catalog"
 import type { SignedInUser } from "@/server/actions/auth"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
@@ -72,22 +70,6 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroup>
         )}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="sm"
-                  // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the button renders its children into the link
-                  render={<a href={portfolioUrl} />}
-                >
-                  <ArrowLeftIcon />
-                  <span>Portfolio</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

@@ -4,6 +4,7 @@ import type { UserDirectory } from "@/server/actions/back-office/users"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -16,8 +17,15 @@ import {
   EmptyMedia,
 } from "@/features/ui/empty"
 import { Skeleton } from "@/features/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/features/ui/table"
 import { InvitationRow, UserRow } from "./directory-rows"
-import { InviteForm } from "./invite-form"
+import { InviteDialog } from "./invite-dialog"
 import { SpotifyDashboardLink, SpotifySpots } from "./spotify"
 
 type ViewState =
@@ -129,131 +137,145 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         </div>
       ) : null}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-20">
-          <InviteForm
-            busy={busy}
-            musicSpots={musicSpots}
-            onInvite={(email, apps) =>
-              mutate(
-                "/api/back-office/invitations",
-                "POST",
-                { email, apps },
-                `Invitation sent to ${email}.`,
-                apps.includes("music")
-              )
-            }
-          />
-        </div>
+      <section aria-label="Users">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Users</h2>
+            </CardTitle>
+            <CardDescription>
+              <SpotifySpots used={musicSpots} />
+            </CardDescription>
+            <CardAction>
+              <InviteDialog
+                busy={busy}
+                error={error}
+                musicSpots={musicSpots}
+                onInvite={(email, apps) =>
+                  mutate(
+                    "/api/back-office/invitations",
+                    "POST",
+                    { email, apps },
+                    `Invitation sent to ${email}.`,
+                    apps.includes("music")
+                  )
+                }
+              />
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Signs in with</TableHead>
+                  <TableHead>Apps</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <UserRow
+                    busy={busy}
+                    isCurrentUser={user.id === currentUserId}
+                    key={user.id}
+                    onAccess={(apps) =>
+                      void mutate(
+                        "/api/back-office/users",
+                        "PUT",
+                        { userId: user.id, apps },
+                        undefined,
+                        apps.includes("music") && !user.apps.includes("music")
+                      )
+                    }
+                    onRemove={() =>
+                      void mutate(
+                        "/api/back-office/users",
+                        "DELETE",
+                        { userId: user.id },
+                        `${user.name} was removed.`
+                      )
+                    }
+                    user={user}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
 
-        <div className="flex min-w-0 flex-col gap-6">
-          <section aria-label="Users">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <h2>Users</h2>
-                </CardTitle>
-                <CardDescription>
-                  <SpotifySpots used={musicSpots} />
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex flex-col gap-3">
-                  {users.map((user) => (
-                    <UserRow
+      <section aria-label="Pending invitations">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Pending invitations</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {invitations.length === 0 ? (
+              <Empty className="border border-dashed p-6 md:p-6">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <MailIcon />
+                  </EmptyMedia>
+                  <EmptyDescription>No pending invitations.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Apps</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitations.map((invitation) => (
+                    <InvitationRow
                       busy={busy}
-                      isCurrentUser={user.id === currentUserId}
-                      key={user.id}
-                      onAccess={(apps) =>
+                      invitation={invitation}
+                      key={invitation.id}
+                      onResend={() =>
                         void mutate(
-                          "/api/back-office/users",
-                          "PUT",
-                          { userId: user.id, apps },
-                          undefined,
-                          apps.includes("music") && !user.apps.includes("music")
+                          "/api/back-office/invitations/resend",
+                          "POST",
+                          { invitationId: invitation.id },
+                          `A new link was sent to ${invitation.email}.`
                         )
                       }
-                      onRemove={() =>
+                      onRevoke={() =>
                         void mutate(
-                          "/api/back-office/users",
+                          "/api/back-office/invitations",
                           "DELETE",
-                          { userId: user.id },
-                          `${user.name} was removed.`
+                          { invitationId: invitation.id },
+                          `The invitation to ${invitation.email} was revoked.`
                         )
                       }
-                      user={user}
                     />
                   ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section aria-label="Pending invitations">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <h2>Pending invitations</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {invitations.length === 0 ? (
-                  <Empty className="border border-dashed p-6 md:p-6">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <MailIcon />
-                      </EmptyMedia>
-                      <EmptyDescription>
-                        No pending invitations.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-                ) : (
-                  <ul className="flex flex-col gap-3">
-                    {invitations.map((invitation) => (
-                      <InvitationRow
-                        busy={busy}
-                        invitation={invitation}
-                        key={invitation.id}
-                        onResend={() =>
-                          void mutate(
-                            "/api/back-office/invitations/resend",
-                            "POST",
-                            { invitationId: invitation.id },
-                            `A new link was sent to ${invitation.email}.`
-                          )
-                        }
-                        onRevoke={() =>
-                          void mutate(
-                            "/api/back-office/invitations",
-                            "DELETE",
-                            { invitationId: invitation.id },
-                            `The invitation to ${invitation.email} was revoked.`
-                          )
-                        }
-                      />
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-        </div>
-      </div>
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   )
 }
 
 function LoadingUsers() {
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    <div className="flex flex-col gap-6">
       <p className="sr-only">Loading users…</p>
-      <Skeleton className="h-96 rounded-xl" />
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-24 rounded-xl" />
-      </div>
+      <Skeleton className="h-80 rounded-xl" />
+      <Skeleton className="h-40 rounded-xl" />
     </div>
   )
 }

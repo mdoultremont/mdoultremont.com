@@ -23,14 +23,13 @@ function MusicControlPage() {
         title="Music control"
         description="Connect Spotify to configure music automation."
       />
-      <div className="flex flex-col gap-6">
-        <SpotifyConnectionPanel />
+      <SpotifyConnectionPanel>
         <IngestionPanel />
         <EnrichmentPanel />
         <DestinationPanel />
         <ClassificationPanel />
         <DeliveryPanel />
-      </div>
+      </SpotifyConnectionPanel>
     </RequireApp>
   )
 }

@@ -1,6 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
+import type { SpotifyConnectionStatus } from "@/server/modules/spotify"
 import { SpotifyConnectionPanel } from "./spotify-connection-panel"
 
 describe("Spotify connection panel", () => {
@@ -41,6 +42,29 @@ describe("Spotify connection panel", () => {
       })
     )
     expect(html).toContain("Reconnect Spotify")
-    expect(html).toContain("Disconnect Spotify")
+    expect(html).not.toContain("Disconnect Spotify")
+  })
+
+  test("shows the rest of the app only once connected", () => {
+    expect(renderWithApp({ status: "disconnected" })).not.toContain(
+      "Music automation"
+    )
+    expect(
+      renderWithApp({
+        status: "connected",
+        accountId: "spotify-42",
+        displayName: null,
+      })
+    ).toContain("Music automation")
   })
 })
+
+/** Renders the panel around a stand-in for the rest of the music app. */
+const renderWithApp = (connection: SpotifyConnectionStatus) =>
+  renderToStaticMarkup(
+    createElement(
+      SpotifyConnectionPanel,
+      { initialConnection: connection },
+      createElement("p", null, "Music automation")
+    )
+  )
