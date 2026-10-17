@@ -19,7 +19,7 @@ pnpm check
 pnpm build
 ```
 
-Run `pnpm deploy` to build and deploy both apps to Cloudflare.
+Run `pnpm deploy:production` to build and deploy both apps to Cloudflare.
 
 In a new git worktree, run `scripts/setup-worktree.sh`. It copies the
 git-ignored local files listed in `.worktreeinclude` (such as
