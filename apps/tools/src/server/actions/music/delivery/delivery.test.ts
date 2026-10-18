@@ -95,7 +95,7 @@ function setup() {
       .run(trackId)
     d1.sqlite
       .prepare(
-        "INSERT OR REPLACE INTO music_decisions (owner_id, track_id, destination_ids, review, reason, probabilities, model, fingerprint, classified_at) VALUES ('owner', ?, ?, ?, 'classified', '{}', 'jev-1.13.0', 'f', 1)"
+        "INSERT OR REPLACE INTO music_decisions (owner_id, track_id, destination_ids, review, reason, probabilities, model, fingerprint, classified_at) VALUES ('owner', ?, ?, ?, 'classified', '{}', 'clef', 'f', 1)"
       )
       .run(
         trackId,

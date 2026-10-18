@@ -145,7 +145,7 @@ export function ClassificationPanel({
             <h2>Classification</h2>
           </CardTitle>
           <CardDescription>
-            Jev reads each track's recording data and your playlist
+            Clef reads each track's recording data and your playlist
             descriptions, and picks the playlists it belongs to. Nothing is
             written to Spotify here.
           </CardDescription>
@@ -268,7 +268,7 @@ function Decision({
           ? decision.reason === "no_recording_data"
             ? "Review (no recording data)"
             : decision.reason === "classifier_failed"
-              ? "Review (Jev could not answer)"
+              ? "Review (Clef could not answer)"
               : best
                 ? `Review (best: ${name(best[0])} ${percent(best[1])})`
                 : "Review"

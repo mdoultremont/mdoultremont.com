@@ -37,6 +37,7 @@
     ],
   },
   "send_email": [{ "name": "EMAIL" }],
+  "ai": { "binding": "AI" },
   // Not a secret, so it ships with every deploy. Its domain must be onboarded
   // for Email Sending (see README).
   "vars": { "EMAIL_FROM": "apps@mdoultremont.com" },

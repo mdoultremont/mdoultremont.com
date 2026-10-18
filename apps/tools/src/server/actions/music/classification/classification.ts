@@ -3,7 +3,7 @@ import {
   type DestinationPersistenceError,
   Destinations,
 } from "@/server/actions/music/destinations"
-import { Jev, type JevError } from "@/server/modules/jev"
+import { Clef, type ClefError } from "@/server/modules/clef"
 import { JobQueue, type JobQueueError } from "@/server/modules/job-queue"
 import {
   ClassificationMessage,
@@ -12,9 +12,12 @@ import {
 } from "./errors"
 import { ClassificationStore, type PendingTrack } from "./store"
 
-/** Pinned so decisions never change because the provider moved `jev-latest`. */
-export const classifierModel = "jev-1.13.0"
-/** A destination is accepted when Jev's yes-probability reaches this. */
+/**
+ * Clef reports no version, so decisions can shift when Cloudflare updates it.
+ * Changing this marks every decision outdated.
+ */
+export const classifierModel = "clef"
+/** A destination is accepted when Clef's yes-probability reaches this. */
 export const acceptanceThreshold = 0.5
 /** Tracks decided per queue message. */
 const batchSize = 20
@@ -23,7 +26,7 @@ export type ClassificationError =
   | ClassificationPersistenceError
   | DestinationPersistenceError
   | JobQueueError
-  | JevError
+  | ClefError
 
 interface Setup {
   readonly destinations: readonly {
@@ -71,7 +74,7 @@ export class MusicClassification extends Context.Service<
     Effect.gen(function* () {
       const store = yield* ClassificationStore
       const destinations = yield* Destinations
-      const jev = yield* Jev
+      const clef = yield* Clef
       const queue = yield* JobQueue
 
       /** The setup to classify against, or `null` when classification must not run. */
@@ -133,7 +136,7 @@ export class MusicClassification extends Context.Service<
           })
 
         // The classifier state holds CC0 recording data only. Spotify fields
-        // must never reach Jev (Spotify Developer Terms).
+        // must never reach Clef (Spotify Developer Terms).
         const state = {
           recording: {
             title: track.recording.title,
@@ -142,9 +145,9 @@ export class MusicClassification extends Context.Service<
           },
           acoustic: track.recording.acoustic,
         }
-        // Jev refusing this one input must not block every later track; a
-        // missing key or rejected credentials still stop the batch.
-        const response = yield* jev
+        // Clef refusing this one input must not block every later track; an
+        // outage still stops the batch so the queue retries it.
+        const response = yield* clef
           .noul({
             model: classifierModel,
             state,
@@ -158,7 +161,9 @@ export class MusicClassification extends Context.Service<
           .pipe(
             Effect.map(Option.some),
             Effect.catchIf(
-              (error) => error.reason === "InvalidResponse",
+              (error) =>
+                error.reason === "Rejected" ||
+                error.reason === "InvalidResponse",
               () => Effect.succeed(Option.none())
             )
           )
@@ -239,11 +244,9 @@ export class MusicClassification extends Context.Service<
     })
   )
 
-  /** Production layer. Needs the platform (`Database`, `JobQueue`, config). */
+  /** Production layer. Needs the platform (`Database`, `JobQueue`, `Clef`, config). */
   static readonly layer = MusicClassification.layerNoDeps.pipe(
-    Layer.provide(
-      Layer.mergeAll(ClassificationStore.layer, Destinations.layer, Jev.layer)
-    )
+    Layer.provide(Layer.mergeAll(ClassificationStore.layer, Destinations.layer))
   )
 }
 

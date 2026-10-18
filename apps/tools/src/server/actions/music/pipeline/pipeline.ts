@@ -51,7 +51,7 @@ export function isRetryable(error: PipelineError): boolean {
     case "SpotifyError":
     case "MusicBrainzError":
     case "AcousticBrainzError":
-    case "JevError":
+    case "ClefError":
       return error.retryable
     case "InvalidLikesPage":
       return false

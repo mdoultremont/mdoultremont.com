@@ -5,7 +5,6 @@ interface Env {
   BETTER_AUTH_URL: string
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
-  JEV_API_KEY: string
   OWNER_ACCOUNTS: string
   SPOTIFY_CLIENT_ID: string
   SPOTIFY_CLIENT_SECRET: string
@@ -19,7 +18,6 @@ declare namespace Cloudflare {
     BETTER_AUTH_URL: string
     GITHUB_CLIENT_ID: string
     GITHUB_CLIENT_SECRET: string
-    JEV_API_KEY: string
     OWNER_ACCOUNTS: string
     SPOTIFY_CLIENT_ID: string
     SPOTIFY_CLIENT_SECRET: string
