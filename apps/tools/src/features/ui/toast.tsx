@@ -15,9 +15,12 @@ interface ToastOptions {
 
 const toastManager = Toast.createToastManager()
 
-/** Shows a short message at the bottom of the screen. Needs `<Toaster>` mounted once. */
+/**
+ * Shows a short message at the bottom of the screen. Needs `<Toaster>` mounted once.
+ * `message` renders inside a `<p>`, so keep it to text and inline elements such as `<strong>` or `<a>`.
+ */
 function toast(
-  message: string,
+  message: React.ReactNode,
   { type = "success", action }: ToastOptions = {}
 ) {
   return toastManager.add({
@@ -65,7 +68,7 @@ function ToastList() {
       )}
       {/* The action sits after a one-line message and wraps under a longer one. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
-        <Toast.Description className="text-pretty" />
+        <Toast.Description className="text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-white [&_strong]:font-semibold" />
         {item.actionProps ? (
           <Toast.Action className="-mx-2 -my-1 shrink-0 rounded-md px-2 py-1 font-medium text-primary outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring" />
         ) : null}
