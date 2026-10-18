@@ -1,9 +1,10 @@
-import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
+import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import type { UserDirectory } from "@/server/actions/back-office/users"
 import { PageHeader } from "@/features/apps/shell"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Skeleton } from "@/features/ui/skeleton"
+import { toast } from "@/features/ui/toast"
 import {
   Table,
   TableBody,
@@ -25,7 +26,6 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
   const [view, setView] = useState<ViewState>({ kind: "loading" })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   /** Set after giving someone Music, which Spotify only allows once they are allowlisted. */
   const [allowlistReminder, setAllowlistReminder] = useState(false)
 
@@ -52,7 +52,6 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
   ) {
     setBusy(true)
     setError(null)
-    setNotice(null)
     setAllowlistReminder(false)
     try {
       await readJson(url, {
@@ -60,7 +59,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
-      if (done) setNotice(done)
+      if (done) toast(done)
       setAllowlistReminder(grantsMusic)
       try {
         setView({
@@ -124,19 +123,13 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         title={title}
       />
       <div className="flex flex-col gap-6">
-        {error || notice || allowlistReminder ? (
+        {error || allowlistReminder ? (
           <div className="flex flex-col gap-3">
             {error ? (
               <Alert variant="destructive">
                 <CircleAlertIcon />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
-            ) : null}
-            {notice ? (
-              <output className="flex items-center gap-2 rounded-lg border bg-card px-2.5 py-2 text-sm text-card-foreground">
-                <CircleCheckIcon className="size-4 shrink-0 text-primary" />
-                {notice}
-              </output>
             ) : null}
             {allowlistReminder ? (
               <p className="rounded-lg border bg-muted/50 px-3 py-2.5 text-sm leading-6 text-muted-foreground">
