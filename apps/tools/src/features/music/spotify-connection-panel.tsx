@@ -4,10 +4,9 @@ import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Button, buttonVariants } from "@/features/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
-import type {
-  SpotifyConnectionStatus,
-  SpotifyPlaylist,
-} from "@/server/modules/spotify"
+import { api } from "@/features/api"
+import { errorReason } from "@/shared/actions"
+import type { SpotifyConnectionStatus, SpotifyPlaylist } from "@/shared/music"
 
 type LoadState =
   | { kind: "loading" }
@@ -35,23 +34,16 @@ export function SpotifyConnectionPanel({
 
   useEffect(() => {
     let active = true
-    fetch("/api/music/spotify/status")
-      .then(async (response) => {
-        if (!response.ok)
-          throw new Error("Connection status could not be loaded")
-        return response.json() as Promise<SpotifyConnectionStatus>
-      })
+    api.music.spotify
+      .status()
       .then((connection) => {
         if (active) setState({ kind: "ready", connection })
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (active)
           setState({
             kind: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Connection status could not be loaded",
+            message: "Connection status could not be loaded",
           })
       })
     return () => {
@@ -63,18 +55,10 @@ export function SpotifyConnectionPanel({
     setBusy(true)
     setActionError(null)
     try {
-      const response = await fetch("/api/music/spotify/playlists")
-      if (response.status === 401) {
-        await refreshStatus()
-        return
-      }
-      if (!response.ok) throw new Error("Playlists could not be loaded")
-      const payload = (await response.json()) as { items: SpotifyPlaylist[] }
-      setPlaylists(payload.items)
+      setPlaylists((await api.music.spotify.playlists()).items)
     } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Playlists could not be loaded"
-      )
+      if (errorReason(error) === "ReconnectNeeded") await refreshStatus()
+      else setActionError("Playlists could not be loaded")
     } finally {
       setBusy(false)
     }
@@ -84,28 +68,22 @@ export function SpotifyConnectionPanel({
     setBusy(true)
     setActionError(null)
     try {
-      const response = await fetch("/api/music/spotify/disconnect", {
-        method: "POST",
-      })
-      if (!response.ok) throw new Error("Spotify could not be disconnected")
+      await api.music.spotify.disconnect()
       setState({ kind: "ready", connection: { status: "disconnected" } })
       setPlaylists(null)
-    } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : "Spotify could not be disconnected"
-      )
+    } catch {
+      setActionError("Spotify could not be disconnected")
     } finally {
       setBusy(false)
     }
   }
 
   async function refreshStatus() {
-    const response = await fetch("/api/music/spotify/status")
-    if (!response.ok) throw new Error("Connection status could not be loaded")
-    const connection = (await response.json()) as SpotifyConnectionStatus
-    setState({ kind: "ready", connection })
+    try {
+      setState({ kind: "ready", connection: await api.music.spotify.status() })
+    } catch {
+      setActionError("Connection status could not be loaded")
+    }
   }
 
   const connection = state.kind === "ready" ? state.connection : null

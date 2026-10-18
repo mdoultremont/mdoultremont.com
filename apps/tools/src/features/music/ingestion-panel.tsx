@@ -12,10 +12,8 @@ import {
   CardTitle,
 } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
-import type {
-  IngestionKind,
-  IngestionStatus,
-} from "@/server/actions/music/ingestion"
+import { api, errorMessage } from "@/features/api"
+import type { IngestionKind, IngestionStatus } from "@/shared/music"
 
 const pollMilliseconds = 3000
 
@@ -37,10 +35,7 @@ export function IngestionPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/ingestion")
-        if (!response.ok)
-          throw new Error("Ingestion status could not be loaded")
-        const next = (await response.json()) as IngestionStatus
+        const next = await api.music.ingestion.status()
         if (!active) return
         setStatus(next)
         setError(null)
@@ -49,13 +44,8 @@ export function IngestionPanel({
           next.latest?.status === "running"
         )
           timer = setTimeout(load, pollMilliseconds)
-      } catch (cause) {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Ingestion status could not be loaded"
-          )
+      } catch {
+        if (active) setError("Ingestion status could not be loaded")
       }
     }
     // Load once on mount, then poll while an ingestion is in progress.
@@ -70,29 +60,14 @@ export function IngestionPanel({
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/ingestion", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ kind }),
-      })
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string
-      } | null
-      if (!response.ok)
-        throw new Error(payload?.error ?? "Ingestion could not be started")
+      const started = await api.music.ingestion.start({ kind })
       setStatus((current) => ({
         liked: current?.liked ?? 0,
         unliked: current?.unliked ?? 0,
-        latest: payload as IngestionStatus["latest"],
+        latest: started,
       }))
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Ingestion could not be started"
-      )
+      setError(errorMessage(cause, "Ingestion could not be started"))
     } finally {
       setBusy(false)
     }

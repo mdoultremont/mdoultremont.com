@@ -3,45 +3,16 @@ import { Effect, Layer } from "effect"
 import {
   createSpotifyOAuthState,
   Spotify,
-  type SpotifyError,
   verifySpotifyOAuthState,
 } from "@/server/modules/spotify"
 import { MusicIngestion } from "@/server/actions/music/ingestion"
 import { platformLayer } from "../../platform"
 import { readCookie } from "../cookies"
-import {
-  json,
-  type RequestError,
-  requireMutation,
-  requireApp,
-  respond,
-  spotifyErrorResponse,
-} from "../http"
+import { requireApp, respond } from "../http"
 
 const stateCookie = "spotify_oauth_state"
 
 const spotifyLayer = () => Spotify.layer.pipe(Layer.provide(platformLayer(env)))
-
-/** Owner-only route using the Spotify module. Spotify errors become JSON responses. */
-const route = (
-  request: Request,
-  options: { readonly mutation: boolean },
-  handler: (
-    ownerId: string
-  ) => Effect.Effect<Response, RequestError | SpotifyError, Spotify>
-) =>
-  respond(
-    Effect.gen(function* () {
-      const owner = yield* requireApp(request, "music")
-      if (options.mutation) yield* requireMutation(request)
-      return yield* handler(owner.id).pipe(
-        Effect.catchTag("SpotifyError", (error) =>
-          Effect.succeed(spotifyErrorResponse(error))
-        ),
-        Effect.provide(spotifyLayer())
-      )
-    })
-  )
 
 export const beginSpotifyConnection = (request: Request) =>
   respond(
@@ -124,53 +95,6 @@ export const completeSpotifyConnection = (request: Request) => {
       Effect.catch(() => Effect.succeed(redirect("failed")))
     )
   )
-}
-
-export const spotifyStatus = (request: Request) =>
-  route(request, { mutation: false }, (ownerId) =>
-    Spotify.use((spotify) => spotify.status(ownerId)).pipe(Effect.map(json))
-  )
-
-export const spotifyPlaylists = (request: Request) =>
-  route(request, { mutation: false }, (ownerId) =>
-    Spotify.use((spotify) => spotify.playlists(ownerId)).pipe(
-      Effect.map((items) => json({ items }))
-    )
-  )
-
-export const spotifySavedTracks = (request: Request) =>
-  route(request, { mutation: false }, (ownerId) => {
-    const cursor = new URL(request.url).searchParams.get("cursor") ?? undefined
-    if (cursor !== undefined && !isSavedTracksCursor(cursor))
-      return Effect.succeed(json({ error: "Invalid cursor" }, 400))
-    return Spotify.use((spotify) =>
-      spotify.savedTracksPage(ownerId, cursor)
-    ).pipe(Effect.map(json))
-  })
-
-export const disconnectSpotify = (request: Request) =>
-  route(request, { mutation: true }, (ownerId) =>
-    Spotify.use((spotify) => spotify.disconnect(ownerId)).pipe(
-      Effect.as(json({ status: "disconnected" }))
-    )
-  )
-
-/** Only Spotify's own next-page links for Liked Songs are accepted from the browser. */
-function isSavedTracksCursor(value: string) {
-  try {
-    const url = new URL(value, "https://api.spotify.com")
-    return (
-      url.origin === "https://api.spotify.com" &&
-      url.pathname === "/v1/me/tracks" &&
-      url.searchParams.has("offset") &&
-      url.searchParams.size <= 2 &&
-      [...url.searchParams.keys()].every(
-        (key) => key === "offset" || key === "limit"
-      )
-    )
-  } catch {
-    return false
-  }
 }
 
 function cookie(name: string, value: string, maxAge: number, request: Request) {

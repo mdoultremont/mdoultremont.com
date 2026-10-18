@@ -1,14 +1,17 @@
 import { env } from "cloudflare:workers"
 import { Effect, Layer, Option } from "effect"
 import {
+  CallerAuth,
+  type ConsentRequest,
   type SignedInUser,
   UserAuth,
   type UserSession,
 } from "@/server/actions/auth"
 import { platformLayer } from "../platform"
 
+/** `UserAuth` and `CallerAuth` for one request, over one Better Auth. */
 export const authLayer = () =>
-  UserAuth.layer.pipe(Layer.provide(platformLayer(env)))
+  CallerAuth.layer.pipe(Layer.provide(platformLayer(env)))
 
 /** Better Auth's routes under /api/auth: sign-in, callbacks, sign-out, linking. */
 export const handleAuthRequest = (request: Request) =>
@@ -51,6 +54,25 @@ export const currentUser = (request: Request): Promise<SignedInUser | null> =>
             apps,
           }),
         })
+      )
+    )
+  )
+
+/**
+ * For the OAuth consent page loader: the authorization request behind its
+ * signed query, or null when the query is not ours, expired, or nobody is
+ * signed in. Sent to the browser.
+ */
+export const consentRequest = (
+  request: Request,
+  query: string
+): Promise<ConsentRequest | null> =>
+  Effect.runPromise(
+    CallerAuth.use((auth) => auth.consentRequest(request.headers, query)).pipe(
+      Effect.provide(authLayer()),
+      Effect.map(Option.getOrNull),
+      Effect.catchCause((cause) =>
+        Effect.logError("Consent request failed", cause).pipe(Effect.as(null))
       )
     )
   )

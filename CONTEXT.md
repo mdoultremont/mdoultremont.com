@@ -61,6 +61,24 @@ The sign-in accounts in `OWNER_ACCOUNTS`. While nobody has back office access,
 they may sign in without an invitation and receive every app, so the site can
 always be recovered.
 
+**Action**:
+One operation of an app, such as importing a flight or saving destinations.
+The site's pages, the CLI and agents all perform the same actions, and every
+call checks the user's app access.
+_Avoid_: Endpoint, procedure, tool (an MCP tool is how an agent sees an action)
+
+**Client**:
+A program a user lets act for them, such as the tools CLI, Claude or Codex. It
+signs in through the user's browser and asks for consent; it can then perform
+every action of the apps the user can use at that moment.
+_Avoid_: Integration, API key, bot
+
+**Grant**:
+A user's consent to one client, with the tokens issued under it. Revoking it
+ends all of them. Losing app access, or being removed, applies to the next
+call of every grant.
+_Avoid_: Session (a session is a browser's sign-in)
+
 ## Music control area
 
 **Owner**:

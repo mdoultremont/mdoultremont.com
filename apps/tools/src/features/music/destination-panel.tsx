@@ -1,8 +1,8 @@
 import { Combobox } from "@base-ui/react/combobox"
 import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useId, useState } from "react"
-import type { SpotifyPlaylist } from "@/server/modules/spotify"
-import type { DestinationConfiguration } from "@/server/actions/music/destinations"
+import { api, errorMessage } from "@/features/api"
+import type { DestinationConfiguration, SpotifyPlaylist } from "@/shared/music"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Button } from "@/features/ui/button"
 import {
@@ -43,17 +43,21 @@ export function DestinationPanel() {
 
   useEffect(() => {
     let active = true
-    Promise.all([
-      readJson<DestinationConfiguration>("/api/music/destinations"),
-      readJson<{ items: SpotifyPlaylist[] }>("/api/music/spotify/playlists"),
-    ])
+    Promise.all([api.music.destinations.get(), api.music.spotify.playlists()])
       .then(([config, playlists]) => {
         if (!active) return
         setView({ kind: "ready", config, playlists: playlists.items })
         setReviewId(config.reviewPlaylistId ?? "")
       })
       .catch((cause: unknown) => {
-        if (active) setView({ kind: "error", message: message(cause) })
+        if (active)
+          setView({
+            kind: "error",
+            message: errorMessage(
+              cause,
+              "Playlist settings could not be loaded"
+            ),
+          })
       })
     return () => {
       active = false
@@ -61,31 +65,17 @@ export function DestinationPanel() {
   }, [])
 
   async function refresh() {
-    const config = await readJson<DestinationConfiguration>(
-      "/api/music/destinations"
-    )
-    const playlists = await readJson<{ items: SpotifyPlaylist[] }>(
-      "/api/music/spotify/playlists"
-    )
+    const config = await api.music.destinations.get()
+    const playlists = await api.music.spotify.playlists()
     setView({ kind: "ready", config, playlists: playlists.items })
     setReviewId(config.reviewPlaylistId ?? "")
   }
 
-  async function mutate(
-    url: string,
-    method: "POST" | "PUT" | "DELETE",
-    body: unknown
-  ) {
+  async function mutate(change: () => Promise<unknown>) {
     setBusy(true)
     setError(null)
     try {
-      await readJson(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      })
+      await change()
       try {
         await refresh()
       } catch {
@@ -95,7 +85,7 @@ export function DestinationPanel() {
       }
       return true
     } catch (cause) {
-      setError(message(cause))
+      setError(errorMessage(cause, "Playlist settings could not be saved"))
       return false
     } finally {
       setBusy(false)
@@ -105,11 +95,13 @@ export function DestinationPanel() {
   async function addSelectedPlaylist() {
     if (!selectedPlaylist) return
     if (
-      await mutate("/api/music/destinations", "PUT", {
-        playlistId: selectedPlaylist.id,
-        description: "",
-        enabled: false,
-      })
+      await mutate(() =>
+        api.music.destinations.save({
+          playlistId: selectedPlaylist.id,
+          description: "",
+          enabled: false,
+        })
+      )
     ) {
       setSelectedPlaylist(null)
       setPlaylistQuery("")
@@ -119,10 +111,9 @@ export function DestinationPanel() {
 
   async function createPlaylist(name: string) {
     if (
-      await mutate("/api/music/destinations/create", "POST", {
-        name,
-        description: "",
-      })
+      await mutate(() =>
+        api.music.destinations.create({ name, description: "" })
+      )
     ) {
       setPlaylistQuery("")
       setSelectedPlaylist(null)
@@ -253,11 +244,13 @@ export function DestinationPanel() {
                             busy || (!destination.enabled && !canEnable)
                           }
                           onClick={() =>
-                            mutate("/api/music/destinations", "PUT", {
-                              playlistId: destination.playlistId,
-                              description: destination.description,
-                              enabled: !destination.enabled,
-                            })
+                            mutate(() =>
+                              api.music.destinations.save({
+                                playlistId: destination.playlistId,
+                                description: destination.description,
+                                enabled: !destination.enabled,
+                              })
+                            )
                           }
                           size="sm"
                           type="button"
@@ -268,9 +261,11 @@ export function DestinationPanel() {
                         <Button
                           disabled={busy}
                           onClick={() =>
-                            mutate("/api/music/destinations", "DELETE", {
-                              playlistId: destination.playlistId,
-                            })
+                            mutate(() =>
+                              api.music.destinations.remove({
+                                playlistId: destination.playlistId,
+                              })
+                            )
                           }
                           size="sm"
                           type="button"
@@ -295,14 +290,16 @@ export function DestinationPanel() {
                             }
                             onClick={async () => {
                               if (
-                                await mutate("/api/music/destinations", "PUT", {
-                                  playlistId: destination.playlistId,
-                                  description: editingDescription,
-                                  enabled:
-                                    destination.enabled ||
-                                    (!destination.description.trim() &&
-                                      Boolean(editingDescription.trim())),
-                                })
+                                await mutate(() =>
+                                  api.music.destinations.save({
+                                    playlistId: destination.playlistId,
+                                    description: editingDescription,
+                                    enabled:
+                                      destination.enabled ||
+                                      (!destination.description.trim() &&
+                                        Boolean(editingDescription.trim())),
+                                  })
+                                )
                               )
                                 setEditingId(null)
                             }}
@@ -404,9 +401,11 @@ export function DestinationPanel() {
               className="w-fit"
               disabled={busy || reviewId === (config.reviewPlaylistId ?? "")}
               onClick={() =>
-                mutate("/api/music/review-playlist", "PUT", {
-                  playlistId: reviewId || null,
-                })
+                mutate(() =>
+                  api.music.destinations.setReviewPlaylist({
+                    playlistId: reviewId || null,
+                  })
+                )
               }
               type="button"
             >
@@ -563,24 +562,3 @@ type PlaylistOption =
       readonly name: string
       readonly label: string
     }
-
-async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
-  const body: unknown = await response.json().catch(() => null)
-  if (!response.ok) {
-    const error =
-      body && typeof body === "object" && "error" in body ? body.error : null
-    throw new Error(
-      typeof error === "string"
-        ? error
-        : "Playlist settings could not be loaded"
-    )
-  }
-  return body as T
-}
-
-function message(cause: unknown) {
-  return cause instanceof Error
-    ? cause.message
-    : "Playlist settings could not be saved"
-}

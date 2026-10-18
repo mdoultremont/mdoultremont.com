@@ -1,10 +1,7 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import type {
-  ClassificationStatus,
-  DecisionSummary,
-} from "@/server/actions/music/classification"
-import type { SpotifyPlaylist } from "@/server/modules/spotify"
+import type { ClassificationStatus, DecisionSummary } from "@/shared/music"
+import { api, errorMessage } from "@/features/api"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Badge } from "@/features/ui/badge"
 import { Button } from "@/features/ui/button"
@@ -45,22 +42,14 @@ export function ClassificationPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/classification")
-        if (!response.ok)
-          throw new Error("Classification status could not be loaded")
-        const next = (await response.json()) as ClassificationStatus
+        const next = await api.music.classification.status()
         if (!active) return
         setStatus(next)
         setError(null)
         if (next.ready && (next.pending > 0 || next.waitingForEnrichment > 0))
           timer = setTimeout(load, pollMilliseconds)
-      } catch (cause) {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Classification status could not be loaded"
-          )
+      } catch {
+        if (active) setError("Classification status could not be loaded")
       }
     }
     if (status === null || working) void load()
@@ -74,12 +63,8 @@ export function ClassificationPanel({
   useEffect(() => {
     if (initialPlaylistNames) return
     let active = true
-    fetch("/api/music/spotify/playlists")
-      .then((response) =>
-        response.ok
-          ? (response.json() as Promise<{ items: SpotifyPlaylist[] }>)
-          : { items: [] }
-      )
+    api.music.spotify
+      .playlists()
       .then(({ items }) => {
         if (active)
           setPlaylistNames(
@@ -92,27 +77,16 @@ export function ClassificationPanel({
     }
   }, [initialPlaylistNames])
 
-  async function send(
-    url: string,
-    init: RequestInit,
+  async function send<A>(
+    call: () => Promise<A>,
     failure: string
-  ): Promise<unknown> {
+  ): Promise<A | null> {
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch(url, {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string
-      } | null
-      if (!response.ok) throw new Error(payload?.error ?? failure)
-      return payload
+      return await call()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure)
+      setError(errorMessage(cause, failure))
       return null
     } finally {
       setBusy(false)
@@ -121,20 +95,18 @@ export function ClassificationPanel({
 
   async function setReady(ready: boolean) {
     const result = await send(
-      "/api/music/ready",
-      { method: "PUT", body: JSON.stringify({ ready }) },
+      () => api.music.classification.setReady({ ready }),
       "Classification could not be changed"
     )
-    if (result && status) setStatus({ ...status, ready })
+    if (result && status) setStatus({ ...status, ready: result.ready })
   }
 
   async function reclassify() {
     const result = await send(
-      "/api/music/classification",
-      { method: "POST" },
+      () => api.music.classification.reclassify(),
       "Reclassification could not start"
     )
-    if (result) setStatus(result as ClassificationStatus)
+    if (result) setStatus(result)
   }
 
   return (

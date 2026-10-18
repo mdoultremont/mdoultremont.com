@@ -23,6 +23,16 @@ function setup() {
     BetterAuth.of({
       handler: () => Effect.succeed(new Response()),
       session: () => Effect.succeed(session),
+      oauth: {
+        origin: "https://tools.example",
+        issuer: "https://tools.example/api/auth",
+        resource: "https://tools.example/api",
+        resourceMetadataUrl:
+          "https://tools.example/.well-known/oauth-protected-resource/api",
+      },
+      accessToken: () => Effect.succeed(Option.none()),
+      isSignedOAuthQuery: () => Effect.succeed(false),
+      oauthClient: () => Effect.succeed(Option.none()),
     })
   )
   const store = AuthStore.layer.pipe(Layer.provide(Database.layer(d1.binding)))

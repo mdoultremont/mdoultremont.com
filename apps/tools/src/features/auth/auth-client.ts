@@ -1,7 +1,15 @@
+import { oauthProviderClient } from "@better-auth/oauth-provider/client"
 import { createAuthClient } from "better-auth/client"
 
-/** Browser side of Better Auth: starts sign-in, linking and sign-out against /api/auth. */
-export const authClient = createAuthClient()
+/**
+ * Browser side of Better Auth: starts sign-in, linking and sign-out against
+ * /api/auth. On the OAuth sign-in and consent pages, the provider plugin
+ * sends the page's signed authorization request along, so signing in
+ * resumes it and consent answers it.
+ */
+export const authClient = createAuthClient({
+  plugins: [oauthProviderClient()],
+})
 
 export type SignInProvider = "github" | "spotify"
 

@@ -1,5 +1,7 @@
+import { verifyOAuthQueryParams } from "@better-auth/oauth-provider"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { isAPIError } from "better-auth/api"
 import {
   Config,
   Context,
@@ -16,7 +18,21 @@ import {
   authUsers,
   authVerifications,
   Database,
+  oauthAccessTokens,
+  oauthClientAssertions,
+  oauthClientResources,
+  oauthClients,
+  oauthConsents,
+  oauthRefreshTokens,
+  oauthResources,
 } from "@/server/modules/database"
+import {
+  makeOAuthProvider,
+  type OAuthAccess,
+  type OAuthSite,
+  oauthSite,
+  toolsOAuth,
+} from "./oauth"
 
 /** The sign-in providers this site offers. */
 export const signInProviders = ["github", "spotify"] as const
@@ -65,6 +81,13 @@ export interface AuthUser {
   readonly image: string | null
 }
 
+/** What a consent page shows about the client asking for access. */
+export interface OAuthClientSummary {
+  readonly clientId: string
+  /** Chosen by whoever registered the client; never proof of who it is. */
+  readonly name: string | null
+}
+
 /** A valid session and its user. */
 export interface AuthSession {
   /** Random, server-side only: never sent to the browser. */
@@ -97,7 +120,10 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
     clientSecret: Redacted.value(yield* secretConfig("SPOTIFY_CLIENT_SECRET")),
   }
 
-  return betterAuth({
+  const site = oauthSite(baseURL)
+  const provider = makeOAuthProvider(site)
+
+  const auth = betterAuth({
     baseURL,
     secret: Redacted.value(secret),
     database: drizzleAdapter(database.drizzle, {
@@ -107,8 +133,16 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
         session: authSessions,
         account: authAccounts,
         verification: authVerifications,
+        oauthClient: oauthClients,
+        oauthResource: oauthResources,
+        oauthClientResource: oauthClientResources,
+        oauthRefreshToken: oauthRefreshTokens,
+        oauthAccessToken: oauthAccessTokens,
+        oauthConsent: oauthConsents,
+        oauthClientAssertion: oauthClientAssertions,
       },
     }),
+    plugins: [provider, toolsOAuth(provider, database.drizzle)],
     socialProviders: { github, spotify },
     account: {
       // Sign-in providers' tokens are never used, but are kept encrypted anyway.
@@ -169,11 +203,13 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
       },
     },
   })
+  return { auth, site, secret: Redacted.value(secret) }
 })
 
 /**
  * Better Auth, configured for this site: GitHub and Spotify sign-in, sessions
- * in D1. Holds no rule about who may sign in; that comes from `AuthGate`.
+ * in D1, and the OAuth provider that lets clients act for a user. Holds no
+ * rule about who may sign in; that comes from `AuthGate`.
  */
 export class BetterAuth extends Context.Service<
   BetterAuth,
@@ -186,24 +222,65 @@ export class BetterAuth extends Context.Service<
     readonly session: (
       headers: Headers
     ) => Effect.Effect<Option.Option<AuthSession>, BetterAuthError>
+    /** The OAuth issuer and protected resource, from BETTER_AUTH_URL. */
+    readonly oauth: OAuthSite
+    /**
+     * The access token's user and client, if the provider finds it active for
+     * an unrevoked grant. Audience and scope are the caller's to check.
+     */
+    readonly accessToken: (
+      token: string
+    ) => Effect.Effect<Option.Option<OAuthAccess>, BetterAuthError>
+    /** Whether an authorization request's query was signed by this server. */
+    readonly isSignedOAuthQuery: (
+      query: string
+    ) => Effect.Effect<boolean, BetterAuthError>
+    /** The registered client, as shown to the signed-in user being asked for consent. */
+    readonly oauthClient: (
+      clientId: string,
+      headers: Headers
+    ) => Effect.Effect<Option.Option<OAuthClientSummary>, BetterAuthError>
   }
 >()("server/modules/BetterAuth") {
   /** Needs `Database`, an `AuthGate`, and the BETTER_AUTH_*, GITHUB_* and SPOTIFY_* configuration. */
   static readonly layer = Layer.effect(
     BetterAuth,
     Effect.gen(function* () {
-      const auth = yield* makeAuth()
+      const { auth, site, secret } = yield* makeAuth()
+      const attempt = <A>(run: () => Promise<A>) =>
+        Effect.tryPromise({
+          try: run,
+          catch: (cause) => new BetterAuthError({ cause }),
+        })
       return BetterAuth.of({
-        handler: (request) =>
-          Effect.tryPromise({
-            try: () => auth.handler(request),
-            catch: (cause) => new BetterAuthError({ cause }),
-          }),
+        handler: (request) => attempt(() => auth.handler(request)),
+        oauth: site,
+        accessToken: (token) =>
+          attempt(() => auth.api.toolsAccessToken({ body: { token } })).pipe(
+            Effect.map(Option.fromNullishOr)
+          ),
+        isSignedOAuthQuery: (query) =>
+          attempt(() => verifyOAuthQueryParams(query, secret)),
+        oauthClient: (clientId, headers) =>
+          attempt(() =>
+            auth.api.getOAuthClientPublic({
+              query: { client_id: clientId },
+              headers,
+            })
+          ).pipe(
+            Effect.map((client) =>
+              Option.some({
+                clientId: client.client_id,
+                name: client.client_name ?? null,
+              })
+            ),
+            Effect.catchIf(
+              (error) => isAPIError(error.cause),
+              () => Effect.succeed(Option.none())
+            )
+          ),
         session: (headers) =>
-          Effect.tryPromise({
-            try: () => auth.api.getSession({ headers }),
-            catch: (cause) => new BetterAuthError({ cause }),
-          }).pipe(
+          attempt(() => auth.api.getSession({ headers })).pipe(
             Effect.map((session) =>
               Option.fromNullishOr(session).pipe(
                 Option.map(({ session: { id }, user }) => ({

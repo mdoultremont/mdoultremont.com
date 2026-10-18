@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm"
+import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
 import { Context, Effect, Layer, Option, Schema } from "effect"
 import {
   appAccess,
@@ -6,6 +6,9 @@ import {
   authUsers,
   Database,
   invitations,
+  oauthAccessTokens,
+  oauthRefreshTokens,
+  oauthRevokedGrants,
 } from "@/server/modules/database"
 import { type App, apps as allApps, isApp } from "./apps"
 import { AuthPersistenceError } from "./errors"
@@ -73,8 +76,8 @@ export class AuthStore extends Context.Service<
     ) => Effect.Effect<Option.Option<PendingInvitation>, AuthPersistenceError>
     /**
      * Marks the invitation accepted by the user, grants its apps, and restores
-     * the user if they were removed. Does nothing if someone else accepted it
-     * first.
+     * the user if they were removed, revoking the OAuth grants they held.
+     * Does nothing if someone else accepted it first.
      */
     readonly acceptInvitation: (input: {
       readonly invitation: PendingInvitation
@@ -257,6 +260,33 @@ export class AuthStore extends Context.Service<
                       })
                       .from(invitations)
                       .where(acceptedHere)
+                  )
+                  .onConflictDoNothing()
+              ),
+              // A restored user starts without the OAuth grants they held
+              // before removal, including any a client refreshed meanwhile.
+              ...[oauthRefreshTokens, oauthAccessTokens].map((tokens) =>
+                db
+                  .insert(oauthRevokedGrants)
+                  .select(
+                    db
+                      .selectDistinct({
+                        authorizationCodeId:
+                          sql<string>`${tokens.authorizationCodeId}`.as(
+                            "authorization_code_id"
+                          ),
+                        revokedAt: sql<number>`${now}`.as("revoked_at"),
+                      })
+                      .from(tokens)
+                      .innerJoin(authUsers, eq(authUsers.id, tokens.userId))
+                      .where(
+                        and(
+                          eq(tokens.userId, userId),
+                          isNotNull(tokens.authorizationCodeId),
+                          isNotNull(authUsers.deletedAt),
+                          sql`EXISTS (SELECT 1 FROM ${invitations} WHERE ${acceptedHere})`
+                        )
+                      )
                   )
                   .onConflictDoNothing()
               ),

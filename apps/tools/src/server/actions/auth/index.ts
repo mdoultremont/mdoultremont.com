@@ -11,5 +11,13 @@ export {
   type PendingInvitation,
 } from "./store"
 export { AuthPersistenceError } from "./errors"
+export {
+  type Caller,
+  CallerAuth,
+  type CallerOrigin,
+  type ConsentRequest,
+  InsufficientScope,
+  InvalidAccessToken,
+} from "./oauth"
 export { invitationCookie } from "./invitation-cookie"
 export { type OwnerAccount, ownerAccounts } from "./owner-accounts"

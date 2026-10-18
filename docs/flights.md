@@ -113,13 +113,12 @@ into a continuous recording, and may affect measurements.
 ## Private web integration
 
 Use the portfolio's existing Better Auth sign-in and app access. The integration
-places pages under `src/routes/_apps/`, the API in the Hono/oRPC shell
-(`src/server/entrypoints/http/hono` and `.../flights`, contract in
-`src/shared/flights/contract`), and UI under `src/features/flights/`.
-Register `flights` in the app access catalog and private-app launcher, and wrap
-the page in `RequireApp`. Every private API request must check the `flights`
-app independently of the page guard; the Hono shell does this for `/api/rpc/*`
-and the file download.
+places pages under `src/routes/_apps/`, the operations as actions (declared in
+`src/shared/flights/actions.ts`, bound in
+`src/server/entrypoints/actions/flights.ts`), and UI under
+`src/features/flights/`. Register `flights` in the app access catalog and
+private-app launcher, and wrap the page in `RequireApp`. Every action call
+checks the `flights` app independently of the page guard.
 
 Keep backend entrypoints, actions, and modules in their existing layers. Both
 the import backend and browser viewer import the shared track API from
@@ -205,17 +204,19 @@ Import writes use one D1 `db.batch`, with duplicate predicates inside the
 conditional flight insert so concurrent uploads cannot both win. A duplicate
 returns the existing flight ID and leaves its original unchanged.
 
-The API is contract-first [oRPC](https://orpc.dev) behind Hono. The contract
-lives in `apps/tools/src/shared/flights/contract` (Effect Schema through its
-Standard Schema adapter) and the browser calls it through the typed client in
-`apps/tools/src/features/flights/api.ts`; the DTO types come from the contract.
-Procedures are served at `POST /api/rpc/flights/<name>`, for example
-`/api/rpc/flights/list` and `/api/rpc/flights/equipment/create` (oRPC RPC protocol, body
-`{ "json": input }`), require Flights access, and verify the request Origin. A
-request body is capped at 6,000,000 bytes. Failures are `ORPCError`s:
-`UNAUTHORIZED` 401, `FORBIDDEN` 403, `BAD_REQUEST` 400 (invalid input or a
-rejected value), `NOT_FOUND` 404, `PAYLOAD_TOO_LARGE` 413, `SERVICE_UNAVAILABLE`
-503 and `INTERNAL_SERVER_ERROR` 500 (database, object storage, or compression failures), each with a readable message.
+The API is the `flights.*` actions in `apps/tools/src/shared/flights/actions.ts`
+(Effect Schema), with DTO types in `schemas.ts` beside it. The browser calls
+them through the typed client in `apps/tools/src/features/flights/api.ts` over
+oRPC at `POST /api/rpc/flights/<name>`, for example `/api/rpc/flights/list` and
+`/api/rpc/flights/equipment/create`. The same actions are served at their
+declared routes under `/api/v1` (`GET /api/v1/flights`, `POST
+/api/v1/flights/imports`, …) and listed by `GET /api/v1`. Every call requires
+Flights access, and session-cookie changes must carry this site's Origin. A
+request body is capped at 6,000,000 bytes. Failures carry a code and a readable
+message: `UNAUTHORIZED` 401, `FORBIDDEN` 403, `BAD_REQUEST` 400 (invalid input
+or a rejected value), `NOT_FOUND` 404, `PAYLOAD_TOO_LARGE` 413,
+`SERVICE_UNAVAILABLE` 503 and `INTERNAL_SERVER_ERROR` 500 (database, object
+storage, or compression failures).
 
 - `list({ year? })` returns `{ flights }`, newest takeoff first; year is
   an optional integer from 1900 to 9998.
@@ -240,10 +241,11 @@ topSites }`. Totals contain flights, hours, and distanceM. UTC activity buckets
   Name length is 1-200, notes allow 5,000 characters, and kind is wing,
   harness, reserve, instrument, or other. `equipment.delete({ equipmentId })`
   returns `{ id }`.
-- `GET /api/flights/files/:fileId` is a plain Hono route (binary, not a
-  procedure): it checks ownership in D1, then streams the original from R2 as an
-  attachment (with its content type, `Content-Length`, and filename) and
-  returns `{ error: string }` on failure.
+- `files.download({ fileId })` returns the original file as
+  `{ filename, contentType, sizeBytes, contentBase64 }` after checking
+  ownership in D1. `GET /api/flights/files/:fileId` serves the same action as
+  an attachment with the exact bytes (content type, `Content-Length`, and
+  filename) and returns `{ error: { code, message } }` on failure.
 
 API timestamps use UTC epoch milliseconds. Metrics use metres, seconds, and
 metres per second, except explicitly named hours. Missing altitude-derived

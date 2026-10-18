@@ -3,7 +3,8 @@
 The private music backend, written with [Effect](https://effect.website) v4.
 This guide covers the structure and the Effect patterns used here. The
 best worked example is `modules/spotify` together with
-`actions/music/destinations` and `entrypoints/http/music/destinations.server.ts`.
+`actions/music/destinations` and the `music.destinations.*` actions
+(`src/shared/music/actions.ts`, `entrypoints/actions/music.ts`).
 
 ## Layers
 
@@ -11,11 +12,11 @@ best worked example is `modules/spotify` together with
 entrypoints  →  actions  →  modules
 ```
 
-| Layer           | Holds                                                                                                          | Example                                             |
-| --------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| **modules**     | Capabilities with no business rules: infrastructure and provider clients.                                      | `database`, `object-storage`, `spotify`             |
-| **actions**     | Business logic: use cases grouped by domain. Combines modules.                                                 | `music/destinations`                                |
-| **entrypoints** | Adapters that wire actions to the outside: HTTP (Hono + oRPC, TanStack routes), queue consumers, cron, (MCP…). | `http/music/destinations.server.ts`, `http/flights` |
+| Layer           | Holds                                                                                                                                   | Example                                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **modules**     | Capabilities with no business rules: infrastructure and provider clients.                                                               | `database`, `object-storage`, `spotify` |
+| **actions**     | Business logic: use cases grouped by domain. Combines modules.                                                                          | `music/destinations`                    |
+| **entrypoints** | Adapters that wire actions to the outside: the action registry, HTTP (Hono + oRPC, MCP, OAuth, TanStack routes), queue consumers, cron. | `entrypoints/actions`, `http/hono`      |
 
 Actions are grouped by domain (`actions/music/…`, `actions/flights/…`);
 each folder inside a domain is one unit. Modules are named after what they do
@@ -94,14 +95,15 @@ becomes the tracing span.
   `actions/music/destinations/destinations.ts`).
 - An action adds its own business errors (`DestinationConflict`, …) and passes
   module errors through when the caller should see them.
-- Entrypoints turn every error into a response with `Effect.catchTags`. Only
-  then can `respond()` accept the program, because it requires every
-  action error to be handled.
+- Entrypoints turn every error into a response. Action errors go through the
+  one table in `entrypoints/actions/errors.ts` (`toActionError`); `bind`
+  only accepts handlers whose errors have a row there. The remaining TanStack
+  protocol routes use `respond()`, which requires every error to be handled.
 
 ### Parsing untrusted data
 
-Use `Schema` for every boundary: request bodies (`decodeBody`), provider
-responses (`modules/spotify/schemas.ts`). Don't write `typeof x === "object"`
+Use `Schema` for every boundary: action inputs and outputs (decoded and
+encoded once by `bind`), provider responses (`modules/spotify/schemas.ts`). Don't write `typeof x === "object"`
 checks.
 
 ### Configuration and time
@@ -115,8 +117,8 @@ checks.
 
 ### Running effects
 
-Only entrypoints leave Effect (`Effect.runPromise`), through `respond()` for
-HTTP. Everything below returns an `Effect`.
+Only entrypoints leave Effect (`Effect.runPromise`): `invokeAction` for every
+action call, `respond()` for the TanStack protocol routes. Everything below returns an `Effect`.
 
 Layers are built **per request or per queue batch**, never shared across
 requests. Cloudflare Workers forbid one request from awaiting I/O started by
@@ -150,29 +152,92 @@ it.effect("does something", () =>
 that point up a layer, and keeps `cloudflare:workers` out of actions. The one
 exception is `@/server/modules/database/testing`, a test-only in-memory D1, and `@/server/modules/object-storage/testing`, a fake R2 bucket.
 
-## HTTP: Hono and oRPC
+## Actions: one registry, every transport
 
-`src/server.ts` sends every `/api/*` request to the Hono app in
-`entrypoints/http/hono`; anything Hono does not match (auth, music, back
-office, invitations) falls through to the TanStack server routes, which still
-use `respond()`. Flights is the first app migrated:
+Every business operation is an **action**. Its declaration lives in
+`src/shared/<app>/actions.ts` (frontend-safe): a description written for
+agents, `effect` (`read` or `write`), an explicit HTTP route relative to
+`/api/v1`, Effect Schema input and output, and optional `file` metadata
+for a text field that may come from a local file (with its byte limit). The
+catalog (`src/shared/actions/catalog.ts`) holds one tree per app; the path
+to an action is its name (`flights.equipment.create`).
 
-- The contract lives in `src/shared/<app>/contract` (`@orpc/contract`, input and
-  output as Effect Schema through `Schema.toStandardSchemaV1`), so the browser
-  and the backend share one set of types. The frontend calls it through a typed
-  `createORPCClient` + `RPCLink` client.
-- `entrypoints/http/<app>/router.ts` implements the contract with `implement()`.
-  The oRPC context carries the signed-in user id and the request's
-  `platformLayer(env)`, built in the Hono middleware.
-- Hono middleware (in `hono/index.ts`) owns what is common: body cap, session +
-  `requireApp`, the Origin check for non-GET requests. Binary or non-RPC
-  endpoints are plain Hono routes in the same unit.
+`entrypoints/actions/<app>.ts` binds each action to its business code:
 
-Each app's router is mounted at `/api/rpc/<app>/*` by one `mountAppRpc(app,
-"<app>", router)` line in `hono/index.ts`; only that prefix requires the app.
+```ts
+create: bind(actions.equipment.create, Equipment.layer, (input, caller) =>
+  Equipment.use((equipment) => equipment.create(caller.userId, input)).pipe(
+    Effect.map((equipment) => ({ equipment }))
+  )
+),
+```
 
-To add a procedure: declare it with its schemas in the contract, add a handler in
-the router that calls `runProcedure(program, Action.layer, context.platform)`,
-and add the new action errors to `toOrpcError` in `flights/errors.ts`, which maps
-tagged errors to `ORPCError` codes. `runProcedure` is where the program leaves
-Effect; defects are logged and become a generic 500.
+`handlers` must have exactly one handler per action, at the same path
+(`HandlersFor<typeof catalog>`); `createRegistry` also refuses a handler
+bound to another action and two actions on one route.
+
+Every transport calls `invokeAction(action, input, caller, platform)`: it
+checks `caller.apps` against the action's app, decodes the canonical JSON
+input once (`Schema.toCodecJson`), enforces `file.maxBytes`, runs the
+handler with its layer on the request's platform, maps errors with
+`toActionError`, and encodes the output once. Defects are logged and become
+`INTERNAL_SERVER_ERROR`. `invoke(name, ...)` does the same by name.
+
+To add an action: declare it in the app's tree, bind it in the app's handler
+file, and give any new error a row in `toActionError`. oRPC, `/api/v1`, the
+manifest and the typed browser client pick it up with no routing code.
+
+## HTTP
+
+`src/server.ts` hands every request to `createToolsFetch` in
+`entrypoints/http/api`, which tries in order:
+
+1. `handleOAuthRequest` (`entrypoints/http/oauth`): OAuth discovery under
+   `/.well-known/`, and the provider's public endpoints
+   (`/api/auth/oauth2/{register,token,revoke}`) with CORS for any origin and
+   no credentials. A cookie-carrying change under `/api/auth/oauth2/` must
+   come from this site's `Origin`.
+2. `/api/*`: the Hono app from `createApi(fallback, options)` in
+   `entrypoints/http/hono`.
+3. Everything else, and whatever Hono does not match: the TanStack app, whose
+   server routes only hold protocol endpoints (Better Auth, the Spotify
+   connection flow, invitation links).
+
+Hono serves:
+
+- `/api/rpc/<action path>`: every action over oRPC, for the browser. The
+  contract (`actionsContract`) is derived from the catalog; the browser uses
+  `createActionsClient`, which encodes inputs and decodes outputs with the
+  same JSON codecs. The server does not re-validate with oRPC.
+- `GET /api/v1`: `{ actions: ActionDescriptor[] }` for the caller's apps,
+  with JSON Schemas of the canonical JSON. Inputs and outputs are object
+  schemas (a union of objects also gets `type: "object"`).
+- `/api/v1/<route>`: each action at its declared method and path. Path
+  parameters fill string input fields; a GET takes the rest of its input as
+  JSON in `?input=`; other methods take a JSON body, merged with the path
+  parameters (a conflicting value is a 400). Success is `200` with the
+  output; failure is `{ error: { code, message, data? } }` with the status
+  from `errorStatus`.
+- `/api/mcp`: every action of the caller's apps as an MCP tool, through the
+  SDK adapter in `entrypoints/mcp` (see its README). `hono/mcp-tools.ts`
+  turns descriptors into tools and refuses, at startup, an action without
+  object schemas.
+- `GET /api/flights/files/:fileId`: `flights.files.download` as the file
+  itself, for the browser.
+
+Every route is capped at 6 MB and authenticated by `options.authenticate`
+(default: `authenticate` from `entrypoints/http/oauth`), which receives the
+credentials the route accepts: `"bearer"` for MCP, `"bearer-or-session"`
+elsewhere. It returns a `Caller` or a `Refusal`; Hono renders a refusal in
+the route's error body (oRPC or JSON) and keeps its headers
+(`WWW-Authenticate`, `Retry-After`). `authenticate` owns every rule about
+credentials: a bearer header is the only credential when present, a cookie
+change needs this site's `Origin`, MCP refuses cookies and foreign `Origin`s.
+This site is `BETTER_AUTH_URL`'s origin, never the request's Host.
+`options.registry` and `options.platform` exist for tests. A `Caller` is
+built per request with the user's current app access.
+
+OAuth itself is Better Auth's provider (`modules/better-auth/oauth.ts`), plus
+tools' grant listing: a revoked grant, a replayed refresh token or a code
+redeemed twice is listed in `oauth_revoked_grants`, and its tokens are refused
+even when stored after the listing. See `docs/tools-api.md`.

@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import type { Ingestion } from "@/server/actions/music/ingestion"
+import type { Ingestion } from "@/shared/music"
 import { IngestionPanel } from "./ingestion-panel"
 
 const ingestion: Ingestion = {

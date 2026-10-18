@@ -11,10 +11,7 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
     updatedAt: number
   }[] = []
   let reviewPlaylistId: string | null = null
-  const writes: {
-    method: string
-    body: Record<string, unknown>
-  }[] = []
+  const writes: { action: string; input: Record<string, unknown> }[] = []
   const spotifyPlaylists = [
     {
       id: "jazz",
@@ -31,77 +28,66 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
       collaborative: false,
     },
   ]
-  await page.route("**/api/music/destinations", async (route) => {
-    const request = route.request()
-    if (request.method() === "GET") {
-      await route.fulfill({ json: { destinations, reviewPlaylistId } })
-      return
-    }
-    const body = request.postDataJSON() as Record<string, unknown>
-    writes.push({
-      method: request.method(),
-      body,
-    })
-    if (request.method() === "PUT") {
-      const index = destinations.findIndex(
-        (item) => item.playlistId === body.playlistId
-      )
+  const actions: Record<string, (input: Record<string, unknown>) => unknown> = {
+    "destinations/get": () => ({
+      destinations,
+      reviewPlaylistId,
+      ready: false,
+    }),
+    "spotify/playlists": () => ({ items: spotifyPlaylists }),
+    "destinations/save": (input) => {
       const destination = {
-        playlistId: String(body.playlistId),
-        description: String(body.description),
-        enabled: Boolean(body.enabled),
+        playlistId: String(input.playlistId),
+        description: String(input.description),
+        enabled: Boolean(input.enabled),
         createdAt: 1,
         updatedAt: 1,
       }
+      const index = destinations.findIndex(
+        (item) => item.playlistId === destination.playlistId
+      )
       if (index >= 0) destinations[index] = destination
       else destinations.push(destination)
-    }
-    await route.fulfill({ json: { ok: true } })
-  })
-  await page.route("**/api/music/destinations/create", async (route) => {
-    const body = route.request().postDataJSON() as {
-      name: string
-      description: string
-    }
-    writes.push({
-      method: route.request().method(),
-      body,
-    })
-    const destination = {
-      playlistId: "private-created",
-      description: body.description,
-      enabled: Boolean(body.description.trim()),
-      createdAt: 1,
-      updatedAt: 1,
-    }
-    destinations.push(destination)
-    spotifyPlaylists.push({
-      id: "private-created",
-      name: body.name,
-      ownerId: "owner",
-      public: false,
-      collaborative: false,
-    })
-    await route.fulfill({
-      status: 201,
-      json: {
-        playlist: { id: "private-created", name: body.name },
-        destination,
-      },
-    })
-  })
-  await page.route("**/api/music/review-playlist", async (route) => {
-    const request = route.request()
-    const body = request.postDataJSON() as { playlistId: string | null }
-    writes.push({
-      method: request.method(),
-      body,
-    })
-    reviewPlaylistId = body.playlistId
-    await route.fulfill({ json: { reviewPlaylistId } })
-  })
-  await page.route("**/api/music/spotify/playlists", async (route) => {
-    await route.fulfill({ json: { items: spotifyPlaylists } })
+      return { destination }
+    },
+    "destinations/create": (input) => {
+      const name = String(input.name)
+      const description = String(input.description)
+      const destination = {
+        playlistId: "private-created",
+        description,
+        enabled: Boolean(description.trim()),
+        createdAt: 1,
+        updatedAt: 1,
+      }
+      destinations.push(destination)
+      spotifyPlaylists.push({
+        id: "private-created",
+        name,
+        ownerId: "owner",
+        public: false,
+        collaborative: false,
+      })
+      return { playlist: { id: "private-created", name }, destination }
+    },
+    "destinations/setReviewPlaylist": (input) => {
+      reviewPlaylistId =
+        typeof input.playlistId === "string" ? input.playlistId : null
+      return { reviewPlaylistId }
+    },
+  }
+  await page.route("**/api/rpc/music/**", async (route) => {
+    const action = new URL(route.request().url()).pathname.replace(
+      "/api/rpc/music/",
+      ""
+    )
+    const input = (route.request().postDataJSON()?.json ?? {}) as Record<
+      string,
+      unknown
+    >
+    if (!action.endsWith("/get") && action !== "spotify/playlists")
+      writes.push({ action, input })
+    await route.fulfill({ json: { json: actions[action]!(input) } })
   })
 
   await page.goto("/music")
@@ -145,24 +131,20 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   ).toBeVisible()
   expect(writes).toEqual([
     {
-      method: "PUT",
-      body: {
-        playlistId: "jazz",
-        description: "",
-        enabled: false,
-      },
+      action: "destinations/save",
+      input: { playlistId: "jazz", description: "", enabled: false },
     },
     {
-      method: "PUT",
-      body: {
+      action: "destinations/save",
+      input: {
         playlistId: "jazz",
         description: "Improvised acoustic music",
         enabled: true,
       },
     },
     {
-      method: "POST",
-      body: { name: "Focus mix", description: "" },
+      action: "destinations/create",
+      input: { name: "Focus mix", description: "" },
     },
   ])
 })

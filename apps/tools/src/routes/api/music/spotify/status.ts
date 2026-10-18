@@ -1,6 +1,0 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { spotifyStatus } from "@/server/entrypoints/http/music/spotify.server"
-
-export const Route = createFileRoute("/api/music/spotify/status")({
-  server: { handlers: { GET: ({ request }) => spotifyStatus(request) } },
-})

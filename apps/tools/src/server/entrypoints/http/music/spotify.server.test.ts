@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 import {
   beginSpotifyConnection,
   completeSpotifyConnection,
-  disconnectSpotify,
-  spotifyStatus,
 } from "./spotify.server"
 
 const mocks = vi.hoisted(() => ({
@@ -49,7 +47,7 @@ beforeEach(() => {
 })
 
 describe("Spotify private entrypoint", () => {
-  test("rejects anonymous connection, callback, status, and disconnect", async () => {
+  test("rejects an anonymous connection and callback", async () => {
     mocks.owner.mockRejectedValue(new Error("not owner"))
     expect(
       (
@@ -67,22 +65,6 @@ describe("Spotify private entrypoint", () => {
         )
       ).status
     ).toBe(303)
-    expect(
-      (
-        await spotifyStatus(
-          new Request("https://example.com/api/music/spotify/status")
-        )
-      ).status
-    ).toBe(401)
-    expect(
-      (
-        await disconnectSpotify(
-          new Request("https://example.com/api/music/spotify/disconnect", {
-            method: "POST",
-          })
-        )
-      ).status
-    ).toBe(401)
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
@@ -115,18 +97,6 @@ describe("Spotify private entrypoint", () => {
       })
     )
     expect(wrongCookie.headers.get("Location")).toContain("spotify=failed")
-    expect(mocks.prepare).not.toHaveBeenCalled()
-  })
-
-  test("checks origin before disconnect", async () => {
-    const request = new Request(
-      "https://example.com/api/music/spotify/disconnect",
-      {
-        method: "POST",
-        headers: { Origin: "https://attacker.example" },
-      }
-    )
-    expect((await disconnectSpotify(request)).status).toBe(403)
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 })
