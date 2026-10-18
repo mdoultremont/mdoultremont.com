@@ -17,6 +17,9 @@
       "enabled": true,
       "invocation_logs": true,
     },
+    "traces": {
+      "enabled": false,
+    },
   },
   // Workers Previews (the "Previews Base" builds) read bindings from here, not
   // from the top level.

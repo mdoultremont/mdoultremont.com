@@ -48,6 +48,9 @@
       "enabled": true,
       "invocation_logs": true,
     },
+    "traces": {
+      "enabled": false,
+    },
   },
   "routes": [{ "pattern": "tools.mdoultremont.com", "custom_domain": true }],
 }
