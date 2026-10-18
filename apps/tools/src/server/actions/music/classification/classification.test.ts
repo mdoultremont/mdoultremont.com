@@ -5,7 +5,7 @@ import {
   type DestinationConfiguration,
   Destinations,
 } from "@/server/actions/music/destinations"
-import { Jev, JevError } from "@/server/modules/jev"
+import { Clef, ClefError } from "@/server/modules/clef"
 import { Database } from "@/server/modules/database"
 import { makeTestD1 } from "@/server/modules/database/testing"
 import { JobQueue } from "@/server/modules/job-queue"
@@ -30,14 +30,14 @@ function setup() {
     reviewPlaylistId: "review",
     ready: true,
   }
-  /** Jev answers from a table of yes-probabilities per recording title. */
+  /** Clef answers from a table of yes-probabilities per recording title. */
   const scores = new Map<string, Record<string, number>>()
-  const noul = vi.fn<Jev["Service"]["noul"]>((input) => {
+  const noul = vi.fn<Clef["Service"]["noul"]>((input) => {
     const title = (input.state as { recording: { title: string } }).recording
       .title
     const byDescription = scores.get(title) ?? {}
     return Effect.succeed({
-      model: "jev-1.13.0",
+      model: "clef",
       probabilities: Object.fromEntries(
         Object.entries(input.questions).map(([key, question]) => [
           key,
@@ -56,7 +56,7 @@ function setup() {
         Layer.succeed(Destinations, {
           read: () => Effect.sync(() => configuration),
         } as unknown as Destinations["Service"]),
-        Layer.succeed(Jev, Jev.of({ noul })),
+        Layer.succeed(Clef, Clef.of({ noul })),
         Layer.succeed(
           JobQueue,
           JobQueue.of({
@@ -122,7 +122,7 @@ function setup() {
 
 describe("music classification", () => {
   it.effect(
-    "sends only recording data to Jev and keeps destinations at 0.5 or more",
+    "sends only recording data to Clef and keeps destinations at 0.5 or more",
     () => {
       const t = setup()
       const track = t.like("USAAA2600001")
@@ -141,13 +141,13 @@ describe("music classification", () => {
             destination_ids: '["jazz"]',
             review: 0,
             reason: "classified",
-            model: "jev-1.13.0",
+            model: "clef",
           })
-          const sentToJev = JSON.stringify(t.noul.mock.calls[0]![0].state)
-          expect(sentToJev).toContain("Blue in Green")
-          expect(sentToJev).not.toContain("SPOTIFY")
-          expect(sentToJev).not.toContain(track)
-          expect(sentToJev).not.toContain("USAAA2600001")
+          const sentToClef = JSON.stringify(t.noul.mock.calls[0]![0].state)
+          expect(sentToClef).toContain("Blue in Green")
+          expect(sentToClef).not.toContain("SPOTIFY")
+          expect(sentToClef).not.toContain(track)
+          expect(sentToClef).not.toContain("USAAA2600001")
         })
       )
     }
@@ -172,7 +172,7 @@ describe("music classification", () => {
   })
 
   it.effect(
-    "sends tracks without recording data to review without asking Jev",
+    "sends tracks without recording data to review without asking Clef",
     () => {
       const t = setup()
       const noIsrc = t.like(null)
@@ -306,7 +306,7 @@ describe("music classification", () => {
   })
 
   it.effect(
-    "sends a track Jev cannot answer for to review and keeps going",
+    "sends a track Clef cannot answer for to review and keeps going",
     () => {
       const t = setup()
       const rejected = t.like("USAAA2600001")
@@ -317,7 +317,7 @@ describe("music classification", () => {
       const answer = t.noul.getMockImplementation()!
       t.noul.mockImplementation((input) =>
         JSON.stringify(input.state).includes("Rejected title")
-          ? Effect.fail(new JevError({ reason: "InvalidResponse" }))
+          ? Effect.fail(new ClefError({ reason: "Rejected" }))
           : answer(input)
       )
       return t.run(
@@ -338,23 +338,20 @@ describe("music classification", () => {
     }
   )
 
-  it.effect(
-    "stops without deciding anything when Jev is not configured",
-    () => {
-      const t = setup()
-      const track = t.like("USAAA2600001")
-      t.recording("USAAA2600001", "found")
-      t.noul.mockReturnValue(
-        Effect.fail(new JevError({ reason: "NotConfigured" }))
-      )
-      return t.run(
-        Effect.gen(function* () {
-          const classification = yield* MusicClassification
-          const error = yield* Effect.flip(classification.processNext("owner"))
-          assert.strictEqual(error._tag, "JevError")
-          assert.isUndefined(t.decision(track))
-        })
-      )
-    }
-  )
+  it.effect("stops without deciding anything when Clef is unavailable", () => {
+    const t = setup()
+    const track = t.like("USAAA2600001")
+    t.recording("USAAA2600001", "found")
+    t.noul.mockReturnValue(
+      Effect.fail(new ClefError({ reason: "Unavailable" }))
+    )
+    return t.run(
+      Effect.gen(function* () {
+        const classification = yield* MusicClassification
+        const error = yield* Effect.flip(classification.processNext("owner"))
+        assert.strictEqual(error._tag, "ClefError")
+        assert.isUndefined(t.decision(track))
+      })
+    )
+  })
 })

@@ -24,13 +24,14 @@ Four steps, each re-runnable on its own:
   ambiguous rather than guessed. AcousticBrainz only knows recordings analysed
   before 2022; newer ones get MusicBrainz data only. "Look up unresolved tracks
   again" retries not-found, ambiguous, and failed ISRCs.
-- **Classification.** Jev (`jev-1.13.0`, pinned) answers one yes/no question
-  per enabled destination. Destinations at 0.5 or more are accepted; otherwise
-  the track goes to review. Tracks without recording data go to review without
-  a Jev call. Only recording data reaches Jev; see
+- **Classification.** Clef, Cloudflare's decision model, answers one yes/no
+  question per enabled destination through the Workers AI binding.
+  Destinations at 0.5 or more are accepted; otherwise the track goes to
+  review. Tracks without recording data go to review without a Clef call.
+  Only recording data reaches Clef; see
   [the input policy](spotify-classifier-input-policy.md). Each decision
-  records a fingerprint of the destinations it used, so changing destinations
-  marks decisions as outdated until the owner reclassifies.
+  records a fingerprint of the model name and destinations it used, so
+  changing either marks decisions as outdated until the owner reclassifies.
 - **Delivery.** Adds each decided track to its enabled destinations, or to the
   review playlist. It only adds, never removes; it re-checks that each track is
   still liked right before writing. Writes are recorded as pending first; a
@@ -59,10 +60,10 @@ step with pending work.
 Worker variables and secrets: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
 `OWNER_ACCOUNTS`, `EMAIL_FROM`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`,
 `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`,
-`SPOTIFY_TOKEN_ENCRYPTION_KEY`, `JEV_API_KEY`. See `apps/tools/README.md` for
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`. See `apps/tools/README.md` for
 how to obtain each. A missing variable returns 503 from the routes that need it.
 
-Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, and the hourly
+Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, Workers AI `AI`, and the hourly
 cron. Production deploys apply migrations automatically (see
 [deploying](deploy-to-cloudflare.md)); locally, run:
 

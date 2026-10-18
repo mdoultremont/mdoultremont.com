@@ -93,17 +93,15 @@ connection status. Disconnect deletes this connection record and its dependent
 music data while leaving sign-in intact. Connecting starts a full
 ingestion of existing Liked Songs.
 
-Classification uses [Jev](https://typesafe.ai). Set its API key with the
-others:
-
-```text
-JEV_API_KEY=<TypeSafe API key>
-```
+Classification uses Cloudflare's [Clef](https://developers.cloudflare.com/workers-ai/models/clef/)
+through the Workers AI `AI` binding, so it needs no API key. Usage is billed
+with the Workers plan, after the daily free allocation. `pnpm dev` calls the
+real model too.
 
 ## Music pipeline
 
 The private `/music` area runs four steps: ingestion of Liked Songs,
-enrichment from MusicBrainz and AcousticBrainz, classification with Jev once
+enrichment from MusicBrainz and AcousticBrainz, classification with Clef once
 you mark your playlists **Ready**, and delivery to Spotify on **Write now** or
 automatically. See [music automation operation](../../docs/music-automation.md).
 

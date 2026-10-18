@@ -6,9 +6,9 @@ interface __BaseEnv_Env {
   DB: D1Database
   EMAIL: SendEmail
   JOBS: Queue
+  AI: Ai
   IMAGES: ImagesBinding
   ASSETS: Fetcher
-  JEV_API_KEY: string
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
   SPOTIFY_CLIENT_ID: string
@@ -35,7 +35,6 @@ declare namespace NodeJS {
   interface ProcessEnv extends StringifyValues<
     Pick<
       Cloudflare.Env,
-      | "JEV_API_KEY"
       | "GITHUB_CLIENT_ID"
       | "GITHUB_CLIENT_SECRET"
       | "SPOTIFY_CLIENT_ID"

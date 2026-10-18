@@ -9,8 +9,8 @@ Builds configuration on the same GitHub repository:
 | `apps/tools` | `mdoultremont-tools`     | `tools.mdoultremont.com` |
 
 The tools Worker is the original `mdoultremont-me` Worker, renamed in the
-dashboard (**Settings > General**), because its secrets (sign-in, Spotify,
-Jev) are stored on it and cannot be read back. Renaming keeps its secrets,
+dashboard (**Settings > General**), because its secrets (sign-in, Spotify)
+are stored on it and cannot be read back. Renaming keeps its secrets,
 bindings, domains, and build configuration.
 
 A push to `main` starts both production builds. The tools build applies
@@ -82,7 +82,9 @@ each one.
 - `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_TOKEN_ENCRYPTION_KEY`
 - `SPOTIFY_REDIRECT_URI`
   (`https://tools.mdoultremont.com/api/music/spotify/callback`)
-- `JEV_API_KEY`
+
+Classification needs no secret. The Worker calls Clef through the `AI`
+binding, billed with the Workers plan.
 
 The portfolio needs no secrets.
 

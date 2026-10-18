@@ -1,12 +1,13 @@
 import { ConfigProvider, Layer } from "effect"
 import { Database } from "@/server/modules/database"
 import { Email } from "@/server/modules/email"
+import { Clef } from "@/server/modules/clef"
 import { JobQueue } from "@/server/modules/job-queue"
 import { ObjectStorage } from "@/server/modules/object-storage"
 
 /**
  * What every action layer needs from the Worker: the D1 binding as the
- * `Database` primitive, the queue as `JobQueue`, the R2 bucket as `ObjectStorage`, the email binding as `Email`,
+ * `Database` primitive, the queue as `JobQueue`, the R2 bucket as `ObjectStorage`, the email binding as `Email`, the AI binding as `Clef`,
  * and the Worker variables and secrets as Effect config.
  * Built per request or per queue batch; nothing is shared across requests.
  */
@@ -17,6 +18,7 @@ export const platformLayer = (bindings: Cloudflare.Env) => {
     JobQueue.layer(bindings.JOBS),
     ObjectStorage.layer(bindings.FILES),
     Email.layer(bindings.EMAIL).pipe(Layer.provide(config)),
+    Clef.layer(bindings.AI),
     config
   )
 }
