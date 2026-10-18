@@ -55,13 +55,11 @@ Accounts are never linked because their emails match.
 Invitations are emailed through
 [Cloudflare Email Service](https://developers.cloudflare.com/email-service/) via
 the `EMAIL` binding, from `EMAIL_FROM` (an address on a domain onboarded with
-`pnpm exec wrangler email sending enable mdoultremont.com`). Local development
-uses Wrangler's email simulator, which does not deliver mail; the invitation
-link is in the logged message.
-
-```text
-EMAIL_FROM=apps@mdoultremont.com
-```
+`pnpm exec wrangler email sending enable mdoultremont.com`). `EMAIL_FROM` is a
+plain variable in `wrangler.jsonc`, so it is not set with `wrangler secret`.
+Without it, every invitation fails with "The email could not be sent". Local
+development uses Wrangler's email simulator, which does not deliver mail; the
+invitation link is in the logged message.
 
 A Spotify app in development mode only signs in accounts on its allowlist
 (see below), so add Spotify users there before they accept an invitation, or
