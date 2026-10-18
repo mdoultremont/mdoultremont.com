@@ -155,6 +155,16 @@ The end of the airborne part selected from a track, with its time, position,
 and an editable site name.
 _Avoid_: Finish (the recording can continue after landing)
 
+**Import**:
+Adding a flight to the logbook from a track file. A file whose contents or
+takeoff time match an existing flight links to that flight instead.
+
+**Syride sync**:
+An import of the flights a user's instrument uploaded to Syride. The user
+starts it with a bookmark on syride.com while signed in there; it imports the
+IGC files of flights that bookmark has not synced before.
+_Avoid_: Automatic import (the user starts each sync)
+
 **Equipment**:
 A user's named flying gear that can be associated with their flights, such as
 a wing, harness, or reserve.
