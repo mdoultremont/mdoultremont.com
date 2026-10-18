@@ -57,7 +57,7 @@ export function InviteDialog({
       }}
       open={open}
     >
-      <DialogTrigger render={<Button size="sm" />}>
+      <DialogTrigger render={<Button />}>
         <UserPlusIcon data-icon="inline-start" />
         Invite user
       </DialogTrigger>
