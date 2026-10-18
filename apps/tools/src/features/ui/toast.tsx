@@ -49,7 +49,7 @@ function ToastList() {
   return toasts.map((item) => (
     <Toast.Root
       className={cn(
-        "flex w-fit max-w-sm items-center gap-2.5 rounded-xl bg-neutral-900 px-3.5 py-2.5 text-sm leading-5 text-neutral-50 shadow-lg ring-1 ring-white/10 select-none dark:bg-neutral-800",
+        "flex w-fit max-w-sm items-start gap-2.5 rounded-xl bg-neutral-900 px-3.5 py-2.5 text-sm leading-5 text-neutral-50 shadow-lg ring-1 ring-white/10 select-none dark:bg-neutral-800",
         "translate-y-(--toast-swipe-movement-y) transition-[translate,opacity] duration-200 ease-out data-swiping:duration-0 motion-reduce:transition-opacity",
         "data-starting-style:translate-y-2 data-starting-style:opacity-0 data-ending-style:translate-y-2 data-ending-style:opacity-0 data-limited:hidden"
       )}
@@ -57,15 +57,19 @@ function ToastList() {
       swipeDirection="down"
       toast={item}
     >
+      {/* `mt-0.5` centers the 16px icon on the first 20px line of text. */}
       {item.type === "error" ? (
-        <CircleAlertIcon className="size-4 shrink-0 text-red-400" />
+        <CircleAlertIcon className="mt-0.5 size-4 shrink-0 text-red-400" />
       ) : (
-        <CircleCheckIcon className="size-4 shrink-0 text-primary" />
+        <CircleCheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
       )}
-      <Toast.Description className="text-pretty" />
-      {item.actionProps ? (
-        <Toast.Action className="-my-1 ml-1.5 shrink-0 rounded-md px-2 py-1 font-medium text-primary outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring" />
-      ) : null}
+      {/* The action sits after a one-line message and wraps under a longer one. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
+        <Toast.Description className="text-pretty" />
+        {item.actionProps ? (
+          <Toast.Action className="-mx-2 -my-1 shrink-0 rounded-md px-2 py-1 font-medium text-primary outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring" />
+        ) : null}
+      </div>
     </Toast.Root>
   ))
 }
