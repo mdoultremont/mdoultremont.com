@@ -18,5 +18,12 @@
       "invocation_logs": true,
     },
   },
+  // Workers Previews (the "Previews Base" builds) read bindings from here, not
+  // from the top level.
+  "previews": {
+    "images": {
+      "binding": "IMAGES",
+    },
+  },
   "routes": [{ "pattern": "mdoultremont.com", "custom_domain": true }],
 }

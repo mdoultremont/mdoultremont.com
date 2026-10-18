@@ -17,7 +17,7 @@
     "test": "vitest run --config vitest.config.ts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "deploy:production": "pnpm run build && wrangler deploy",
-    "deploy:preview": "pnpm run build && wrangler versions upload"
+    "deploy:preview": "pnpm run build && wrangler preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
