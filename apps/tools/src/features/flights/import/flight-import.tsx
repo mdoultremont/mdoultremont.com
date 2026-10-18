@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { PageHeader } from "@/features/apps/shell"
 import { importFlight } from "@/features/flights/api"
 import { message } from "@/features/flights/layout/ui"
@@ -13,6 +13,11 @@ import {
   ItemTitle,
 } from "@/features/ui/item"
 import { cn } from "@/features/ui/lib/utils"
+import {
+  bookmarkletHref,
+  SYRIDE_ORIGINS,
+  type SyncMessage,
+} from "@/features/flights/syride"
 
 type Result = { key: number; filename: string } & (
   | { status: "imported" | "duplicate"; flightId: string }
@@ -25,6 +30,115 @@ export function FlightImport() {
   const [results, setResults] = useState<Result[]>([])
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [sync, setSync] = useState<string | null>(null)
+  const bookmarklet = useRef<HTMLAnchorElement>(null)
+  const replace = (result: Result) =>
+    setResults((previous) =>
+      previous.map((item) => (item.key === result.key ? result : item))
+    )
+  const queue = (filename: string, note: string) => {
+    const item: Result = {
+      key: nextKey.current++,
+      filename,
+      status: "pending",
+      message: note,
+    }
+    setResults((previous) => [...previous, item])
+    return item
+  }
+  // React refuses `javascript:` URLs in JSX, so the href is replaced here.
+  useEffect(() => {
+    bookmarklet.current?.setAttribute(
+      "href",
+      bookmarkletHref(window.location.origin)
+    )
+  }, [])
+  // Opened by the Syride bookmarklet: receive its files and import them one
+  // at a time, answering each so it can remember what is already synced.
+  useEffect(() => {
+    const opener = window.opener as Window | null
+    if (
+      !opener ||
+      new URLSearchParams(window.location.search).get("from") !== "syride"
+    )
+      return
+    setSync("Waiting for Syride…")
+    const greet = () =>
+      SYRIDE_ORIGINS.forEach((origin) =>
+        opener.postMessage({ type: "flights-sync:ready" }, origin)
+      )
+    greet()
+    let greeting: ReturnType<typeof setInterval> | undefined = setInterval(
+      greet,
+      500
+    )
+    const stopGreeting = () => {
+      clearInterval(greeting)
+      greeting = undefined
+    }
+    let total = 0
+    let done = 0
+    let chain = Promise.resolve()
+    const onMessage = (event: MessageEvent<SyncMessage>) => {
+      if (event.source !== opener || !SYRIDE_ORIGINS.includes(event.origin))
+        return
+      const data = event.data
+      const answer = (reply: SyncMessage) =>
+        opener.postMessage(reply, event.origin)
+      if (data?.type === "flights-sync:start") {
+        stopGreeting()
+        total = data.total
+        setSync(
+          total
+            ? `Syncing ${total} new ${total === 1 ? "flight" : "flights"} from Syride…`
+            : "Syride has no new flights."
+        )
+      } else if (data?.type === "flights-sync:file") {
+        const item = queue(data.filename, "Importing…")
+        chain = chain.then(async () => {
+          let ok = false
+          try {
+            const result = await importFlight({
+              filename: data.filename,
+              text: data.text,
+            })
+            ok = true
+            replace({ ...item, ...result })
+          } catch (cause) {
+            replace({ ...item, status: "error", message: message(cause) })
+          }
+          done++
+          setSync(`Synced ${done} of ${total} from Syride…`)
+          answer({ type: "flights-sync:result", id: data.id, ok })
+        })
+      } else if (data?.type === "flights-sync:skip") {
+        setResults((previous) => [
+          ...previous,
+          {
+            key: nextKey.current++,
+            filename: data.filename,
+            status: "error",
+            message: data.message,
+          },
+        ])
+        done++
+      } else if (data?.type === "flights-sync:done") {
+        void chain.then(() =>
+          setSync(
+            total ? "Syride sync finished." : "Syride has no new flights."
+          )
+        )
+      } else if (data?.type === "flights-sync:failed") {
+        stopGreeting()
+        setSync(`Syride sync failed: ${data.message}`)
+      }
+    }
+    window.addEventListener("message", onMessage)
+    return () => {
+      stopGreeting()
+      window.removeEventListener("message", onMessage)
+    }
+  }, [])
   async function upload(files: File[]) {
     if (processing.current || files.length === 0) return
     processing.current = true
@@ -36,10 +150,6 @@ export function FlightImport() {
       message: "Waiting…",
     }))
     setResults((previous) => [...previous, ...queued])
-    const replace = (result: Result) =>
-      setResults((previous) =>
-        previous.map((item) => (item.key === result.key ? result : item))
-      )
     try {
       for (const [index, file] of files.entries()) {
         const item = queued[index]!
@@ -126,6 +236,7 @@ export function FlightImport() {
         </Button>
       </div>
       <div aria-live="polite" aria-busy={busy}>
+        {sync ? <p className="mt-6 text-sm font-medium">{sync}</p> : null}
         {results.length ? (
           <ul className="mt-6 space-y-2">
             {results.map((result) => (
@@ -177,10 +288,20 @@ export function FlightImport() {
         </h2>
         <p>
           <strong className="font-medium text-foreground">
-            Syride has no public API.
+            Sync from Syride.
           </strong>{" "}
-          Connect your instrument to SYS PC Tool, choose “Download recorded
-          flights”, then export as IGC or GPX.
+          Drag this button to your bookmarks bar:{" "}
+          <a
+            ref={bookmarklet}
+            href="/flights/import"
+            className="rounded-md border bg-card px-2 py-1 font-medium text-foreground no-underline"
+          >
+            Sync to Flights
+          </a>
+          . Then, signed in on syride.com, open your profile and click the
+          bookmark. It opens this page and imports the IGC files of flights it
+          has not synced yet. If Syride shows its security check, pass it and
+          the sync continues.
         </p>
         <p>
           From XCTrack, Flyskyhy, or another app, export a GPX track or IGC
@@ -188,10 +309,10 @@ export function FlightImport() {
           be imported.
         </p>
         <p>
-          Imports are manual. Duplicate files and flights with similar takeoff
-          times link to the existing flight. A file below 5 MB may still exceed
-          the compressed storage limit; the import will explain if a shorter
-          recording is needed.
+          Duplicate files and flights with similar takeoff times link to the
+          existing flight. A file below 5 MB may still exceed the compressed
+          storage limit; the import will explain if a shorter recording is
+          needed.
         </p>
       </section>
     </section>

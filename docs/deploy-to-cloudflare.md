@@ -34,14 +34,19 @@ The portfolio (`mdoultremont-portfolio`):
 
 - Build command: none
 - Deploy command: `pnpm --filter @mdoultremont/portfolio deploy:production`
-- Version command: `pnpm --filter @mdoultremont/portfolio deploy:preview`
+- Previews Base: builds for preview branches on, build command none,
+  preview command `pnpm --filter @mdoultremont/portfolio deploy:preview`
+
+`deploy:preview` runs `wrangler preview`, which publishes the branch as a
+Workers Preview. Previews do not inherit the top-level bindings: each one the
+portfolio uses must also appear in the `previews` block of
+`apps/web/wrangler.jsonc`, and the command fails if that block is missing.
 
 The tools (`mdoultremont-tools`):
 
 - Build command: none
 - Deploy command: `pnpm --filter @mdoultremont/tools deploy:production`
-- Builds for non-production branches: off (**Settings > Build > Branch
-  control**)
+- Previews Base: builds for preview branches off
 
 Each app's `deploy:production` script, and the portfolio's `deploy:preview`,
 build the app themselves, so the same command works in Workers Builds and on
