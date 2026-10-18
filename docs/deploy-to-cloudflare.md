@@ -15,8 +15,9 @@ bindings, domains, and build configuration.
 
 A push to `main` starts both production builds. The tools build applies
 pending D1 migrations to `mdoultremont-data` before it deploys; the portfolio
-has no database. Pushes to other branches create preview builds, which never
-migrate.
+has no database. Pushes to other branches create preview builds of the
+portfolio only: the tools have no staging database, so a tools preview would
+run against production data.
 
 GitHub Actions checks formatting, linting, types, and the production builds.
 It does not deploy.
@@ -39,11 +40,12 @@ The tools (`mdoultremont-tools`):
 
 - Build command: none
 - Deploy command: `pnpm --filter @mdoultremont/tools deploy:production`
-- Version command: `pnpm --filter @mdoultremont/tools deploy:preview`
+- Builds for non-production branches: off (**Settings > Build > Branch
+  control**)
 
-Each app's `deploy:production` and `deploy:preview` scripts build the app
-themselves, so the same command works in Workers Builds and on your computer.
-Leave the build command empty; setting one would build twice.
+Each app's `deploy:production` script, and the portfolio's `deploy:preview`,
+build the app themselves, so the same command works in Workers Builds and on
+your computer. Leave the build command empty; setting one would build twice.
 
 To skip builds that cannot change a Worker, set its build watch paths to its
 app directory (`apps/web/*` or `apps/tools/*`) plus the root `package.json`,
@@ -56,8 +58,8 @@ migrations only builds and deploys. A failed build or migration stops the
 command before the deploy, leaving the previous Worker running. Wrangler answers its confirmation prompt with yes in
 the build.
 
-Preview versions share the production database binding, so the version
-command (`deploy:preview`) must not apply migrations.
+Do not turn tools previews back on: a preview version would share the
+production database binding.
 
 The tools build's API token needs **D1: Edit** for the migration step. If the
 migration step fails with an authentication error, add that permission to the
