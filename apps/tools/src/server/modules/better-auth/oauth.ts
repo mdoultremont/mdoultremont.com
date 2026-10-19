@@ -1,11 +1,11 @@
-import { getOAuthProviderApi, oauthProvider } from "@better-auth/oauth-provider"
-import type { BetterAuthPlugin } from "better-auth"
 import {
-  APIError,
-  createAuthEndpoint,
-  createAuthMiddleware,
-  isAPIError,
-} from "better-auth/api"
+  getOAuthProviderApi,
+  oauthProvider,
+  type OAuthOptions,
+  type Scope,
+} from "@better-auth/oauth-provider"
+import type { BetterAuthPlugin } from "better-auth"
+import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api"
 import { and, eq, isNotNull, type SQL, sql } from "drizzle-orm"
 import { Option, Schema } from "effect"
 import { Base64Url } from "effect/encoding"
@@ -45,8 +45,9 @@ export const oauthSite = (baseURL: string): OAuthSite => {
   }
 }
 
-export const makeOAuthProvider = (site: OAuthSite) =>
+export const makeOAuthProvider = (site: OAuthSite, db: Drizzle) =>
   oauthProvider({
+    tokenLifecycle: toolsTokenLifecycle(db),
     loginPage: "/oauth/sign-in",
     consentPage: "/oauth/consent",
     scopes: [toolsScope, "offline_access"],
@@ -93,49 +94,11 @@ const Introspection = Schema.Struct({
   ),
 })
 
-const RefreshGrant = Schema.Struct({
-  grant_type: Schema.Literal("refresh_token"),
-  refresh_token: Schema.String,
-})
-
-const Revocation = Schema.Struct({
-  token: Schema.String,
-  token_type_hint: Schema.optional(Schema.String),
-})
-
 const CodeGrant = Schema.Struct({
   grant_type: Schema.Literal("authorization_code"),
   code: Schema.String,
   code_verifier: Schema.optional(Schema.String),
-  client_id: Schema.optional(Schema.String),
 })
-
-/** The client a token request names, in its body or HTTP Basic credentials. Not proof. */
-const namedClient = (
-  clientId: string | undefined,
-  headers: Headers | undefined
-) => {
-  if (clientId !== undefined) return clientId
-  const authorization = headers?.get("authorization") ?? ""
-  if (!authorization.startsWith("Basic ")) return undefined
-  try {
-    const [id = ""] = atob(authorization.slice(6)).split(":")
-    return decodeURIComponent(id)
-  } catch {
-    return undefined
-  }
-}
-
-/** The part of the provider's stored authorization code that names its client. */
-const IssuedCode = Schema.fromJsonString(
-  Schema.Struct({
-    type: Schema.Literal("authorization_code"),
-    query: Schema.Struct({
-      client_id: Schema.String,
-      code_challenge: Schema.optional(Schema.String),
-    }),
-  })
-)
 
 const invalidGrant = (description: string) =>
   new APIError("BAD_REQUEST", {
@@ -184,46 +147,122 @@ const revokeGrants = (db: Drizzle, where: SQL | undefined, now: number) =>
     )
     .onConflictDoNothing()
 
-/**
- * Tools' additions to the provider:
- *
- * - `toolsAccessToken`, a server-only endpoint that introspects an access token
- *   with the provider (expiry, revocation, client, session, audience) and
- *   refuses it when its grant was revoked.
- * - Grant revocation the provider cannot finish atomically on D1. Revoking a
- *   refresh token, replaying a rotated one, or redeeming an authorization code
- *   twice lists the grant (see `oauthRevokedGrants`), and a listed grant's
- *   tokens are refused even when they are stored after the listing.
- *
- * Nothing is listed for a request the provider would refuse first: the
- * requesting client must authenticate as the provider checks it, and must be
- * the client the code or token was issued to.
- */
-export const toolsOAuth = (provider: OAuthProvider, db: Drizzle) => {
-  /** The client the request authenticates as, checked as the provider does. */
-  const authenticatedClient = async (
-    ctx: Parameters<typeof getOAuthProviderApi>[0],
-    grantType?: "authorization_code" | "refresh_token"
-  ) => {
-    try {
-      const { clientId } = await getOAuthProviderApi(
-        ctx,
-        provider.options,
-        grantType
-      ).authenticateClient({ requireCredentials: false })
-      return clientId
-    } catch (error) {
-      if (isAPIError(error)) return undefined
-      throw error
+/** The pinned provider patch calls these after its own validation, once. */
+const toolsTokenLifecycle = (
+  db: Drizzle
+): NonNullable<OAuthOptions<Scope[]>["tokenLifecycle"]> => ({
+  authorizationCode: async ({
+    ctx,
+    client,
+    authorizationCodeId,
+    verificationValue,
+  }) => {
+    const now = Date.now()
+    if (verificationValue !== undefined) {
+      const claimed = await db
+        .insert(oauthRedeemedCodes)
+        .values({
+          authorizationCodeId,
+          clientId: client.clientId,
+          codeChallenge: verificationValue.query.code_challenge ?? null,
+          redeemedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning({ id: oauthRedeemedCodes.authorizationCodeId })
+      if (claimed.length > 0) return
     }
-  }
+    const redeemed = await db
+      .select()
+      .from(oauthRedeemedCodes)
+      .where(eq(oauthRedeemedCodes.authorizationCodeId, authorizationCodeId))
+      .get()
+    const grant = Schema.decodeUnknownOption(CodeGrant)(ctx.body)
+    // An absent code has no verifier left at the provider. The durable claim
+    // retains its challenge so only its own client can revoke the grant.
+    if (
+      redeemed?.clientId === client.clientId &&
+      Option.isSome(grant) &&
+      (redeemed.codeChallenge === null ||
+        (await provesPkce(redeemed.codeChallenge, grant.value.code_verifier)))
+    )
+      await db
+        .insert(oauthRevokedGrants)
+        .values({ authorizationCodeId, revokedAt: now })
+        .onConflictDoNothing()
+    throw invalidGrant("invalid code")
+  },
+  refreshToken: async ({ client, refreshToken }) => {
+    const now = Date.now()
+    const replayed =
+      refreshToken.revoked != null &&
+      !(
+        refreshToken.rotationReplayExpiresAt != null &&
+        refreshToken.rotationReplayExpiresAt.getTime() > now
+      )
+    if (replayed) {
+      // The provider deletes this client's family next. Listing it first
+      // also stops tokens stored by a concurrent refresh after that deletion.
+      await revokeGrants(
+        db,
+        and(
+          eq(oauthRefreshTokens.clientId, client.clientId),
+          eq(oauthRefreshTokens.userId, refreshToken.userId)
+        ),
+        now
+      )
+      return
+    }
+    if (await isRevoked(db, refreshToken.authorizationCodeId ?? null))
+      throw invalidGrant("invalid refresh token")
+  },
+  revoke: async ({ ctx, opts, client, token, tokenTypeHint: hint }) => {
+    const api = getOAuthProviderApi(ctx, opts)
+    const refresh =
+      hint === "access_token"
+        ? undefined
+        : await db
+            .select({
+              clientId: oauthRefreshTokens.clientId,
+              authorizationCodeId: oauthRefreshTokens.authorizationCodeId,
+            })
+            .from(oauthRefreshTokens)
+            .where(
+              eq(
+                oauthRefreshTokens.token,
+                await api.hashToken(token, "refresh_token")
+              )
+            )
+            .get()
+    const access =
+      refresh !== undefined || hint === "refresh_token"
+        ? undefined
+        : await db
+            .select({ id: oauthAccessTokens.id })
+            .from(oauthAccessTokens)
+            .where(
+              eq(
+                oauthAccessTokens.token,
+                await api.hashToken(token, "access_token")
+              )
+            )
+            .get()
+    // RFC 7009 answers unknown tokens with 200. Stop mismatched refresh
+    // tokens here too: the provider invalidates their family before ownership.
+    if (refresh === undefined && access === undefined) return true
+    if (refresh === undefined) return false
+    if (refresh.clientId !== client.clientId) return true
+    if (refresh.authorizationCodeId !== null)
+      await revokeGrants(
+        db,
+        eq(oauthRefreshTokens.authorizationCodeId, refresh.authorizationCodeId),
+        Date.now()
+      )
+    return false
+  },
+})
 
-  const listGrant = (authorizationCodeId: string, now: number) =>
-    db
-      .insert(oauthRevokedGrants)
-      .values({ authorizationCodeId, revokedAt: now })
-      .onConflictDoNothing()
-
+/** Server-only introspection, with tools' durable grant revocations. */
+export const toolsOAuth = (provider: OAuthProvider, db: Drizzle) => {
   return {
     id: "tools-oauth",
     endpoints: {
@@ -273,191 +312,6 @@ export const toolsOAuth = (provider: OAuthProvider, db: Drizzle) => {
           }
         }
       ),
-    },
-    hooks: {
-      before: [
-        {
-          matcher: (ctx) => ctx.path === "/oauth2/token",
-          handler: createAuthMiddleware(async (ctx) => {
-            const grant = Schema.decodeUnknownOption(CodeGrant)(ctx.body)
-            if (Option.isNone(grant)) return
-            const api = getOAuthProviderApi(ctx, provider.options)
-            const authorizationCodeId = await api.hashToken(
-              grant.value.code,
-              "authorization_code"
-            )
-            const now = Date.now()
-            const stored =
-              await ctx.context.internalAdapter.findVerificationValue(
-                authorizationCodeId
-              )
-            const issued = Schema.decodeUnknownOption(IssuedCode)(stored?.value)
-            // The first redemption by the code's client claims the code; any
-            // later one is a replay, even while the first is still storing its
-            // tokens. Claiming does not authenticate the client: a stolen code
-            // can be spent, but listing the grant below needs proof.
-            if (
-              Option.isSome(issued) &&
-              namedClient(grant.value.client_id, ctx.headers) ===
-                issued.value.query.client_id
-            ) {
-              const claimed = await db
-                .insert(oauthRedeemedCodes)
-                .values({
-                  authorizationCodeId,
-                  clientId: issued.value.query.client_id,
-                  codeChallenge: issued.value.query.code_challenge ?? null,
-                  redeemedAt: now,
-                })
-                .onConflictDoNothing()
-                .returning({ id: oauthRedeemedCodes.authorizationCodeId })
-              if (claimed.length > 0) return
-            }
-            const redeemed = await db
-              .select()
-              .from(oauthRedeemedCodes)
-              .where(
-                eq(oauthRedeemedCodes.authorizationCodeId, authorizationCodeId)
-              )
-              .get()
-            // Unknown or expired: the provider refuses it.
-            if (redeemed === undefined) return
-            // RFC 6749 §4.1.2: a code used twice revokes its grant, when the
-            // party replaying it proves it is the client the code was for.
-            if (
-              (await authenticatedClient(ctx, "authorization_code")) ===
-                redeemed.clientId &&
-              (redeemed.codeChallenge === null ||
-                (await provesPkce(
-                  redeemed.codeChallenge,
-                  grant.value.code_verifier
-                )))
-            )
-              await listGrant(authorizationCodeId, now)
-            throw invalidGrant("invalid code")
-          }),
-        },
-        {
-          matcher: (ctx) => ctx.path === "/oauth2/token",
-          handler: createAuthMiddleware(async (ctx) => {
-            const grant = Schema.decodeUnknownOption(RefreshGrant)(ctx.body)
-            if (Option.isNone(grant)) return
-            const api = getOAuthProviderApi(ctx, provider.options)
-            const refresh = await db
-              .select({
-                clientId: oauthRefreshTokens.clientId,
-                userId: oauthRefreshTokens.userId,
-                authorizationCodeId: oauthRefreshTokens.authorizationCodeId,
-                expiresAt: oauthRefreshTokens.expiresAt,
-                revoked: oauthRefreshTokens.revoked,
-                rotationReplayExpiresAt:
-                  oauthRefreshTokens.rotationReplayExpiresAt,
-              })
-              .from(oauthRefreshTokens)
-              .where(
-                eq(
-                  oauthRefreshTokens.token,
-                  await api.hashToken(
-                    grant.value.refresh_token,
-                    "refresh_token"
-                  )
-                )
-              )
-              .get()
-            if (refresh === undefined) return
-            const now = Date.now()
-            const replayed =
-              refresh.revoked !== null &&
-              !(
-                refresh.rotationReplayExpiresAt !== null &&
-                refresh.rotationReplayExpiresAt.getTime() > now
-              )
-            // The provider answers a replay itself and deletes the family it
-            // finds: every grant of this client for this user. Listing those
-            // grants first also stops a successor that a concurrent refresh
-            // stores after that deletion. The provider only gets there for the
-            // token's own, authenticated client and an unexpired token.
-            if (replayed) {
-              if (
-                refresh.expiresAt.getTime() < now ||
-                (await authenticatedClient(ctx, "refresh_token")) !==
-                  refresh.clientId
-              )
-                return
-              return void (await revokeGrants(
-                db,
-                and(
-                  eq(oauthRefreshTokens.clientId, refresh.clientId),
-                  eq(oauthRefreshTokens.userId, refresh.userId)
-                ),
-                now
-              ))
-            }
-            if (await isRevoked(db, refresh.authorizationCodeId))
-              throw invalidGrant("invalid refresh token")
-          }),
-        },
-        {
-          matcher: (ctx) => ctx.path === "/oauth2/revoke",
-          handler: createAuthMiddleware(async (ctx) => {
-            const request = Schema.decodeUnknownOption(Revocation)(ctx.body)
-            if (Option.isNone(request)) return
-            const { token, token_type_hint: hint } = request.value
-            // The provider refuses an unauthenticated client itself.
-            const clientId = await authenticatedClient(ctx)
-            if (clientId === undefined) return
-            const api = getOAuthProviderApi(ctx, provider.options)
-            const refresh =
-              hint === "access_token"
-                ? undefined
-                : await db
-                    .select({
-                      clientId: oauthRefreshTokens.clientId,
-                      authorizationCodeId:
-                        oauthRefreshTokens.authorizationCodeId,
-                    })
-                    .from(oauthRefreshTokens)
-                    .where(
-                      eq(
-                        oauthRefreshTokens.token,
-                        await api.hashToken(token, "refresh_token")
-                      )
-                    )
-                    .get()
-            const access =
-              refresh !== undefined || hint === "refresh_token"
-                ? undefined
-                : await db
-                    .select({ id: oauthAccessTokens.id })
-                    .from(oauthAccessTokens)
-                    .where(
-                      eq(
-                        oauthAccessTokens.token,
-                        await api.hashToken(token, "access_token")
-                      )
-                    )
-                    .get()
-            // RFC 7009 §2.2: an unknown token, such as one already revoked
-            // with its grant, is answered with a 200; the provider says 400.
-            if (refresh === undefined && access === undefined)
-              return ctx.json(null)
-            if (
-              refresh?.authorizationCodeId == null ||
-              refresh.clientId !== clientId
-            )
-              return
-            // RFC 7009 §2.1: revoking a refresh token ends its whole grant.
-            await revokeGrants(
-              db,
-              eq(
-                oauthRefreshTokens.authorizationCodeId,
-                refresh.authorizationCodeId
-              ),
-              Date.now()
-            )
-          }),
-        },
-      ],
     },
   } satisfies BetterAuthPlugin
 }

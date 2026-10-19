@@ -121,7 +121,7 @@ const makeAuth = Effect.fn("BetterAuth.make")(function* () {
   }
 
   const site = oauthSite(baseURL)
-  const provider = makeOAuthProvider(site)
+  const provider = makeOAuthProvider(site, database.drizzle)
 
   const auth = betterAuth({
     baseURL,

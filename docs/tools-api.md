@@ -154,3 +154,11 @@ consents, resources) and two of tools' own: `oauth_revoked_grants` and
 and `BETTER_AUTH_URL`; there are no new secrets or bindings.
 
 API keys for unattended scripts are deferred: every client signs in as a user.
+
+The pnpm patch for `@better-auth/oauth-provider@1.7.10` adds `tokenLifecycle`
+callbacks after provider validation. Tools uses them to claim authorization
+codes and list revoked grants before token writes, without authenticating a
+request twice. The patch delays code consumption until credentials, PKCE,
+session, and resource checks pass. When upgrading the provider, port these
+callbacks or replace them with upstream equivalents and run the OAuth tests,
+including `oauth.security.test.ts`.

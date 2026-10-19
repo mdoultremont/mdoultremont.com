@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@better-auth/oauth-provider@1.7.10': 899274591d1f1f6f450b345cf859bfadf66a8fc75f4fcde62dd35616b2b0215b
+
 importers:
 
   .:
@@ -25,7 +28,7 @@ importers:
         version: 1.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@better-auth/oauth-provider':
         specifier: 1.7.10
-        version: 1.7.10(@better-auth/core@1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-auth@1.7.10(@tanstack/react-start@1.169.3(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(rollup@4.62.4)(supports-color@10.2.2)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.3(kysely@0.29.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.15)(vitest@5.0.3(@types/node@22.20.1)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))))(better-call@1.4.2(zod@4.6.5))
+        version: 1.7.10(patch_hash=899274591d1f1f6f450b345cf859bfadf66a8fc75f4fcde62dd35616b2b0215b)(@better-auth/core@1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-auth@1.7.10(@tanstack/react-start@1.169.3(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(rollup@4.62.4)(supports-color@10.2.2)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.3(kysely@0.29.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.15)(vitest@5.0.3(@types/node@22.20.1)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))))(better-call@1.4.2(zod@4.6.5))
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
@@ -5079,7 +5082,7 @@ snapshots:
       '@better-auth/core': 1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.5.0
 
-  '@better-auth/oauth-provider@1.7.10(@better-auth/core@1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-auth@1.7.10(@tanstack/react-start@1.169.3(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(rollup@4.62.4)(supports-color@10.2.2)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.3(kysely@0.29.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.15)(vitest@5.0.3(@types/node@22.20.1)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))))(better-call@1.4.2(zod@4.6.5))':
+  '@better-auth/oauth-provider@1.7.10(patch_hash=899274591d1f1f6f450b345cf859bfadf66a8fc75f4fcde62dd35616b2b0215b)(@better-auth/core@1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-auth@1.7.10(@tanstack/react-start@1.169.3(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(rollup@4.62.4)(supports-color@10.2.2)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.3(kysely@0.29.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.15)(vitest@5.0.3(@types/node@22.20.1)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))))(better-call@1.4.2(zod@4.6.5))':
     dependencies:
       '@better-auth/core': 1.7.10(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.2(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.5.0
