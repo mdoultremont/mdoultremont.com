@@ -5,8 +5,11 @@ import { Button, buttonVariants } from "@/features/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
 import { api } from "@/features/api"
-import { errorReason } from "@/shared/actions"
-import type { SpotifyConnectionStatus, SpotifyPlaylist } from "@/shared/music"
+import { errorReason } from "@mdoultremont/tools-contracts"
+import type {
+  SpotifyConnectionStatus,
+  SpotifyPlaylist,
+} from "@mdoultremont/tools-contracts/music"
 
 type LoadState =
   | { kind: "loading" }

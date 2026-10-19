@@ -13,7 +13,10 @@ import {
 } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
 import { api, errorMessage } from "@/features/api"
-import type { IngestionKind, IngestionStatus } from "@/shared/music"
+import type {
+  IngestionKind,
+  IngestionStatus,
+} from "@mdoultremont/tools-contracts/music"
 
 const pollMilliseconds = 3000
 

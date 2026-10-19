@@ -13,7 +13,7 @@ import {
 } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
 import { api, errorMessage } from "@/features/api"
-import type { EnrichmentStatus } from "@/shared/music"
+import type { EnrichmentStatus } from "@mdoultremont/tools-contracts/music"
 
 const pollMilliseconds = 5000
 

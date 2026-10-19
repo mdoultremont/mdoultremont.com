@@ -1,6 +1,6 @@
 import { CircleAlertIcon, UserPlusIcon } from "lucide-react"
 import { useId, useState } from "react"
-import type { App } from "@/shared/apps"
+import type { App } from "@mdoultremont/tools-contracts/apps"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Button } from "@/features/ui/button"
 import {

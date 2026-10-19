@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import { Fragment, type ReactNode } from "react"
 import { appAt, appCatalog, pageAt } from "@/features/apps/catalog"
-import type { SignedInUser } from "@/server/actions/auth"
+import type { SignedInUser } from "@mdoultremont/tools-contracts/auth"
 import {
   Breadcrumb,
   BreadcrumbItem,

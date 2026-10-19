@@ -6,11 +6,11 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { type ReactNode, useState } from "react"
-import type { App } from "@/shared/apps"
+import type { App } from "@mdoultremont/tools-contracts/apps"
 import type {
   DirectoryUser,
   PendingInvitationSummary,
-} from "@/shared/back-office"
+} from "@mdoultremont/tools-contracts/back-office"
 import { appName } from "@/features/apps/catalog"
 import { providerNames } from "@/features/auth/auth-client"
 import {

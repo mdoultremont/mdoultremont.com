@@ -8,7 +8,7 @@ public `/flights` routes are not the web integration architecture.
 
 ## Shared track processing
 
-`apps/tools/src/shared/flight-track/index.ts` is the public API for both browser and
+`packages/flight-track/src/index.ts` is the public API for both browser and
 backend callers. The library contains no React, database, authentication,
 Cloudflare bindings, or Node runtime APIs. GPX parsing uses `fast-xml-parser`;
 IGC parsing is the prototype's fixed-width parser. MapLibre GL JS and Recharts
@@ -23,12 +23,12 @@ metres. Parsers normalize ordering and remove duplicate timestamps. Metrics
 require at least two valid points with strictly increasing timestamps.
 
 The complete prototype track tests and fixtures live beside the implementation.
-Run them through the web Vitest configuration from the repository root:
+Run them through the flight-track package Vitest configuration from the repository root:
 
 ```sh
-pnpm --filter @mdoultremont/tools test src/shared/flight-track
-pnpm exec oxlint --deny-warnings apps/tools/src/shared/flight-track
-pnpm exec oxfmt --check apps/tools/src/shared/flight-track docs/flights.md CONTEXT.md
+pnpm --filter @mdoultremont/flight-track test
+pnpm exec oxlint --deny-warnings packages/flight-track/src
+pnpm exec oxfmt --check packages/flight-track/src docs/flights.md CONTEXT.md
 ```
 
 ## Import research carried forward
@@ -114,15 +114,15 @@ into a continuous recording, and may affect measurements.
 
 Use the portfolio's existing Better Auth sign-in and app access. The integration
 places pages under `src/routes/_apps/`, the operations as actions (declared in
-`src/shared/flights/actions.ts`, bound in
-`src/server/entrypoints/actions/flights.ts`), and UI under
+`packages/tools-contracts/src/flights/actions.ts`, bound in
+`apps/tools-backend/src/entrypoints/actions/flights.ts`), and UI under
 `src/features/flights/`. Register `flights` in the app access catalog and
 private-app launcher, and wrap the page in `RequireApp`. Every action call
 checks the `flights` app independently of the page guard.
 
 Keep backend entrypoints, actions, and modules in their existing layers. Both
 the import backend and browser viewer import the shared track API from
-`@/shared/flight-track`; neither should reach into the other's implementation.
+`@mdoultremont/flight-track`; neither should reach into the other's implementation.
 Load MapLibre and its worker only in the browser. Preserve the prototype's
 linked map/profile cursor, original-file download, and client-side share image
 with a projected-track fallback when map capture fails.
@@ -204,7 +204,7 @@ Import writes use one D1 `db.batch`, with duplicate predicates inside the
 conditional flight insert so concurrent uploads cannot both win. A duplicate
 returns the existing flight ID and leaves its original unchanged.
 
-The API is the `flights.*` actions in `apps/tools/src/shared/flights/actions.ts`
+The API is the `flights.*` actions in `packages/tools-contracts/src/flights/actions.ts`
 (Effect Schema), with DTO types in `schemas.ts` beside it. The browser calls
 them through the typed client in `apps/tools/src/features/flights/api.ts` over
 oRPC at `POST /api/rpc/flights/<name>`, for example `/api/rpc/flights/list` and

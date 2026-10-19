@@ -20,8 +20,10 @@ _Avoid_: Public page, finished page
 
 **Tools**:
 The private part of the site, at `tools.mdoultremont.com` (`apps/tools`),
-deployed apart from the portfolio (`apps/web`). It holds every app and their
-shared sign-in. Its home page lists the apps a user can open.
+deployed apart from the portfolio (`apps/web`). `apps/tools` owns its web
+client and Worker mounting. `apps/tools-backend` owns the backend application
+and database migrations, composed into that same Worker. It holds every app
+and their shared sign-in. Its home page lists the apps a user can open.
 _Avoid_: Apps area, `/apps`
 
 **User**:
@@ -66,6 +68,11 @@ One operation of an app, such as importing a flight or saving destinations.
 The site's pages, the CLI and agents all perform the same actions, and every
 call checks the user's app access.
 _Avoid_: Endpoint, procedure, tool (an MCP tool is how an agent sees an action)
+
+**Action contract**:
+The frontend-safe declaration of an action and its input and output schemas,
+held in `packages/tools-contracts` with the typed HTTP client. A contract has
+no business handler.
 
 **Client**:
 A program a user lets act for them, such as the tools CLI, Claude or Codex. It

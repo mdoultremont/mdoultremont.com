@@ -2,7 +2,10 @@ import { Combobox } from "@base-ui/react/combobox"
 import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useId, useState } from "react"
 import { api, errorMessage } from "@/features/api"
-import type { DestinationConfiguration, SpotifyPlaylist } from "@/shared/music"
+import type {
+  DestinationConfiguration,
+  SpotifyPlaylist,
+} from "@mdoultremont/tools-contracts/music"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Button } from "@/features/ui/button"
 import {

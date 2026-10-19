@@ -4,7 +4,7 @@ import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url"
 // Required for MapLibre controls and marker positioning.
 // oxlint-disable-next-line import/no-unassigned-import
 import "maplibre-gl/dist/maplibre-gl.css"
-import type { TrackPoint } from "@/shared/flight-track"
+import type { TrackPoint } from "@mdoultremont/flight-track"
 import { nearestPointIndex } from "./logic"
 
 export interface FlightMapProps {

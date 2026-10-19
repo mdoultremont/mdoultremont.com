@@ -1,4 +1,4 @@
-import { createActionsClient } from "@/shared/actions/client"
+import { createActionsClient } from "@mdoultremont/tools-contracts/client"
 
 /**
  * Every action, called from the browser over oRPC at /api/rpc with the

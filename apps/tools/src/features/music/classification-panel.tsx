@@ -1,6 +1,9 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import type { ClassificationStatus, DecisionSummary } from "@/shared/music"
+import type {
+  ClassificationStatus,
+  DecisionSummary,
+} from "@mdoultremont/tools-contracts/music"
 import { api, errorMessage } from "@/features/api"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Badge } from "@/features/ui/badge"

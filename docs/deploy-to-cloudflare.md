@@ -53,11 +53,18 @@ build the app themselves, so the same command works in Workers Builds and on
 your computer. Leave the build command empty; setting one would build twice.
 
 To skip builds that cannot change a Worker, set its build watch paths to its
-app directory (`apps/web/*` or `apps/tools/*`) plus the root `package.json`,
-`pnpm-lock.yaml`, and `pnpm-workspace.yaml`.
+app directory plus the root `package.json`, `pnpm-lock.yaml`, and
+`pnpm-workspace.yaml`. The tools watch paths must also include
+`apps/tools-backend/*`, `packages/tools-contracts/*`, `packages/flight-track/*`,
+and `patches/*`. The CLI has no Worker deployment.
 
 For the tools, `deploy:production` builds the app, runs `wrangler d1
 migrations apply mdoultremont-data --remote`, and then `wrangler deploy`.
+Wrangler reads SQL from `apps/tools-backend/migrations` through the host
+config. Commands still run in `apps/tools`, so local migrations use the same
+`apps/tools/.wrangler` D1 state as the development server. Schema generation
+runs in `apps/tools-backend` with its own Drizzle config.
+
 Wrangler records applied migrations in the database, so a deploy without new
 migrations only builds and deploys. A failed build or migration stops the
 command before the deploy, leaving the previous Worker running. Wrangler answers its confirmation prompt with yes in

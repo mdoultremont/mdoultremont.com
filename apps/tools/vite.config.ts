@@ -1,4 +1,5 @@
 import { defineConfig } from "vite"
+import { clientBoundaries } from "./client-boundaries.ts"
 import { devtools } from "@tanstack/devtools-vite"
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
@@ -13,6 +14,7 @@ const config = defineConfig({
   server: { host: "127.0.0.1" },
   resolve: { tsconfigPaths: true },
   plugins: [
+    clientBoundaries(),
     devtools(),
     cloudflare({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),

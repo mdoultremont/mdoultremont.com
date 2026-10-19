@@ -7,9 +7,16 @@ clients (`/api/v1`), to agents (MCP at `/api/mcp`) and to the CLI
 all of them. See [ADR 0003](adr/0003-one-action-registry-for-every-client.md)
 for why it is built this way.
 
+The web and Worker host live in `apps/tools`. Business implementation and
+transports live in `apps/tools-backend`; declarations and the typed client live
+in `packages/tools-contracts`. `apps/tools-cli` calls the authenticated manifest
+and HTTP routes remotely. These packages still ship as one tools Worker. See
+[ADR 0004](adr/0004-tools-application-package-boundaries.md) for ownership and
+package boundaries.
+
 ## Add an action
 
-1. Declare it in `apps/tools/src/shared/<app>/actions.ts`, in that app's tree.
+1. Declare it in `packages/tools-contracts/src/<app>/actions.ts`, in that app's tree.
    For a hypothetical `flights.archive`:
 
    ```ts
@@ -28,7 +35,7 @@ for why it is built this way.
    and the CLI require it, and the Worker refuses to start otherwise.
 
 2. Bind it to its business code in
-   `apps/tools/src/server/entrypoints/actions/<app>.ts`, at the same path:
+   `apps/tools-backend/src/entrypoints/actions/<app>.ts`, at the same path:
 
    ```ts
    archive: bind(actions.archive, Flights.layer, ({ flightId }, caller) =>
@@ -77,7 +84,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/jso
 
 Success is `200` with the action's output. Failure is
 `{ "error": { "code", "message", "data"? } }` with the status of its code
-(`errorStatus` in `src/shared/actions/errors.ts`). A refused credential also
+(`errorStatus` in `packages/tools-contracts/src/actions/errors.ts`). A refused credential also
 carries `WWW-Authenticate: Bearer resource_metadata="…", scope="tools offline_access"`,
 and a temporary sign-in failure carries `Retry-After`. Bodies are capped at
 6 MB, and responses are `Cache-Control: no-store`.
@@ -96,7 +103,7 @@ pnpm tools logout           # revokes the grant and deletes local credentials
 
 `--url http://localhost:3000` (or `TOOLS_URL`) targets a local server, whose
 `BETTER_AUTH_URL` must be that same origin. `TOOLS_TOKEN` supplies an access
-token for headless use. `packages/tools-cli/README.md` covers storage, locking
+token for headless use. `apps/tools-cli/README.md` covers storage, locking
 and file arguments.
 
 ## MCP

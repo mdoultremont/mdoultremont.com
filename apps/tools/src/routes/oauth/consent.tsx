@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { Schema } from "effect"
-import { consentRequest } from "@/server/entrypoints/http/auth.server"
+import { consentRequest } from "@mdoultremont/tools-backend/http"
 import { OAuthConsent } from "@/features/auth/oauth-consent"
 
 /**

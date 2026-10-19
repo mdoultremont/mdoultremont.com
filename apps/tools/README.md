@@ -4,6 +4,11 @@ The private apps, served at `tools.mdoultremont.com`. It is a TanStack Start
 app on Cloudflare Workers, with D1, R2, a queue, and an hourly cron. The public
 portfolio is a separate app in `apps/web`.
 
+The backend application lives in `apps/tools-backend` and ships in this same
+Worker. Its [backend guide](../tools-backend/README.md) describes the layers.
+Action declarations and the typed client live in `packages/tools-contracts`;
+the separate CLI in `apps/tools-cli` calls the backend over HTTP.
+
 ## Run locally
 
 ```bash

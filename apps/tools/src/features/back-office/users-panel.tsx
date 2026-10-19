@@ -1,6 +1,6 @@
 import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import type { UserDirectory } from "@/shared/back-office"
+import type { UserDirectory } from "@mdoultremont/tools-contracts/back-office"
 import { api, errorMessage } from "@/features/api"
 import { PageHeader } from "@/features/apps/shell"
 import { Alert, AlertDescription } from "@/features/ui/alert"

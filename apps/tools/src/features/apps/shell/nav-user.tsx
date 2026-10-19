@@ -6,7 +6,7 @@ import {
   type SignInProvider,
   signInProviders,
 } from "@/features/auth/auth-client"
-import type { SignedInUser } from "@/server/actions/auth"
+import type { SignedInUser } from "@mdoultremont/tools-contracts/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/features/ui/avatar"
 import {
   DropdownMenu,

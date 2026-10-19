@@ -21,8 +21,9 @@ stylesheet, so the apps' shadcn theme had to be scoped to pages that rendered a
   changed `BETTER_AUTH_SECRET` or `SPOTIFY_TOKEN_ENCRYPTION_KEY` would sign
   everyone out and drop the Spotify connection. The portfolio moves to a new Worker, `mdoultremont-portfolio`,
   which needs no secrets.
-- **Nothing is shared through `packages/` yet.** The two apps have no code in
-  common; the shadcn components moved to tools with the apps.
+- **The portfolio and tools have independent UI code.** The shadcn components
+  moved to tools with the apps. [ADR 0004](0004-tools-application-package-boundaries.md)
+  defines the packages shared by the tools clients and backend.
 
 ## Consequences
 

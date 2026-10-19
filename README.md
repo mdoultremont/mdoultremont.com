@@ -1,11 +1,15 @@
 # mdoultremont.com
 
-Matthieu's personal monorepo, with two apps:
+Matthieu's personal monorepo, with two deployed sites:
 
 - `apps/web/`: the public portfolio at `mdoultremont.com`. Pages CMS uses the
   repository-root `.pages.yml` to manage its content and media.
 - `apps/tools/`: the private apps (music, flights, back office) at
-  `tools.mdoultremont.com`.
+  `tools.mdoultremont.com`. Its backend lives in `apps/tools-backend`, mounted
+  into the same Worker. `apps/tools-cli` is a separate remote HTTP client.
+
+`packages/tools-contracts` holds action declarations, schemas, and the typed
+HTTP client. `packages/flight-track` holds shared track algorithms.
 
 ## Develop
 

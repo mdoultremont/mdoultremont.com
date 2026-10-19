@@ -1,5 +1,8 @@
 import { api } from "@/features/api"
-import type { EquipmentInput, FlightUpdate } from "@/shared/flights"
+import type {
+  EquipmentInput,
+  FlightUpdate,
+} from "@mdoultremont/tools-contracts/flights"
 
 export type {
   Dashboard,
@@ -9,7 +12,7 @@ export type {
   FlightDetail,
   FlightUpdate,
   ImportResult,
-} from "@/shared/flights"
+} from "@mdoultremont/tools-contracts/flights"
 
 /** The original file as `downloadFlightFile` reads it. */
 export interface FlightDownload {
@@ -18,7 +21,7 @@ export interface FlightDownload {
   readonly text: string
 }
 
-/** The flights actions in `@/shared/flights`; wire shapes and units are documented there. */
+/** The flights actions in `@mdoultremont/tools-contracts/flights`; wire shapes and units are documented there. */
 export const listFlights = (year?: number) => api.flights.list({ year })
 export const getFlight = (flightId: string) => api.flights.get({ flightId })
 export const updateFlight = (flightId: string, input: FlightUpdate) =>

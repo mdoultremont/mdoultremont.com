@@ -1,6 +1,6 @@
 import { CircleAlertIcon } from "lucide-react"
 import { useState } from "react"
-import type { ConsentRequest } from "@/server/actions/auth"
+import type { ConsentRequest } from "@mdoultremont/tools-contracts/auth"
 import { appCatalog } from "@/features/apps/catalog"
 import { authClient } from "@/features/auth/auth-client"
 import { AuthFrame } from "@/features/auth/auth-frame"

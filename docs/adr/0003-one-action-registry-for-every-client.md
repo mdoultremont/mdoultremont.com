@@ -10,8 +10,8 @@ do everything a user can, without a second implementation of any operation.
 
 - **Every operation is an action in one catalog.** An action declares its
   app, whether it reads or writes, an HTTP route, and Effect Schema input and
-  output (`src/shared/<app>/actions.ts`). The server binds each one to its
-  handler (`src/server/entrypoints/actions`). Transports are derived from the
+  output (`packages/tools-contracts/src/<app>/actions.ts`). The server binds each one to its
+  handler (`apps/tools-backend/src/entrypoints/actions`). Transports are derived from the
   registry: oRPC for the browser, `/api/v1` and its manifest for HTTP clients
   and the CLI, `/api/mcp` for agents. All of them call `invokeAction`, which
   checks app access, decodes, runs, maps errors, and encodes once.

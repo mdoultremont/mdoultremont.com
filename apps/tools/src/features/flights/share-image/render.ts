@@ -1,6 +1,6 @@
 import type { Map as FlightMap } from "maplibre-gl"
 import type { FlightDetail } from "@/features/flights/api"
-import { computeMetrics } from "@/shared/flight-track"
+import { computeMetrics } from "@mdoultremont/flight-track"
 import { formatDate } from "@/features/flights/format"
 import {
   fitText,

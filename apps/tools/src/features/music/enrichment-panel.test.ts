@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import type { EnrichmentStatus } from "@/shared/music"
+import type { EnrichmentStatus } from "@mdoultremont/tools-contracts/music"
 import { EnrichmentPanel } from "./enrichment-panel"
 
 const status: EnrichmentStatus = {

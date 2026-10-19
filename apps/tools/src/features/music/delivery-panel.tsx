@@ -1,6 +1,6 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
-import type { DeliveryStatus } from "@/shared/music"
+import type { DeliveryStatus } from "@mdoultremont/tools-contracts/music"
 import { api, errorMessage } from "@/features/api"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Badge } from "@/features/ui/badge"

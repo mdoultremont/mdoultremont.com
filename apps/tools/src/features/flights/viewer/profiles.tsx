@@ -13,7 +13,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from "@/features/ui/chart"
-import type { ProfilePoint } from "@/shared/flight-track"
+import type { ProfilePoint } from "@mdoultremont/flight-track"
 import { formatProfileTime } from "./logic"
 
 const chartConfig = {
