@@ -12,7 +12,8 @@ import {
   CardTitle,
 } from "@/features/ui/card"
 import { Spinner } from "@/features/ui/spinner"
-import type { EnrichmentStatus } from "@/server/actions/music/enrichment"
+import { api, errorMessage } from "@/features/api"
+import type { EnrichmentStatus } from "@mdoultremont/tools-contracts/music"
 
 const pollMilliseconds = 5000
 
@@ -33,22 +34,14 @@ export function EnrichmentPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/enrichment")
-        if (!response.ok)
-          throw new Error("Enrichment status could not be loaded")
-        const next = (await response.json()) as EnrichmentStatus
+        const next = await api.music.enrichment.status()
         if (!active) return
         setStatus(next)
         setError(null)
         // Poll only while lookups remain.
         if (next.pending > 0) timer = setTimeout(load, pollMilliseconds)
-      } catch (cause) {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Enrichment status could not be loaded"
-          )
+      } catch {
+        if (active) setError("Enrichment status could not be loaded")
       }
     }
     if (status === null || pending > 0) void load()
@@ -62,19 +55,9 @@ export function EnrichmentPanel({
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/enrichment", {
-        method: "POST",
-      })
-      const payload = (await response.json().catch(() => null)) as
-        | (EnrichmentStatus & { error?: string })
-        | null
-      if (!response.ok || !payload)
-        throw new Error(payload?.error ?? "Lookups could not be retried")
-      setStatus(payload)
+      setStatus(await api.music.enrichment.retry())
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Lookups could not be retried"
-      )
+      setError(errorMessage(cause, "Lookups could not be retried"))
     } finally {
       setBusy(false)
     }

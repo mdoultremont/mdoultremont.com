@@ -1,6 +1,7 @@
 import { CircleAlertIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import type { UserDirectory } from "@/server/actions/back-office/users"
+import type { UserDirectory } from "@mdoultremont/tools-contracts/back-office"
+import { api, errorMessage } from "@/features/api"
 import { PageHeader } from "@/features/apps/shell"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Skeleton } from "@/features/ui/skeleton"
@@ -31,12 +32,17 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
 
   useEffect(() => {
     let active = true
-    readJson<UserDirectory>("/api/back-office/users")
+    api.backOffice.users
+      .list()
       .then((directory) => {
         if (active) setView({ kind: "ready", directory })
       })
       .catch((cause: unknown) => {
-        if (active) setView({ kind: "error", message: message(cause) })
+        if (active)
+          setView({
+            kind: "error",
+            message: errorMessage(cause, "Users could not be loaded"),
+          })
       })
     return () => {
       active = false
@@ -44,9 +50,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
   }, [])
 
   async function mutate(
-    url: string,
-    method: "POST" | "PUT" | "DELETE",
-    body: unknown,
+    change: () => Promise<unknown>,
     done?: string,
     grantsMusic = false
   ) {
@@ -54,17 +58,13 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
     setError(null)
     setAllowlistReminder(false)
     try {
-      await readJson(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
+      await change()
       if (done) toast(done)
       setAllowlistReminder(grantsMusic)
       try {
         setView({
           kind: "ready",
-          directory: await readJson<UserDirectory>("/api/back-office/users"),
+          directory: await api.backOffice.users.list(),
         })
       } catch {
         setError(
@@ -73,7 +73,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
       }
       return true
     } catch (cause) {
-      setError(message(cause))
+      setError(errorMessage(cause, "Users could not be saved"))
       return false
     } finally {
       setBusy(false)
@@ -110,9 +110,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
             musicSpots={musicSpots}
             onInvite={(email, apps) =>
               mutate(
-                "/api/back-office/invitations",
-                "POST",
-                { email, apps },
+                () => api.backOffice.invitations.create({ email, apps }),
                 `Invitation sent to ${email}.`,
                 apps.includes("music")
               )
@@ -175,18 +173,18 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
                     key={user.id}
                     onAccess={(apps) =>
                       mutate(
-                        "/api/back-office/users",
-                        "PUT",
-                        { userId: user.id, apps },
+                        () =>
+                          api.backOffice.users.setAccess({
+                            userId: user.id,
+                            apps,
+                          }),
                         `${user.name}'s access was saved.`,
                         apps.includes("music") && !user.apps.includes("music")
                       )
                     }
                     onRemove={() =>
                       void mutate(
-                        "/api/back-office/users",
-                        "DELETE",
-                        { userId: user.id },
+                        () => api.backOffice.users.remove({ userId: user.id }),
                         `${user.name} was removed.`
                       )
                     }
@@ -200,17 +198,19 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
                     key={invitation.id}
                     onResend={() =>
                       void mutate(
-                        "/api/back-office/invitations/resend",
-                        "POST",
-                        { invitationId: invitation.id },
+                        () =>
+                          api.backOffice.invitations.resend({
+                            invitationId: invitation.id,
+                          }),
                         `A new link was sent to ${invitation.email}.`
                       )
                     }
                     onRevoke={() =>
                       void mutate(
-                        "/api/back-office/invitations",
-                        "DELETE",
-                        { invitationId: invitation.id },
+                        () =>
+                          api.backOffice.invitations.revoke({
+                            invitationId: invitation.id,
+                          }),
                         `The invitation to ${invitation.email} was revoked.`
                       )
                     }
@@ -237,21 +237,4 @@ function LoadingUsers() {
       <Skeleton className="h-80 rounded-xl" />
     </>
   )
-}
-
-async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
-  const body: unknown = await response.json().catch(() => null)
-  if (!response.ok) {
-    const error =
-      body && typeof body === "object" && "error" in body ? body.error : null
-    throw new Error(
-      typeof error === "string" ? error : "Users could not be loaded"
-    )
-  }
-  return body as T
-}
-
-function message(cause: unknown) {
-  return cause instanceof Error ? cause.message : "Users could not be saved"
 }

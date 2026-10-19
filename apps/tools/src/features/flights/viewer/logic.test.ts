@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { TrackPoint } from "@/shared/flight-track"
+import type { TrackPoint } from "@mdoultremont/flight-track"
 import {
   buildViewerSeries,
   nearestPointIndex,

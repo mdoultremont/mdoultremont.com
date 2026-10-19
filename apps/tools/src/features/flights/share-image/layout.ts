@@ -1,4 +1,4 @@
-import type { TrackPoint } from "@/shared/flight-track"
+import type { TrackPoint } from "@mdoultremont/flight-track"
 import type { FlightDetail } from "@/features/flights/api"
 import {
   formatAltitude,

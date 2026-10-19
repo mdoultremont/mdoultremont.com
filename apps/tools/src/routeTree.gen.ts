@@ -14,31 +14,18 @@ import { Route as AppsIndexRouteImport } from './routes/_apps/index'
 import { Route as AppsBackOfficeRouteImport } from './routes/_apps/back-office'
 import { Route as AppsFlightsRouteRouteImport } from './routes/_apps/flights/route'
 import { Route as AppsMusicRouteImport } from './routes/_apps/music'
+import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
+import { Route as OauthSignInRouteImport } from './routes/oauth/sign-in'
 import { Route as AppsFlightsIndexRouteImport } from './routes/_apps/flights/index'
 import { Route as AppsFlightsFlightIdRouteImport } from './routes/_apps/flights/$flightId'
 import { Route as AppsFlightsEquipmentRouteImport } from './routes/_apps/flights/equipment'
 import { Route as AppsFlightsImportRouteImport } from './routes/_apps/flights/import'
 import { Route as AppsFlightsLogbookRouteImport } from './routes/_apps/flights/logbook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiBackOfficeInvitationsRouteImport } from './routes/api/back-office/invitations'
-import { Route as ApiBackOfficeUsersRouteImport } from './routes/api/back-office/users'
 import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
-import { Route as ApiMusicClassificationRouteImport } from './routes/api/music/classification'
-import { Route as ApiMusicDeliveryRouteImport } from './routes/api/music/delivery'
-import { Route as ApiMusicDestinationsRouteImport } from './routes/api/music/destinations'
-import { Route as ApiMusicEnrichmentRouteImport } from './routes/api/music/enrichment'
-import { Route as ApiMusicIngestionRouteImport } from './routes/api/music/ingestion'
-import { Route as ApiMusicReadyRouteImport } from './routes/api/music/ready'
-import { Route as ApiMusicReviewPlaylistRouteImport } from './routes/api/music/review-playlist'
 import { Route as AppsFlightsFlightIdEditRouteImport } from './routes/_apps/flights/$flightId_.edit'
-import { Route as ApiBackOfficeInvitationsResendRouteImport } from './routes/api/back-office/invitations/resend'
-import { Route as ApiMusicDestinationsCreateRouteImport } from './routes/api/music/destinations/create'
 import { Route as ApiMusicSpotifyCallbackRouteImport } from './routes/api/music/spotify/callback'
 import { Route as ApiMusicSpotifyConnectRouteImport } from './routes/api/music/spotify/connect'
-import { Route as ApiMusicSpotifyDisconnectRouteImport } from './routes/api/music/spotify/disconnect'
-import { Route as ApiMusicSpotifyLikedTracksRouteImport } from './routes/api/music/spotify/liked-tracks'
-import { Route as ApiMusicSpotifyPlaylistsRouteImport } from './routes/api/music/spotify/playlists'
-import { Route as ApiMusicSpotifyStatusRouteImport } from './routes/api/music/spotify/status'
 
 const AppsRouteRoute = AppsRouteRouteImport.update({
   id: '/_apps',
@@ -63,6 +50,16 @@ const AppsMusicRoute = AppsMusicRouteImport.update({
   id: '/music',
   path: '/music',
   getParentRoute: () => AppsRouteRoute,
+} as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthSignInRoute = OauthSignInRouteImport.update({
+  id: '/oauth/sign-in',
+  path: '/oauth/sign-in',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppsFlightsIndexRoute = AppsFlightsIndexRouteImport.update({
   id: '/',
@@ -94,55 +91,9 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiBackOfficeInvitationsRoute =
-  ApiBackOfficeInvitationsRouteImport.update({
-    id: '/api/back-office/invitations',
-    path: '/api/back-office/invitations',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiBackOfficeUsersRoute = ApiBackOfficeUsersRouteImport.update({
-  id: '/api/back-office/users',
-  path: '/api/back-office/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiInvitationsAcceptRoute = ApiInvitationsAcceptRouteImport.update({
   id: '/api/invitations/accept',
   path: '/api/invitations/accept',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicClassificationRoute = ApiMusicClassificationRouteImport.update({
-  id: '/api/music/classification',
-  path: '/api/music/classification',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicDeliveryRoute = ApiMusicDeliveryRouteImport.update({
-  id: '/api/music/delivery',
-  path: '/api/music/delivery',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicDestinationsRoute = ApiMusicDestinationsRouteImport.update({
-  id: '/api/music/destinations',
-  path: '/api/music/destinations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicEnrichmentRoute = ApiMusicEnrichmentRouteImport.update({
-  id: '/api/music/enrichment',
-  path: '/api/music/enrichment',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicIngestionRoute = ApiMusicIngestionRouteImport.update({
-  id: '/api/music/ingestion',
-  path: '/api/music/ingestion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicReadyRoute = ApiMusicReadyRouteImport.update({
-  id: '/api/music/ready',
-  path: '/api/music/ready',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMusicReviewPlaylistRoute = ApiMusicReviewPlaylistRouteImport.update({
-  id: '/api/music/review-playlist',
-  path: '/api/music/review-playlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppsFlightsFlightIdEditRoute = AppsFlightsFlightIdEditRouteImport.update({
@@ -150,18 +101,6 @@ const AppsFlightsFlightIdEditRoute = AppsFlightsFlightIdEditRouteImport.update({
   path: '/$flightId/edit',
   getParentRoute: () => AppsFlightsRouteRoute,
 } as any)
-const ApiBackOfficeInvitationsResendRoute =
-  ApiBackOfficeInvitationsResendRouteImport.update({
-    id: '/resend',
-    path: '/resend',
-    getParentRoute: () => ApiBackOfficeInvitationsRoute,
-  } as any)
-const ApiMusicDestinationsCreateRoute =
-  ApiMusicDestinationsCreateRouteImport.update({
-    id: '/create',
-    path: '/create',
-    getParentRoute: () => ApiMusicDestinationsRoute,
-  } as any)
 const ApiMusicSpotifyCallbackRoute = ApiMusicSpotifyCallbackRouteImport.update({
   id: '/api/music/spotify/callback',
   path: '/api/music/spotify/callback',
@@ -172,90 +111,41 @@ const ApiMusicSpotifyConnectRoute = ApiMusicSpotifyConnectRouteImport.update({
   path: '/api/music/spotify/connect',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMusicSpotifyDisconnectRoute =
-  ApiMusicSpotifyDisconnectRouteImport.update({
-    id: '/api/music/spotify/disconnect',
-    path: '/api/music/spotify/disconnect',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiMusicSpotifyLikedTracksRoute =
-  ApiMusicSpotifyLikedTracksRouteImport.update({
-    id: '/api/music/spotify/liked-tracks',
-    path: '/api/music/spotify/liked-tracks',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiMusicSpotifyPlaylistsRoute =
-  ApiMusicSpotifyPlaylistsRouteImport.update({
-    id: '/api/music/spotify/playlists',
-    path: '/api/music/spotify/playlists',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiMusicSpotifyStatusRoute = ApiMusicSpotifyStatusRouteImport.update({
-  id: '/api/music/spotify/status',
-  path: '/api/music/spotify/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppsIndexRoute
   '/flights': typeof AppsFlightsRouteRouteWithChildren
   '/back-office': typeof AppsBackOfficeRoute
   '/music': typeof AppsMusicRoute
+  '/oauth/consent': typeof OauthConsentRoute
+  '/oauth/sign-in': typeof OauthSignInRoute
   '/flights/$flightId': typeof AppsFlightsFlightIdRoute
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/back-office/invitations': typeof ApiBackOfficeInvitationsRouteWithChildren
-  '/api/back-office/users': typeof ApiBackOfficeUsersRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/api/music/classification': typeof ApiMusicClassificationRoute
-  '/api/music/delivery': typeof ApiMusicDeliveryRoute
-  '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
-  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
-  '/api/music/ingestion': typeof ApiMusicIngestionRoute
-  '/api/music/ready': typeof ApiMusicReadyRoute
-  '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/flights/': typeof AppsFlightsIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/back-office/invitations/resend': typeof ApiBackOfficeInvitationsResendRoute
-  '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
-  '/api/music/spotify/disconnect': typeof ApiMusicSpotifyDisconnectRoute
-  '/api/music/spotify/liked-tracks': typeof ApiMusicSpotifyLikedTracksRoute
-  '/api/music/spotify/playlists': typeof ApiMusicSpotifyPlaylistsRoute
-  '/api/music/spotify/status': typeof ApiMusicSpotifyStatusRoute
 }
 export interface FileRoutesByTo {
   '/back-office': typeof AppsBackOfficeRoute
   '/music': typeof AppsMusicRoute
+  '/oauth/consent': typeof OauthConsentRoute
+  '/oauth/sign-in': typeof OauthSignInRoute
   '/': typeof AppsIndexRoute
   '/flights/$flightId': typeof AppsFlightsFlightIdRoute
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/back-office/invitations': typeof ApiBackOfficeInvitationsRouteWithChildren
-  '/api/back-office/users': typeof ApiBackOfficeUsersRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/api/music/classification': typeof ApiMusicClassificationRoute
-  '/api/music/delivery': typeof ApiMusicDeliveryRoute
-  '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
-  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
-  '/api/music/ingestion': typeof ApiMusicIngestionRoute
-  '/api/music/ready': typeof ApiMusicReadyRoute
-  '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/flights': typeof AppsFlightsIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/back-office/invitations/resend': typeof ApiBackOfficeInvitationsResendRoute
-  '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
-  '/api/music/spotify/disconnect': typeof ApiMusicSpotifyDisconnectRoute
-  '/api/music/spotify/liked-tracks': typeof ApiMusicSpotifyLikedTracksRoute
-  '/api/music/spotify/playlists': typeof ApiMusicSpotifyPlaylistsRoute
-  '/api/music/spotify/status': typeof ApiMusicSpotifyStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -263,32 +153,19 @@ export interface FileRoutesById {
   '/_apps/flights': typeof AppsFlightsRouteRouteWithChildren
   '/_apps/back-office': typeof AppsBackOfficeRoute
   '/_apps/music': typeof AppsMusicRoute
+  '/oauth/consent': typeof OauthConsentRoute
+  '/oauth/sign-in': typeof OauthSignInRoute
   '/_apps/': typeof AppsIndexRoute
   '/_apps/flights/$flightId': typeof AppsFlightsFlightIdRoute
   '/_apps/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/_apps/flights/import': typeof AppsFlightsImportRoute
   '/_apps/flights/logbook': typeof AppsFlightsLogbookRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/back-office/invitations': typeof ApiBackOfficeInvitationsRouteWithChildren
-  '/api/back-office/users': typeof ApiBackOfficeUsersRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
-  '/api/music/classification': typeof ApiMusicClassificationRoute
-  '/api/music/delivery': typeof ApiMusicDeliveryRoute
-  '/api/music/destinations': typeof ApiMusicDestinationsRouteWithChildren
-  '/api/music/enrichment': typeof ApiMusicEnrichmentRoute
-  '/api/music/ingestion': typeof ApiMusicIngestionRoute
-  '/api/music/ready': typeof ApiMusicReadyRoute
-  '/api/music/review-playlist': typeof ApiMusicReviewPlaylistRoute
   '/_apps/flights/': typeof AppsFlightsIndexRoute
   '/_apps/flights/$flightId_/edit': typeof AppsFlightsFlightIdEditRoute
-  '/api/back-office/invitations/resend': typeof ApiBackOfficeInvitationsResendRoute
-  '/api/music/destinations/create': typeof ApiMusicDestinationsCreateRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
-  '/api/music/spotify/disconnect': typeof ApiMusicSpotifyDisconnectRoute
-  '/api/music/spotify/liked-tracks': typeof ApiMusicSpotifyLikedTracksRoute
-  '/api/music/spotify/playlists': typeof ApiMusicSpotifyPlaylistsRoute
-  '/api/music/spotify/status': typeof ApiMusicSpotifyStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -297,114 +174,64 @@ export interface FileRouteTypes {
     | '/flights'
     | '/back-office'
     | '/music'
+    | '/oauth/consent'
+    | '/oauth/sign-in'
     | '/flights/$flightId'
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
     | '/api/auth/$'
-    | '/api/back-office/invitations'
-    | '/api/back-office/users'
     | '/api/invitations/accept'
-    | '/api/music/classification'
-    | '/api/music/delivery'
-    | '/api/music/destinations'
-    | '/api/music/enrichment'
-    | '/api/music/ingestion'
-    | '/api/music/ready'
-    | '/api/music/review-playlist'
     | '/flights/'
     | '/flights/$flightId/edit'
-    | '/api/back-office/invitations/resend'
-    | '/api/music/destinations/create'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
-    | '/api/music/spotify/disconnect'
-    | '/api/music/spotify/liked-tracks'
-    | '/api/music/spotify/playlists'
-    | '/api/music/spotify/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/back-office'
     | '/music'
+    | '/oauth/consent'
+    | '/oauth/sign-in'
     | '/'
     | '/flights/$flightId'
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
     | '/api/auth/$'
-    | '/api/back-office/invitations'
-    | '/api/back-office/users'
     | '/api/invitations/accept'
-    | '/api/music/classification'
-    | '/api/music/delivery'
-    | '/api/music/destinations'
-    | '/api/music/enrichment'
-    | '/api/music/ingestion'
-    | '/api/music/ready'
-    | '/api/music/review-playlist'
     | '/flights'
     | '/flights/$flightId/edit'
-    | '/api/back-office/invitations/resend'
-    | '/api/music/destinations/create'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
-    | '/api/music/spotify/disconnect'
-    | '/api/music/spotify/liked-tracks'
-    | '/api/music/spotify/playlists'
-    | '/api/music/spotify/status'
   id:
     | '__root__'
     | '/_apps'
     | '/_apps/flights'
     | '/_apps/back-office'
     | '/_apps/music'
+    | '/oauth/consent'
+    | '/oauth/sign-in'
     | '/_apps/'
     | '/_apps/flights/$flightId'
     | '/_apps/flights/equipment'
     | '/_apps/flights/import'
     | '/_apps/flights/logbook'
     | '/api/auth/$'
-    | '/api/back-office/invitations'
-    | '/api/back-office/users'
     | '/api/invitations/accept'
-    | '/api/music/classification'
-    | '/api/music/delivery'
-    | '/api/music/destinations'
-    | '/api/music/enrichment'
-    | '/api/music/ingestion'
-    | '/api/music/ready'
-    | '/api/music/review-playlist'
     | '/_apps/flights/'
     | '/_apps/flights/$flightId_/edit'
-    | '/api/back-office/invitations/resend'
-    | '/api/music/destinations/create'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
-    | '/api/music/spotify/disconnect'
-    | '/api/music/spotify/liked-tracks'
-    | '/api/music/spotify/playlists'
-    | '/api/music/spotify/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppsRouteRoute: typeof AppsRouteRouteWithChildren
+  OauthConsentRoute: typeof OauthConsentRoute
+  OauthSignInRoute: typeof OauthSignInRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiBackOfficeInvitationsRoute: typeof ApiBackOfficeInvitationsRouteWithChildren
-  ApiBackOfficeUsersRoute: typeof ApiBackOfficeUsersRoute
   ApiInvitationsAcceptRoute: typeof ApiInvitationsAcceptRoute
-  ApiMusicClassificationRoute: typeof ApiMusicClassificationRoute
-  ApiMusicDeliveryRoute: typeof ApiMusicDeliveryRoute
-  ApiMusicDestinationsRoute: typeof ApiMusicDestinationsRouteWithChildren
-  ApiMusicEnrichmentRoute: typeof ApiMusicEnrichmentRoute
-  ApiMusicIngestionRoute: typeof ApiMusicIngestionRoute
-  ApiMusicReadyRoute: typeof ApiMusicReadyRoute
-  ApiMusicReviewPlaylistRoute: typeof ApiMusicReviewPlaylistRoute
   ApiMusicSpotifyCallbackRoute: typeof ApiMusicSpotifyCallbackRoute
   ApiMusicSpotifyConnectRoute: typeof ApiMusicSpotifyConnectRoute
-  ApiMusicSpotifyDisconnectRoute: typeof ApiMusicSpotifyDisconnectRoute
-  ApiMusicSpotifyLikedTracksRoute: typeof ApiMusicSpotifyLikedTracksRoute
-  ApiMusicSpotifyPlaylistsRoute: typeof ApiMusicSpotifyPlaylistsRoute
-  ApiMusicSpotifyStatusRoute: typeof ApiMusicSpotifyStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -443,6 +270,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/music'
       preLoaderRoute: typeof AppsMusicRouteImport
       parentRoute: typeof AppsRouteRoute
+    }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/sign-in': {
+      id: '/oauth/sign-in'
+      path: '/oauth/sign-in'
+      fullPath: '/oauth/sign-in'
+      preLoaderRoute: typeof OauthSignInRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_apps/flights/': {
       id: '/_apps/flights/'
@@ -486,74 +327,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/back-office/invitations': {
-      id: '/api/back-office/invitations'
-      path: '/api/back-office/invitations'
-      fullPath: '/api/back-office/invitations'
-      preLoaderRoute: typeof ApiBackOfficeInvitationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/back-office/users': {
-      id: '/api/back-office/users'
-      path: '/api/back-office/users'
-      fullPath: '/api/back-office/users'
-      preLoaderRoute: typeof ApiBackOfficeUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/invitations/accept': {
       id: '/api/invitations/accept'
       path: '/api/invitations/accept'
       fullPath: '/api/invitations/accept'
       preLoaderRoute: typeof ApiInvitationsAcceptRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/classification': {
-      id: '/api/music/classification'
-      path: '/api/music/classification'
-      fullPath: '/api/music/classification'
-      preLoaderRoute: typeof ApiMusicClassificationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/delivery': {
-      id: '/api/music/delivery'
-      path: '/api/music/delivery'
-      fullPath: '/api/music/delivery'
-      preLoaderRoute: typeof ApiMusicDeliveryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/destinations': {
-      id: '/api/music/destinations'
-      path: '/api/music/destinations'
-      fullPath: '/api/music/destinations'
-      preLoaderRoute: typeof ApiMusicDestinationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/enrichment': {
-      id: '/api/music/enrichment'
-      path: '/api/music/enrichment'
-      fullPath: '/api/music/enrichment'
-      preLoaderRoute: typeof ApiMusicEnrichmentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/ingestion': {
-      id: '/api/music/ingestion'
-      path: '/api/music/ingestion'
-      fullPath: '/api/music/ingestion'
-      preLoaderRoute: typeof ApiMusicIngestionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/ready': {
-      id: '/api/music/ready'
-      path: '/api/music/ready'
-      fullPath: '/api/music/ready'
-      preLoaderRoute: typeof ApiMusicReadyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/review-playlist': {
-      id: '/api/music/review-playlist'
-      path: '/api/music/review-playlist'
-      fullPath: '/api/music/review-playlist'
-      preLoaderRoute: typeof ApiMusicReviewPlaylistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_apps/flights/$flightId_/edit': {
@@ -562,20 +340,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/flights/$flightId/edit'
       preLoaderRoute: typeof AppsFlightsFlightIdEditRouteImport
       parentRoute: typeof AppsFlightsRouteRoute
-    }
-    '/api/back-office/invitations/resend': {
-      id: '/api/back-office/invitations/resend'
-      path: '/resend'
-      fullPath: '/api/back-office/invitations/resend'
-      preLoaderRoute: typeof ApiBackOfficeInvitationsResendRouteImport
-      parentRoute: typeof ApiBackOfficeInvitationsRoute
-    }
-    '/api/music/destinations/create': {
-      id: '/api/music/destinations/create'
-      path: '/create'
-      fullPath: '/api/music/destinations/create'
-      preLoaderRoute: typeof ApiMusicDestinationsCreateRouteImport
-      parentRoute: typeof ApiMusicDestinationsRoute
     }
     '/api/music/spotify/callback': {
       id: '/api/music/spotify/callback'
@@ -589,34 +353,6 @@ declare module '@tanstack/react-router' {
       path: '/api/music/spotify/connect'
       fullPath: '/api/music/spotify/connect'
       preLoaderRoute: typeof ApiMusicSpotifyConnectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/spotify/disconnect': {
-      id: '/api/music/spotify/disconnect'
-      path: '/api/music/spotify/disconnect'
-      fullPath: '/api/music/spotify/disconnect'
-      preLoaderRoute: typeof ApiMusicSpotifyDisconnectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/spotify/liked-tracks': {
-      id: '/api/music/spotify/liked-tracks'
-      path: '/api/music/spotify/liked-tracks'
-      fullPath: '/api/music/spotify/liked-tracks'
-      preLoaderRoute: typeof ApiMusicSpotifyLikedTracksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/spotify/playlists': {
-      id: '/api/music/spotify/playlists'
-      path: '/api/music/spotify/playlists'
-      fullPath: '/api/music/spotify/playlists'
-      preLoaderRoute: typeof ApiMusicSpotifyPlaylistsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/music/spotify/status': {
-      id: '/api/music/spotify/status'
-      path: '/api/music/spotify/status'
-      fullPath: '/api/music/spotify/status'
-      preLoaderRoute: typeof ApiMusicSpotifyStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -661,50 +397,14 @@ const AppsRouteRouteWithChildren = AppsRouteRoute._addFileChildren(
   AppsRouteRouteChildren,
 )
 
-interface ApiBackOfficeInvitationsRouteChildren {
-  ApiBackOfficeInvitationsResendRoute: typeof ApiBackOfficeInvitationsResendRoute
-}
-
-const ApiBackOfficeInvitationsRouteChildren: ApiBackOfficeInvitationsRouteChildren =
-  {
-    ApiBackOfficeInvitationsResendRoute: ApiBackOfficeInvitationsResendRoute,
-  }
-
-const ApiBackOfficeInvitationsRouteWithChildren =
-  ApiBackOfficeInvitationsRoute._addFileChildren(
-    ApiBackOfficeInvitationsRouteChildren,
-  )
-
-interface ApiMusicDestinationsRouteChildren {
-  ApiMusicDestinationsCreateRoute: typeof ApiMusicDestinationsCreateRoute
-}
-
-const ApiMusicDestinationsRouteChildren: ApiMusicDestinationsRouteChildren = {
-  ApiMusicDestinationsCreateRoute: ApiMusicDestinationsCreateRoute,
-}
-
-const ApiMusicDestinationsRouteWithChildren =
-  ApiMusicDestinationsRoute._addFileChildren(ApiMusicDestinationsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   AppsRouteRoute: AppsRouteRouteWithChildren,
+  OauthConsentRoute: OauthConsentRoute,
+  OauthSignInRoute: OauthSignInRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiBackOfficeInvitationsRoute: ApiBackOfficeInvitationsRouteWithChildren,
-  ApiBackOfficeUsersRoute: ApiBackOfficeUsersRoute,
   ApiInvitationsAcceptRoute: ApiInvitationsAcceptRoute,
-  ApiMusicClassificationRoute: ApiMusicClassificationRoute,
-  ApiMusicDeliveryRoute: ApiMusicDeliveryRoute,
-  ApiMusicDestinationsRoute: ApiMusicDestinationsRouteWithChildren,
-  ApiMusicEnrichmentRoute: ApiMusicEnrichmentRoute,
-  ApiMusicIngestionRoute: ApiMusicIngestionRoute,
-  ApiMusicReadyRoute: ApiMusicReadyRoute,
-  ApiMusicReviewPlaylistRoute: ApiMusicReviewPlaylistRoute,
   ApiMusicSpotifyCallbackRoute: ApiMusicSpotifyCallbackRoute,
   ApiMusicSpotifyConnectRoute: ApiMusicSpotifyConnectRoute,
-  ApiMusicSpotifyDisconnectRoute: ApiMusicSpotifyDisconnectRoute,
-  ApiMusicSpotifyLikedTracksRoute: ApiMusicSpotifyLikedTracksRoute,
-  ApiMusicSpotifyPlaylistsRoute: ApiMusicSpotifyPlaylistsRoute,
-  ApiMusicSpotifyStatusRoute: ApiMusicSpotifyStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

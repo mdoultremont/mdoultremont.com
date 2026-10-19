@@ -1,0 +1,112 @@
+diff --git a/dist/authorize-dkOG8GqZ.mjs b/dist/authorize-dkOG8GqZ.mjs
+index 3aff46628412fb5fd68ce5dbf694b8e46af2f65c..d1aab41dbcb3eae7739974a672032fe080e8cc25 100644
+--- a/dist/authorize-dkOG8GqZ.mjs
++++ b/dist/authorize-dkOG8GqZ.mjs
+@@ -3713,6 +3713,7 @@ async function revokeEndpoint(ctx, opts) {
+ 		error: "invalid_request"
+ 	});
+ 	const client = await validateClientCredentials(ctx, opts, client_id, client_secret, void 0, preVerified, void 0, authMethod);
++	if (await opts.tokenLifecycle?.revoke?.({ ctx, opts, client, token, tokenTypeHint: token_type_hint })) return null;
+ 	try {
+ 		if (token_type_hint === void 0 || token_type_hint === "access_token") try {
+ 			return await revokeAccessToken(ctx, opts, client.clientId, token);
+diff --git a/dist/introspect-BVm_zFQC.mjs b/dist/introspect-BVm_zFQC.mjs
+index c988c7fc7a0b8fc1685743f0fe71a79d9b2c9646..cb92c266cd54d32046bba6bed221d3aee6dcf6e1 100644
+--- a/dist/introspect-BVm_zFQC.mjs
++++ b/dist/introspect-BVm_zFQC.mjs
+@@ -1837,6 +1837,17 @@ async function createUserTokens(ctx, opts, params) {
+ 		refreshToken: existingRefreshToken
+ 	});
+ 	const requestedUserInfoClaims = params.requestedUserInfoClaims ?? existingRefreshToken?.requestedUserInfoClaims ?? [];
++	if (grantType === "authorization_code") {
++		const authorizationCodeId = params.authorizationCodeId;
++		await opts.tokenLifecycle?.authorizationCode?.({ ctx, opts, client, authorizationCodeId, verificationValue });
++		if (!await ctx.context.internalAdapter.consumeVerificationValue(authorizationCodeId)) {
++			await revokeTokensIssuedForAuthorizationCode(ctx, authorizationCodeId);
++			throw new APIError("BAD_REQUEST", {
++				error_description: "invalid code",
++				error: "invalid_grant"
++			});
++		}
++	}
+ 	const earlyRefreshToken = isRefreshToken && user && !isJwtAccessToken ? await createRefreshToken(ctx, opts, user, referenceId, params.authorizationCodeId, client, effectiveScopes, {
+ 		iat,
+ 		exp: refreshTokenExp,
+@@ -1897,10 +1908,11 @@ async function createUserTokens(ctx, opts, params) {
+ 	return ctx.json(responseBody);
+ }
+ /** Checks verification value */
+-async function checkVerificationValue(ctx, opts, code, client_id, redirect_uri, resource) {
++async function checkVerificationValue(ctx, opts, code, client, redirect_uri, resource) {
+ 	const authorizationCodeId = await storeToken(opts.storeTokens, code, "authorization_code");
+-	const verification = await ctx.context.internalAdapter.consumeVerificationValue(authorizationCodeId);
++	const verification = await ctx.context.internalAdapter.findVerificationValue(authorizationCodeId);
+ 	if (!verification) {
++		await opts.tokenLifecycle?.authorizationCode?.({ ctx, opts, client, authorizationCodeId });
+ 		await revokeTokensIssuedForAuthorizationCode(ctx, authorizationCodeId);
+ 		throw new APIError("BAD_REQUEST", {
+ 			error_description: "invalid code",
+@@ -1922,7 +1934,7 @@ async function checkVerificationValue(ctx, opts, code, client_id, redirect_uri,
+ 		error: "invalid_grant"
+ 	});
+ 	const verificationValue = parsed.data;
+-	if (verificationValue.query.client_id !== client_id) throw new APIError("BAD_REQUEST", {
++	if (verificationValue.query.client_id !== client.clientId) throw new APIError("BAD_REQUEST", {
+ 		error_description: "invalid client_id",
+ 		error: "invalid_grant"
+ 	});
+@@ -1983,7 +1995,7 @@ async function handleAuthorizationCodeGrant(ctx, opts) {
+ 	* `invalid_grant` and before a one-time code is consumed). */
+ 	const client = await validateClientCredentials(ctx, opts, client_id, client_secret, void 0, preVerified, "authorization_code", authMethod);
+ 	/** Get and check Verification Value */
+-	const { verificationValue, effectiveResources, authorizedResources, authorizationCodeId } = await checkVerificationValue(ctx, opts, code, client_id, redirect_uri, resources);
++	const { verificationValue, effectiveResources, authorizedResources, authorizationCodeId } = await checkVerificationValue(ctx, opts, code, client, redirect_uri, resources);
+ 	const scopes = verificationValue.query.scope?.split(" ");
+ 	if (!scopes) throw new APIError("INTERNAL_SERVER_ERROR", {
+ 		error_description: "verification scope unset",
+@@ -2157,6 +2169,7 @@ async function handleRefreshTokenGrant(ctx, opts) {
+ 		});
+ 	}
+ 	validateClientScopes(client, requestedScopes ?? scopes);
++	await opts.tokenLifecycle?.refreshToken?.({ ctx, opts, client, refreshToken });
+ 	if (refreshToken.revoked) {
+ 		if (isWithinRefreshTokenReuseInterval(refreshToken)) {
+ 			const replay = await getRefreshTokenRotationReplay(ctx, refreshToken, await resolveRefreshTokenRotationReplayRequest(ctx, opts, {
+diff --git a/dist/oauth-DXiqbRzK.d.mts b/dist/oauth-DXiqbRzK.d.mts
+index 82f827d995f8347ae5be1b70a1bb13a51bef3de9..8cb5c5e3db6115d1b2643ea6d4982a46d6b09ecf 100644
+--- a/dist/oauth-DXiqbRzK.d.mts
++++ b/dist/oauth-DXiqbRzK.d.mts
+@@ -1075,6 +1075,33 @@ interface InitialAccessTokenAuthorization {
+   referenceId?: string;
+ }
+ interface OAuthOptions<Scopes extends readonly Scope[] = InternallySupportedScopes[]> {
++  /** Local 1.7.10 patch: authenticated token lifecycle, before writes. */
++  tokenLifecycle?: {
++    /** Called after code validation, or with no value for an absent code. */
++    authorizationCode?: (input: {
++      ctx: GenericEndpointContext;
++      opts: OAuthOptions<Scopes>;
++      client: SchemaClient;
++      authorizationCodeId: string;
++      verificationValue?: VerificationValue;
++    }) => Awaitable<void>;
++    /** Called after client, ownership, expiry, resource and scope validation. */
++    refreshToken?: (input: {
++      ctx: GenericEndpointContext;
++      opts: OAuthOptions<Scopes>;
++      client: SchemaClient;
++      refreshToken: OAuthRefreshToken;
++    }) => Awaitable<void>;
++    /** Called after authentication. True answers 200 without provider writes. */
++    revoke?: (input: {
++      ctx: GenericEndpointContext;
++      opts: OAuthOptions<Scopes>;
++      client: SchemaClient;
++      token: string;
++      tokenTypeHint?: "access_token" | "refresh_token";
++    }) => Awaitable<boolean>;
++  };
++
+   /**
+    * Custom schema definitions
+    */

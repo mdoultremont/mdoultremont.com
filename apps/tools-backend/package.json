@@ -1,0 +1,41 @@
+{
+  "name": "@mdoultremont/tools-backend",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./http": "./src/entrypoints/http/index.ts",
+    "./worker": "./src/entrypoints/worker.ts"
+  },
+  "scripts": {
+    "build": "pnpm typecheck",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings .",
+    "test": "vitest run --config vitest.config.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@better-auth/oauth-provider": "1.7.10",
+    "@mdoultremont/flight-track": "workspace:*",
+    "@mdoultremont/tools-contracts": "workspace:*",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@orpc/server": "^1.15.7",
+    "better-auth": "1.7.10",
+    "drizzle-orm": "^0.45.3",
+    "effect": "4.0.2",
+    "hono": "^4.13.13"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260826.1",
+    "@effect/vitest": "4.0.2",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^6.0.2",
+    "vitest": "^5.0.3"
+  },
+  "imports": {
+    "#backend/modules/database/testing": "./src/modules/database/testing.ts",
+    "#backend/modules/object-storage/testing": "./src/modules/object-storage/testing.ts",
+    "#backend/*": "./src/*/index.ts"
+  }
+}

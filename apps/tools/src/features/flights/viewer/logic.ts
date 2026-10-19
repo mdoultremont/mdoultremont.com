@@ -4,7 +4,7 @@ import {
   downsampleLttb,
   type ProfilePoint,
   type TrackPoint,
-} from "@/shared/flight-track"
+} from "@mdoultremont/flight-track"
 
 /** Keep original fix indices through filtering and independent series downsampling. */
 export function buildViewerSeries(points: readonly TrackPoint[], target = 800) {

@@ -35,19 +35,26 @@ test("back office lists users and invitations together, with actions in a row me
       },
     ],
   }
-  const writes: { url: string; method: string; body: unknown }[] = []
-  await page.route("**/api/back-office/**", async (route) => {
+  const writes: { action: string; input: unknown }[] = []
+  const outputs: Record<string, unknown> = {
+    "users/setAccess": { status: "saved" },
+    "users/remove": { status: "removed" },
+    "invitations/create": { status: "sent" },
+    "invitations/resend": { status: "sent" },
+    "invitations/revoke": { status: "revoked" },
+  }
+  await page.route("**/api/rpc/backOffice/**", async (route) => {
     const request = route.request()
-    if (request.method() === "GET") {
-      await route.fulfill({ json: directory })
+    const action = new URL(request.url()).pathname.replace(
+      "/api/rpc/backOffice/",
+      ""
+    )
+    if (action === "users/list") {
+      await route.fulfill({ json: { json: directory } })
       return
     }
-    writes.push({
-      url: new URL(request.url()).pathname,
-      method: request.method(),
-      body: request.postDataJSON(),
-    })
-    await route.fulfill({ json: { status: "saved" } })
+    writes.push({ action, input: request.postDataJSON().json })
+    await route.fulfill({ json: { json: outputs[action] } })
   })
 
   await page.goto("/music")
@@ -72,9 +79,8 @@ test("back office lists users and invitations together, with actions in a row me
   await dialog.getByRole("button", { name: "Save" }).click()
   await expect(dialog).toBeHidden()
   expect(writes.at(-1)).toEqual({
-    url: "/api/back-office/users",
-    method: "PUT",
-    body: { userId: "friend", apps: ["music", "flights"] },
+    action: "users/setAccess",
+    input: { userId: "friend", apps: ["music", "flights"] },
   })
 
   await page
@@ -92,9 +98,10 @@ test("back office lists users and invitations together, with actions in a row me
     "Revoke",
   ])
   await page.getByRole("menuitem", { name: "Revoke" }).click()
-  expect(writes.at(-1)).toEqual({
-    url: "/api/back-office/invitations",
-    method: "DELETE",
-    body: { invitationId: "invitation" },
-  })
+  await expect
+    .poll(() => writes.at(-1))
+    .toEqual({
+      action: "invitations/revoke",
+      input: { invitationId: "invitation" },
+    })
 })

@@ -1,0 +1,28 @@
+{
+  "name": "@mdoultremont/tools-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tools": "./src/cli.mjs"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "tools": "node src/cli.mjs",
+    "build": "pnpm typecheck",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings .",
+    "test": "node --test test/*.test.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "oauth4webapi": "3.8.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^6.0.2"
+  }
+}

@@ -1,7 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router"
 import { LockIcon } from "lucide-react"
 import type { ReactNode } from "react"
-import type { App } from "@/server/actions/auth"
+import type { App } from "@mdoultremont/tools-contracts/auth"
 import {
   Empty,
   EmptyDescription,

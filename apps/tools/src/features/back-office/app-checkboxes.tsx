@@ -1,4 +1,4 @@
-import type { App } from "@/server/actions/auth"
+import type { App } from "@mdoultremont/tools-contracts/apps"
 import { appCatalog } from "@/features/apps/catalog"
 import { Checkbox } from "@/features/ui/checkbox"
 import { Label } from "@/features/ui/label"

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { type CatalogApp, pageAt } from "@/features/apps/catalog"
-import type { SignedInUser } from "@/server/actions/auth"
+import type { SignedInUser } from "@mdoultremont/tools-contracts/auth"
 import {
   Sidebar,
   SidebarContent,

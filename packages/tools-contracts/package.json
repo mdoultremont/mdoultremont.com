@@ -1,0 +1,28 @@
+{
+  "name": "@mdoultremont/tools-contracts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/actions/index.ts",
+    "./client": "./src/actions/client.ts",
+    "./flights": "./src/flights/index.ts",
+    "./music": "./src/music/index.ts",
+    "./back-office": "./src/back-office/index.ts",
+    "./apps": "./src/apps.ts",
+    "./auth": "./src/auth.ts"
+  },
+  "scripts": {
+    "build": "pnpm typecheck",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings ."
+  },
+  "dependencies": {
+    "@orpc/client": "^1.15.7",
+    "@orpc/contract": "^1.15.7",
+    "effect": "4.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^6.0.2"
+  }
+}

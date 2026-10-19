@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import type { DeliveryStatus } from "@/server/actions/music/delivery"
+import type { DeliveryStatus } from "@mdoultremont/tools-contracts/music"
 import { DeliveryPanel } from "./delivery-panel"
 
 const render = (status: DeliveryStatus) =>

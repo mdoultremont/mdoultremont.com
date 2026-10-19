@@ -16,9 +16,10 @@
     "deploy:production": "pnpm -r run deploy:production",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint": "pnpm -r run lint",
-    "test": "pnpm -r run test",
-    "typecheck": "pnpm -r run typecheck"
+    "lint": "oxlint --deny-warnings scripts && node scripts/check-tools-boundaries.mjs && pnpm -r run lint",
+    "test": "node --test scripts/tools-boundaries.test.mjs && pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "tools": "pnpm --filter @mdoultremont/tools-cli tools"
   },
   "devDependencies": {
     "oxfmt": "^0.64.0",

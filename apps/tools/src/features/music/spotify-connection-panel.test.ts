@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import type { SpotifyConnectionStatus } from "@/server/modules/spotify"
+import type { SpotifyConnectionStatus } from "@mdoultremont/tools-contracts/music"
 import { SpotifyConnectionPanel } from "./spotify-connection-panel"
 
 describe("Spotify connection panel", () => {

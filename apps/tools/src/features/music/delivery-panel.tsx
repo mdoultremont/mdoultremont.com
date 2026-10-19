@@ -1,6 +1,7 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
-import type { DeliveryStatus } from "@/server/actions/music/delivery"
+import type { DeliveryStatus } from "@mdoultremont/tools-contracts/music"
+import { api, errorMessage } from "@/features/api"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Badge } from "@/features/ui/badge"
 import { Button } from "@/features/ui/button"
@@ -38,9 +39,7 @@ export function DeliveryPanel({
     let timer: ReturnType<typeof setTimeout> | undefined
     async function load() {
       try {
-        const response = await fetch("/api/music/delivery")
-        if (!response.ok) throw new Error("Delivery status could not be loaded")
-        const next = (await response.json()) as DeliveryStatus
+        const next = await api.music.delivery.status()
         if (!active) return
         setStatus(next)
         setError(null)
@@ -52,13 +51,8 @@ export function DeliveryPanel({
         if (next.toWrite === 0 || stalled >= maxStalledPolls) setWriting(false)
         else if (writing || next.automatic)
           timer = setTimeout(load, pollMilliseconds)
-      } catch (cause) {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Delivery status could not be loaded"
-          )
+      } catch {
+        if (active) setError("Delivery status could not be loaded")
       }
     }
     if (status === null || writing || status.automatic) void load()
@@ -68,24 +62,14 @@ export function DeliveryPanel({
     }
   }, [writing, status?.automatic])
 
-  async function send(init: RequestInit, failure: string) {
+  async function send(call: () => Promise<DeliveryStatus>, failure: string) {
     setBusy(true)
     setError(null)
     try {
-      const response = await fetch("/api/music/delivery", {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      const payload = (await response.json().catch(() => null)) as
-        | (DeliveryStatus & { error?: string })
-        | null
-      if (!response.ok || !payload) throw new Error(payload?.error ?? failure)
-      setStatus(payload)
+      setStatus(await call())
       return true
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure)
+      setError(errorMessage(cause, failure))
       return false
     } finally {
       setBusy(false)
@@ -93,7 +77,9 @@ export function DeliveryPanel({
   }
 
   async function writeNow() {
-    if (await send({ method: "POST" }, "Writing could not start")) {
+    if (
+      await send(() => api.music.delivery.start(), "Writing could not start")
+    ) {
       progress.current = { toWrite: Number.POSITIVE_INFINITY, stalled: 0 }
       setWriting(true)
     }
@@ -178,12 +164,10 @@ export function DeliveryPanel({
                   id={automaticId}
                   onChange={(event) =>
                     void send(
-                      {
-                        method: "PUT",
-                        body: JSON.stringify({
+                      () =>
+                        api.music.delivery.setAutomatic({
                           automatic: event.target.checked,
                         }),
-                      },
                       "The setting could not be saved"
                     )
                   }

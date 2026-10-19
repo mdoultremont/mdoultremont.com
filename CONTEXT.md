@@ -20,8 +20,10 @@ _Avoid_: Public page, finished page
 
 **Tools**:
 The private part of the site, at `tools.mdoultremont.com` (`apps/tools`),
-deployed apart from the portfolio (`apps/web`). It holds every app and their
-shared sign-in. Its home page lists the apps a user can open.
+deployed apart from the portfolio (`apps/web`). `apps/tools` owns its web
+client and Worker mounting. `apps/tools-backend` owns the backend application
+and database migrations, composed into that same Worker. It holds every app
+and their shared sign-in. Its home page lists the apps a user can open.
 _Avoid_: Apps area, `/apps`
 
 **User**:
@@ -60,6 +62,29 @@ _Avoid_: Deleted user
 The sign-in accounts in `OWNER_ACCOUNTS`. While nobody has back office access,
 they may sign in without an invitation and receive every app, so the site can
 always be recovered.
+
+**Action**:
+One operation of an app, such as importing a flight or saving destinations.
+The site's pages, the CLI and agents all perform the same actions, and every
+call checks the user's app access.
+_Avoid_: Endpoint, procedure, tool (an MCP tool is how an agent sees an action)
+
+**Action contract**:
+The frontend-safe declaration of an action and its input and output schemas,
+held in `packages/tools-contracts` with the typed HTTP client. A contract has
+no business handler.
+
+**Client**:
+A program a user lets act for them, such as the tools CLI, Claude or Codex. It
+signs in through the user's browser and asks for consent; it can then perform
+every action of the apps the user can use at that moment.
+_Avoid_: Integration, API key, bot
+
+**Grant**:
+A user's consent to one client, with the tokens issued under it. Revoking it
+ends all of them. Losing app access, or being removed, applies to the next
+call of every grant.
+_Avoid_: Session (a session is a browser's sign-in)
 
 ## Music control area
 

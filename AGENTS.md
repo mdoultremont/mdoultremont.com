@@ -1,9 +1,13 @@
 # Repository guide
 
-- Keep deployable applications under `apps/`: the portfolio in `apps/web`
-  (`mdoultremont.com`) and the private apps in `apps/tools`
-  (`tools.mdoultremont.com`).
-- Put code shared by more than one app under `packages/`.
+- Keep applications under `apps/`: the portfolio in `apps/web`, the tools web
+  client and Worker host in `apps/tools`, its backend in `apps/tools-backend`,
+  and its remote HTTP CLI in `apps/tools-cli`. The tools web and backend ship
+  as one Worker at `tools.mdoultremont.com`.
+- Put shared code under `packages/`. `tools-contracts` owns frontend-safe
+  action declarations, schemas, and the typed HTTP client. `flight-track` owns
+  shared parsing and measurement algorithms. Use explicit package exports
+  across application boundaries.
 - Run `pnpm dev`, `pnpm check`, and `pnpm build` from the repository root.
 - Keep Pages CMS configuration in the repository-root `.pages.yml`. Update it
   when changing files or fields under `apps/web/content`.

@@ -1,5 +1,5 @@
-import { LockIcon } from "lucide-react"
 import { useState } from "react"
+import { AuthFrame } from "@/features/auth/auth-frame"
 import {
   authClient,
   providerNames,
@@ -7,18 +7,21 @@ import {
   signInProviders,
 } from "@/features/auth/auth-client"
 import { Button } from "@/features/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/features/ui/card"
-import { portfolioUrl } from "@/features/apps/catalog"
 import { AuthError, useSearchParam } from "./auth-error"
 
-/** The signed-out screen. Signing in returns to the page the user asked for. */
-export function SignIn() {
+/**
+ * The signed-out screen. By default signing in returns to the page the user
+ * asked for; `returnTo` overrides where success and failure land.
+ */
+export function SignIn({
+  returnTo,
+  title,
+  description,
+}: {
+  readonly returnTo?: { readonly success: string; readonly failure: string }
+  readonly title?: string
+  readonly description?: string
+}) {
   const invited = useSearchParam("invited") === "1"
   const [busy, setBusy] = useState(false)
 
@@ -27,55 +30,35 @@ export function SignIn() {
     const here = window.location.pathname
     const result = await authClient.signIn.social({
       provider,
-      callbackURL: here,
-      errorCallbackURL: here,
+      callbackURL: returnTo?.success ?? here,
+      errorCallbackURL: returnTo?.failure ?? here,
     })
     if (result.error) setBusy(false)
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <div className="flex items-center gap-2 self-center font-heading font-medium">
-          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <LockIcon className="size-3.5" />
-          </div>
-          Private apps
-        </div>
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">
-              <h1>{invited ? "Finish signing up" : "Sign in"}</h1>
-            </CardTitle>
-            <CardDescription>
-              {invited
-                ? "Continue with GitHub or Spotify to accept your invitation. You will sign in with that account from now on."
-                : "Sign in with an account you have used here before. New users need an invitation."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <AuthError />
-            {signInProviders.map((provider) => (
-              <Button
-                key={provider}
-                size="lg"
-                variant="outline"
-                className="w-full"
-                disabled={busy}
-                onClick={() => void signIn(provider)}
-              >
-                Continue with {providerNames[provider]}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-        <a
-          href={portfolioUrl}
-          className="self-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+    <AuthFrame
+      title={title ?? (invited ? "Finish signing up" : "Sign in")}
+      description={
+        description ??
+        (invited
+          ? "Continue with GitHub or Spotify to accept your invitation. You will sign in with that account from now on."
+          : "Sign in with an account you have used here before. New users need an invitation.")
+      }
+    >
+      <AuthError />
+      {signInProviders.map((provider) => (
+        <Button
+          key={provider}
+          size="lg"
+          variant="outline"
+          className="w-full"
+          disabled={busy}
+          onClick={() => void signIn(provider)}
         >
-          Return to portfolio
-        </a>
-      </div>
-    </div>
+          Continue with {providerNames[provider]}
+        </Button>
+      ))}
+    </AuthFrame>
   )
 }

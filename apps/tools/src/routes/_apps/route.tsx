@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
-import { currentUser } from "@/server/entrypoints/http/auth.server"
+import { currentUser } from "@mdoultremont/tools-backend/http"
 import { AppShell, SignIn } from "@/features/apps/shell"
 
 const loadCurrentUser = createServerFn({ method: "GET" }).handler(() =>

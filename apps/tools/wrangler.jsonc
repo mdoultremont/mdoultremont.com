@@ -14,7 +14,7 @@
       "binding": "DB",
       "database_name": "mdoultremont-data",
       "database_id": "482954d4-e4c9-4f9e-89a5-ece06e26b041",
-      "migrations_dir": "migrations",
+      "migrations_dir": "../tools-backend/migrations",
     },
   ],
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "mdoultremont-files" }],

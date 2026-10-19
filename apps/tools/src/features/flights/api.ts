@@ -1,7 +1,8 @@
-import { createORPCClient } from "@orpc/client"
-import { RPCLink } from "@orpc/client/fetch"
-import type { ContractRouterClient } from "@orpc/contract"
-import { flightsContract, type EquipmentInput } from "@/shared/flights/contract"
+import { api } from "@/features/api"
+import type {
+  EquipmentInput,
+  FlightUpdate,
+} from "@mdoultremont/tools-contracts/flights"
 
 export type {
   Dashboard,
@@ -11,7 +12,7 @@ export type {
   FlightDetail,
   FlightUpdate,
   ImportResult,
-} from "@/shared/flights/contract"
+} from "@mdoultremont/tools-contracts/flights"
 
 /** The original file as `downloadFlightFile` reads it. */
 export interface FlightDownload {
@@ -20,43 +21,31 @@ export interface FlightDownload {
   readonly text: string
 }
 
-/**
- * Typed client for the flights contract in `@/shared/flights/contract`; the
- * wire shapes and units are documented there. Calls go to /api/rpc/flights with the
- * session cookie, and failures throw an Error whose message is readable.
- * Only called from the browser, never during server rendering.
- */
-const client: ContractRouterClient<typeof flightsContract> = createORPCClient(
-  new RPCLink({
-    url: () => new URL("/api/rpc/flights", window.location.origin).href,
-  })
-)
-
-export const listFlights = (year?: number) => client.list({ year })
-export const getFlight = (flightId: string) => client.get({ flightId })
-export const updateFlight = (
-  flightId: string,
-  input: Omit<Parameters<typeof client.update>[0], "flightId">
-) => client.update({ flightId, ...input })
-export const deleteFlight = (flightId: string) => client.delete({ flightId })
+/** The flights actions in `@mdoultremont/tools-contracts/flights`; wire shapes and units are documented there. */
+export const listFlights = (year?: number) => api.flights.list({ year })
+export const getFlight = (flightId: string) => api.flights.get({ flightId })
+export const updateFlight = (flightId: string, input: FlightUpdate) =>
+  api.flights.update({ flightId, ...input })
+export const deleteFlight = (flightId: string) =>
+  api.flights.delete({ flightId })
 export const importFlight = (input: {
   readonly filename: string
   readonly text: string
-}) => client.import(input)
-export const getFlightStats = () => client.stats.get()
-export const listEquipment = () => client.equipment.list()
+}) => api.flights.import(input)
+export const getFlightStats = () => api.flights.stats.get()
+export const listEquipment = () => api.flights.equipment.list()
 export const createEquipment = (input: EquipmentInput) =>
-  client.equipment.create(input)
+  api.flights.equipment.create(input)
 export const updateEquipment = (equipmentId: string, input: EquipmentInput) =>
-  client.equipment.update({ equipmentId, ...input })
+  api.flights.equipment.update({ equipmentId, ...input })
 export const deleteEquipment = (equipmentId: string) =>
-  client.equipment.delete({ equipmentId })
+  api.flights.equipment.delete({ equipmentId })
 
 /**
- * GET /api/flights/files/:fileId returns an attachment containing the exact
- * original text (binary-safe, so it is a plain route rather than a procedure).
- * Reads it as { filename, format: 'gpx'|'igc', text }; throws Error with the
- * route's { error } message.
+ * GET /api/flights/files/:fileId serves `flights.files.download` as an
+ * attachment containing the exact original bytes. Reads it as
+ * { filename, format: 'gpx'|'igc', text }; throws Error with the failure's
+ * message.
  */
 export async function downloadFlightFile(
   fileId: string
@@ -67,12 +56,16 @@ export async function downloadFlightFile(
   )
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null)
-    throw new Error(
-      payload &&
-        typeof payload === "object" &&
-        "error" in payload &&
-        typeof payload.error === "string"
+    const error =
+      payload && typeof payload === "object" && "error" in payload
         ? payload.error
+        : null
+    throw new Error(
+      error &&
+        typeof error === "object" &&
+        "message" in error &&
+        typeof error.message === "string"
+        ? error.message
         : "Flight request failed"
     )
   }

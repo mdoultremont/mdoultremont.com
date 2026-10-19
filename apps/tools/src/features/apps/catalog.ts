@@ -9,7 +9,7 @@ import {
   UploadIcon,
   UsersIcon,
 } from "lucide-react"
-import type { App } from "@/server/actions/auth"
+import type { App } from "@mdoultremont/tools-contracts/auth"
 import { ParagliderIcon } from "@/features/flights/icon"
 
 /** The public portfolio, which lives on its own domain. */

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { beginSpotifyConnection } from "@/server/entrypoints/http/music/spotify.server"
+import { beginSpotifyConnection } from "@mdoultremont/tools-backend/http"
 
 export const Route = createFileRoute("/api/music/spotify/connect")({
   server: {
