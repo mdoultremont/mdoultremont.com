@@ -6,29 +6,31 @@ in `apps/flights/` in the source checkout are the historical references. Its
 standalone PostgreSQL server, password authentication, Docker deployment, and
 public `/flights` routes are not the web integration architecture.
 
-## Shared track processing
+## Backend track processing
 
-`packages/flight-track/src/index.ts` is the public API for both browser and
-backend callers. The library contains no React, database, authentication,
-Cloudflare bindings, or Node runtime APIs. GPX parsing uses `fast-xml-parser`;
-IGC parsing is the prototype's fixed-width parser. MapLibre GL JS and Recharts
-are web dependencies for the viewer, not dependencies of this library.
+`apps/tools-backend/src/actions/flights/track/index.ts` is the backend unit
+for track parsing, measurements, and profiles. The importer and flight detail
+action use it. GPX parsing uses `fast-xml-parser`; IGC parsing uses the
+prototype's fixed-width parser.
 
-The library exports `parseGpx`, `parseIgc`, `parseTrackFile`, `computeMetrics`,
-`buildProfile`, `downsampleLttb`, `haversineDistance`, and `TrackParseError`, plus
-the `TrackPoint`, `ParsedTrack`, `FlightMetrics`, and `ProfilePoint` types. A
-track point is `[UTC epoch milliseconds, latitude, longitude, GPS altitude or
-null, barometric altitude or null]`; coordinates use degrees and altitude uses
-metres. Parsers normalize ordering and remove duplicate timestamps. Metrics
-require at least two valid points with strictly increasing timestamps.
+A track point is `[UTC epoch milliseconds, latitude, longitude, GPS altitude
+or null, barometric altitude or null]`. Coordinates use degrees and altitude
+uses metres. Parsers normalize ordering and remove duplicate timestamps.
+Metrics require at least two valid points with strictly increasing timestamps.
 
-The complete prototype track tests and fixtures live beside the implementation.
-Run them through the flight-track package Vitest configuration from the repository root:
+The flight detail action returns the full point array and nullable `analysis`.
+Analysis contains the detected takeoff and landing indices, the takeoff
+timestamp, and the full airborne profile. The viewer and share image use
+those results. The browser owns chart sampling, cursor selection, map
+projection, formatting, and image composition.
+
+Parsing, measurement, and profile tests and fixtures live beside the backend
+implementation. Chart sampling tests live with the viewer. Run them from the
+repository root:
 
 ```sh
-pnpm --filter @mdoultremont/flight-track test
-pnpm exec oxlint --deny-warnings packages/flight-track/src
-pnpm exec oxfmt --check packages/flight-track/src docs/flights.md CONTEXT.md
+pnpm --filter @mdoultremont/tools-backend test
+pnpm --filter @mdoultremont/tools test
 ```
 
 ## Import research carried forward
@@ -120,9 +122,9 @@ places pages under `src/routes/_apps/`, the operations as actions (declared in
 private-app launcher, and wrap the page in `RequireApp`. Every action call
 checks the `flights` app independently of the page guard.
 
-Keep backend entrypoints, actions, and modules in their existing layers. Both
-the import backend and browser viewer import the shared track API from
-`@mdoultremont/flight-track`; neither should reach into the other's implementation.
+Keep backend entrypoints, actions, and modules in their existing layers.
+The browser reads flight measurements and profiles through action contracts
+in `@mdoultremont/tools-contracts/flights`.
 Load MapLibre and its worker only in the browser. Preserve the prototype's
 linked map/profile cursor, original-file download, and client-side share image
 with a projected-track fallback when map capture fails.
@@ -220,8 +222,14 @@ storage, or compression failures).
 
 - `list({ year? })` returns `{ flights }`, newest takeoff first; year is
   an optional integer from 1900 to 9998.
-- `get({ flightId })` returns `{ flight, equipment, files, points }`.
+- `get({ flightId })` returns `{ flight, equipment, files, points, analysis }`.
   File records contain `id`, `filename`, `format`, `sha256`, and `sizeBytes`.
+  Analysis is null for fewer than two recorded points. Otherwise it contains
+  `takeoffIndex`, `landingIndex`, `takeoffAt`, and `profile`. Each profile
+  sample contains its original point index `i`, elapsed seconds `tS`,
+  nullable altitude `altM`, speed `speedKmh`, vertical speed `varioMps`,
+  and cumulative distance `distKm`. Elapsed time starts at `analysis.takeoffAt`.
+  The stored flight row remains the source for summary statistics.
 - `update({ flightId, takeoffName, landingName, notes, equipmentIds })`
   returns `{ id }`. Names allow 200 characters; notes allow 10,000;
   assignments allow up to 100 equipment IDs. Blank names and notes become null.

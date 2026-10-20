@@ -1,9 +1,25 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import flightGpx from "./fixtures/flight.gpx?raw"
-import segmentsGpx from "./fixtures/two-segments.gpx?raw"
-import missingTimesGpx from "./fixtures/missing-times.gpx?raw"
-import oldIgc from "./fixtures/old-date.igc?raw"
-import midnightIgc from "./fixtures/new-date-midnight.igc?raw"
+const flightGpx = readFileSync(
+  new URL("./fixtures/flight.gpx", import.meta.url),
+  "utf8"
+)
+const segmentsGpx = readFileSync(
+  new URL("./fixtures/two-segments.gpx", import.meta.url),
+  "utf8"
+)
+const missingTimesGpx = readFileSync(
+  new URL("./fixtures/missing-times.gpx", import.meta.url),
+  "utf8"
+)
+const oldIgc = readFileSync(
+  new URL("./fixtures/old-date.igc", import.meta.url),
+  "utf8"
+)
+const midnightIgc = readFileSync(
+  new URL("./fixtures/new-date-midnight.igc", import.meta.url),
+  "utf8"
+)
 import {
   bRecord,
   flightPoints,

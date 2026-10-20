@@ -7,7 +7,7 @@ import type {
 } from "#backend/modules/database"
 import type { CompressionError } from "#backend/modules/compression"
 import type { ObjectStorageError } from "#backend/modules/object-storage"
-import type { TrackPoint } from "@mdoultremont/flight-track"
+import type { ProfilePoint, TrackPoint } from "#backend/actions/flights/track"
 
 export class FlightInputError extends Data.TaggedError("FlightInputError")<{
   readonly message: string
@@ -31,6 +31,12 @@ export interface FlightDetail {
   readonly flight: Flight
   readonly equipment: readonly EquipmentItem[]
   readonly files: readonly FileMetadata[]
+  readonly analysis: {
+    readonly takeoffIndex: number
+    readonly landingIndex: number
+    readonly takeoffAt: number
+    readonly profile: readonly ProfilePoint[]
+  } | null
   readonly points: readonly TrackPoint[]
 }
 export interface FlightUpdate {

@@ -5,8 +5,9 @@
   and its remote HTTP CLI in `apps/tools-cli`. The tools web and backend ship
   as one Worker at `tools.mdoultremont.com`.
 - Put shared code under `packages/`. `tools-contracts` owns frontend-safe
-  action declarations, schemas, and the typed HTTP client. `flight-track` owns
-  shared parsing and measurement algorithms. Use explicit package exports
+  action declarations, input and output schemas, and the typed HTTP client.
+  Keep flight parsing and measurement algorithms in `apps/tools-backend`;
+  clients read their results through actions. Use explicit package exports
   across application boundaries.
 - Run `pnpm dev`, `pnpm check`, and `pnpm build` from the repository root.
 - Keep Pages CMS configuration in the repository-root `.pages.yml`. Update it

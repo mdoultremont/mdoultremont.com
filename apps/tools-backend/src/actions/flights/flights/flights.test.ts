@@ -23,14 +23,11 @@ import {
 import { FlightImport } from "#backend/actions/flights/import"
 import { Equipment } from "#backend/actions/flights/equipment"
 import { FlightStats } from "#backend/actions/flights/stats"
-import { parseTrackFile } from "@mdoultremont/flight-track"
+import { analyzeTrack, parseTrackFile } from "#backend/actions/flights/track"
 import { Flights } from "./index"
 
 const fixture = readFileSync(
-  new URL(
-    "../../../../../../packages/flight-track/src/fixtures/flight.gpx",
-    import.meta.url
-  ),
+  new URL("../track/fixtures/flight.gpx", import.meta.url),
   "utf8"
 )
 const bodies = (days = 0) => ({
@@ -90,6 +87,13 @@ describe("flight logbook", () => {
         expect(detail.points).toEqual(
           parseTrackFile("flight.gpx", fixture).points
         )
+        const expected = analyzeTrack(detail.points)!
+        expect(detail.analysis).toEqual({
+          takeoffIndex: expected.metrics.takeoffIndex,
+          landingIndex: expected.metrics.landingIndex,
+          takeoffAt: expected.metrics.takeoffAt.getTime(),
+          profile: expected.profile,
+        })
         expect(detail.flight.createdAt).toBe(Date.UTC(2026, 9, 16))
         expect(detail.files[0]).toMatchObject({
           filename: "flight.gpx",
@@ -147,6 +151,149 @@ describe("flight logbook", () => {
           yield* database.use((db) => db.select().from(flightTracks).all())
         ).toEqual([])
         expect(objects.size).toBe(0)
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "recomputes detail analysis without changing saved flight statistics",
+    () => {
+      const { layer, sqlite } = setup()
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare(
+            "UPDATE flights SET takeoff_at = takeoff_at + 10000, duration_s = 17, distance_m = 123 WHERE id = ?"
+          )
+          .run(imported.flightId)
+        const logbook = yield* Flights
+        const before = yield* logbook.list("owner")
+        const detail = yield* logbook.detail("owner", imported.flightId)
+        expect(detail.analysis!.takeoffAt).toBe(detail.flight.takeoffAt - 10000)
+        expect(detail.analysis!.profile[0]!.tS).toBe(0)
+        expect(detail.analysis!.profile[0]!.i).toBe(
+          detail.analysis!.takeoffIndex
+        )
+        expect(detail.flight).toMatchObject({ durationS: 17, distanceM: 123 })
+        expect(yield* logbook.list("owner")).toEqual(before)
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "distinguishes an absent track row from a missing stored object",
+    () => {
+      const { layer, objects, sqlite } = setup()
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        const logbook = yield* Flights
+        objects.clear()
+        expect(
+          yield* Effect.flip(logbook.detail("owner", imported.flightId))
+        ).toMatchObject({ _tag: "ObjectStorageError", reason: "MissingObject" })
+        sqlite
+          .prepare("DELETE FROM flight_tracks WHERE flight_id = ?")
+          .run(imported.flightId)
+        expect(yield* logbook.detail("owner", imported.flightId)).toMatchObject(
+          { points: [], analysis: null }
+        )
+        expect(
+          yield* Effect.flip(logbook.detail("owner", "missing"))
+        ).toMatchObject({ _tag: "FlightNotFound" })
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect("keeps a one-point stored track with null analysis", () => {
+    const { layer } = setup()
+    return Effect.gen(function* () {
+      const imported = yield* FlightImport.use((i) =>
+        i.importFile("owner", bodies())
+      )
+      const storage = yield* ObjectStorage
+      const points = parseTrackFile("flight.gpx", fixture).points.slice(0, 1)
+      yield* storage.put(
+        `flights/owner/${imported.flightId}/track.json.gz`,
+        yield* gzipText(JSON.stringify(points))
+      )
+      expect(
+        yield* Flights.use((f) => f.detail("owner", imported.flightId))
+      ).toMatchObject({ points, analysis: null })
+    }).pipe(Effect.provide(layer))
+  })
+  it.effect(
+    "returns profiles with null altitude and original indices around GPS spikes",
+    () => {
+      const { layer } = setup()
+      return Effect.gen(function* () {
+        const text = readFileSync(
+          new URL("../track/fixtures/spike.gpx", import.meta.url),
+          "utf8"
+        )
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", { filename: "spike.gpx", text })
+        )
+        const points = parseTrackFile("spike.gpx", text).points.map((p) => [
+          p[0],
+          p[1],
+          p[2],
+          null,
+          null,
+        ])
+        const storage = yield* ObjectStorage
+        yield* storage.put(
+          `flights/owner/${imported.flightId}/track.json.gz`,
+          yield* gzipText(JSON.stringify(points))
+        )
+        const detail = yield* Flights.use((f) =>
+          f.detail("owner", imported.flightId)
+        )
+        expect(detail.points).toEqual(points)
+        expect(detail.analysis).toMatchObject({
+          takeoffIndex: 20,
+          landingIndex: 80,
+        })
+        expect(detail.analysis!.profile.some((p) => p.i === 45)).toBe(false)
+        expect(detail.analysis!.profile.some((p) => p.i === 46)).toBe(true)
+        expect(
+          detail.analysis!.profile.every(
+            (p) => p.altM === null && p.varioMps === 0
+          )
+        ).toBe(true)
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "maps malformed and invalid stored track calculations to compression errors",
+    () => {
+      const { layer } = setup()
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        const storage = yield* ObjectStorage
+        const key = `flights/owner/${imported.flightId}/track.json.gz`
+        for (const text of [
+          "not json",
+          "{}",
+          "[[0,46,6,null]]",
+          "[[0,100,6,null,null]]",
+          "[[0,46,6,null,null],[0,46,6,null,null]]",
+        ]) {
+          yield* storage.put(key, yield* gzipText(text))
+          expect(
+            yield* Effect.flip(
+              Flights.use((f) => f.detail("owner", imported.flightId))
+            )
+          ).toMatchObject({ _tag: "CompressionError", reason: "InvalidData" })
+        }
+        yield* storage.put(key, new Uint8Array([1, 2, 3]))
+        expect(
+          yield* Effect.flip(
+            Flights.use((f) => f.detail("owner", imported.flightId))
+          )
+        ).toMatchObject({ _tag: "CompressionError", reason: "InvalidData" })
       }).pipe(Effect.provide(layer))
     }
   )

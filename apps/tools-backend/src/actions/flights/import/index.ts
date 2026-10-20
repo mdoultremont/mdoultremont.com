@@ -13,7 +13,7 @@ import {
   computeMetrics,
   haversineDistance,
   parseTrackFile,
-} from "@mdoultremont/flight-track"
+} from "#backend/actions/flights/track"
 import { FlightImportStore } from "./store"
 
 export const MAX_TRACK_BYTES = 5_000_000

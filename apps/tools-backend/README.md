@@ -10,8 +10,10 @@ This package exposes only `@mdoultremont/tools-backend/http` for protocol
 routes and server functions, and `@mdoultremont/tools-backend/worker` for
 Worker mounting, queues, and cron. It ships inside the existing `apps/tools`
 Worker. Action declarations and the typed HTTP client are in
-`packages/tools-contracts`; shared track algorithms are in
-`packages/flight-track`. Internal `#backend/*` imports stay within this package.
+`packages/tools-contracts`. Flight parsing, measurements, and profiles belong
+to `actions/flights/track`. The flight detail action returns the computed
+profile and flight bounds to clients. Internal `#backend/*` imports stay within
+this package.
 
 The schema, Drizzle config, and SQL migrations live here. Generate migrations
 with `pnpm db:generate`. Apply them through `apps/tools` to keep Wrangler

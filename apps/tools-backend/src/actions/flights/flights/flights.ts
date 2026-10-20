@@ -1,4 +1,4 @@
-import type { TrackPoint } from "@mdoultremont/flight-track"
+import { analyzeTrack } from "#backend/actions/flights/track"
 import { Clock, Context, Effect, Layer, Option, Schema } from "effect"
 import { CompressionError, gunzipText } from "#backend/modules/compression"
 import {
@@ -45,10 +45,24 @@ const makeFlights = Effect.gen(function* () {
     const bytes = yield* readBytes(objectKey, object.value)
     return yield* gunzipText(bytes).pipe(
       Effect.flatMap(
-        // Stored content is trusted (the contract validates it on the way in);
-        // only check the shape so a corrupt object fails clearly.
         Schema.decodeUnknownEffect(
-          Schema.fromJsonString(Schema.Array(Schema.Array(Schema.Unknown)))
+          Schema.fromJsonString(
+            Schema.Array(
+              Schema.mutable(
+                Schema.Tuple([
+                  Schema.Finite,
+                  Schema.Finite.check(
+                    Schema.isBetween({ minimum: -90, maximum: 90 })
+                  ),
+                  Schema.Finite.check(
+                    Schema.isBetween({ minimum: -180, maximum: 180 })
+                  ),
+                  Schema.NullOr(Schema.Finite),
+                  Schema.NullOr(Schema.Finite),
+                ])
+              )
+            )
+          )
         )
       ),
       Effect.mapError(
@@ -69,11 +83,28 @@ const makeFlights = Effect.gen(function* () {
     const flight = rows[0]
     if (!flight) return yield* missing()
     const points = tracks[0] ? yield* loadTrack(tracks[0].objectKey) : []
+    const analyzed = yield* Effect.try({
+      try: () => analyzeTrack(points),
+      catch: (cause) =>
+        new CompressionError({
+          reason: "InvalidData",
+          message: "Stored track is unreadable",
+          cause,
+        }),
+    })
     return {
       flight,
       equipment,
       files,
-      points: points.map((point) => [...point] as unknown as TrackPoint),
+      points,
+      analysis: analyzed
+        ? {
+            takeoffIndex: analyzed.metrics.takeoffIndex,
+            landingIndex: analyzed.metrics.landingIndex,
+            takeoffAt: analyzed.metrics.takeoffAt.getTime(),
+            profile: analyzed.profile,
+          }
+        : null,
     }
   })
   const update = Effect.fn("Flights.update")(function* (

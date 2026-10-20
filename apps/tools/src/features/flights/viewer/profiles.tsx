@@ -13,7 +13,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from "@/features/ui/chart"
-import type { ProfilePoint } from "@mdoultremont/flight-track"
+import type { ProfilePoint } from "@mdoultremont/tools-contracts/flights"
 import { formatProfileTime } from "./logic"
 
 const chartConfig = {
@@ -23,9 +23,9 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface Props {
-  altitude: ProfilePoint[]
-  speed: ProfilePoint[]
-  vario: ProfilePoint[]
+  altitude: readonly ProfilePoint[]
+  speed: readonly ProfilePoint[]
+  vario: readonly ProfilePoint[]
   activeSeconds: number | null
   onTime: (seconds: number) => void
 }

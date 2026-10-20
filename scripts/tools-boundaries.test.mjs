@@ -27,7 +27,6 @@ function fixture(run) {
       "tools-contracts",
       { ".": "./src/actions/index.ts", "./client": "./src/actions/client.ts" },
     ],
-    ["packages/flight-track", "flight-track", { ".": "./src/index.ts" }],
   ])
     write(
       `${directory}/package.json`,
@@ -126,6 +125,18 @@ for (const [name, path, contents, message] of [
     "apps/tools-backend/src/modules/database/index.ts",
     'export { Auth } from "../../actions/auth"',
     "point down",
+  ],
+  [
+    "frontend importing backend track algorithms by relative path",
+    "apps/tools/src/features/flights/logic.ts",
+    'import { computeMetrics } from "../../../../tools-backend/src/actions/flights/track/index.ts"',
+    "only Worker composition",
+  ],
+  [
+    "flight action bypassing the track unit public API",
+    "apps/tools-backend/src/actions/flights/import/index.ts",
+    'import { computeMetrics } from "#backend/actions/flights/track/metrics"',
+    "index.ts public API",
   ],
   [
     "unit bypassing another unit's public API",

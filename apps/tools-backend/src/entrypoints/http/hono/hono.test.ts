@@ -1,3 +1,4 @@
+import type { FlightDetail } from "@mdoultremont/tools-contracts/flights"
 import { readFileSync } from "node:fs"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import { Effect, Layer, Schema } from "effect"
@@ -17,7 +18,7 @@ import { makeHarness, code, origin } from "./testing"
 
 const fixture = readFileSync(
   new URL(
-    "../../../../../../packages/flight-track/src/fixtures/flight.gpx",
+    "../../../actions/flights/track/fixtures/flight.gpx",
     import.meta.url
   ),
   "utf8"
@@ -169,6 +170,18 @@ describe("flights", () => {
     ).toHaveLength(0)
     const detail = await api.client.flights.get({ flightId })
     expect(detail.points.length).toBeGreaterThan(2)
+    expect(detail.analysis).toMatchObject({
+      takeoffIndex: 20,
+      landingIndex: 80,
+      takeoffAt: detail.points[20]![0],
+    })
+    expect(detail.analysis!.profile[0]).toMatchObject({
+      i: 20,
+      tS: 0,
+      altM: 1000,
+    })
+    const publicDetail = await api.request(`/api/v1/flights/${flightId}`)
+    expect(await publicDetail.json()).toEqual(detail)
     expect((await api.client.flights.stats.get()).totals.flights).toBe(1)
     expect(
       (
@@ -248,9 +261,7 @@ describe("flights", () => {
     expect(await list.json()).toEqual({ flights: [] })
     const detail = (await (
       await api.request(`/api/v1/flights/${flightId}`)
-    ).json()) as {
-      files: { id: string }[]
-    }
+    ).json()) as FlightDetail
     const download = (await (
       await api.request(`/api/v1/flights/files/${detail.files[0]!.id}`)
     ).json()) as { contentBase64: string }
@@ -289,6 +300,30 @@ describe("flights", () => {
     expect(await gone.json()).toEqual({
       error: { code: "NOT_FOUND", message: "Flight not found" },
     })
+  })
+
+  test("keeps saved statistics separate from analysis and returns null for an absent track", async () => {
+    api.signIn(["flights"])
+    const { flightId } = await api.client.flights.import({
+      filename: "flight.gpx",
+      text: fixture,
+    })
+    api.d1.sqlite
+      .prepare(
+        "UPDATE flights SET takeoff_at = takeoff_at + 10000, duration_s = 17 WHERE id = ?"
+      )
+      .run(flightId)
+    const detail = await api.client.flights.get({ flightId })
+    expect(detail.analysis!.takeoffAt).toBe(detail.flight.takeoffAt - 10000)
+    expect(detail.analysis!.profile[0]!.tS).toBe(0)
+    expect(detail.flight.durationS).toBe(17)
+    api.d1.sqlite
+      .prepare("DELETE FROM flight_tracks WHERE flight_id = ?")
+      .run(flightId)
+    const withoutTrack = await api.client.flights.get({ flightId })
+    expect(withoutTrack).toMatchObject({ points: [], analysis: null })
+    const http = await api.request(`/api/v1/flights/${flightId}`)
+    expect(await http.json()).toEqual(withoutTrack)
   })
 
   test("caps bodies at 6 MB and file content at 5 MB on every transport", async () => {

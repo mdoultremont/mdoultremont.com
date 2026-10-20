@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import spikeGpx from "./fixtures/spike.gpx?raw"
+const spikeGpx = readFileSync(
+  new URL("./fixtures/spike.gpx", import.meta.url),
+  "utf8"
+)
 import { flightPoints, START_MS } from "./fixtures/synthetic.ts"
 import { computeMetrics } from "./metrics.ts"
 import { parseGpx } from "./parse-gpx.ts"

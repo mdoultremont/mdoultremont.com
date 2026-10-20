@@ -37,7 +37,7 @@ const valueOrDash = (
 ) => (value === null ? "—" : format(value))
 
 export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
-  const { flight, points, equipment, files } = detail
+  const { flight, points, equipment, files, analysis } = detail
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const mapReady = useCallback(
     (value: MapLibreMap | null) => {
@@ -46,7 +46,7 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
     },
     [onMapReady]
   )
-  const series = useMemo(() => buildViewerSeries(points), [points])
+  const series = useMemo(() => buildViewerSeries(analysis), [analysis])
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const frame = useRef(0)
   const pending = useRef<number | null>(null)
@@ -68,8 +68,8 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
   )
   const selectedPoint = activeIndex === null ? undefined : points[activeIndex]
   const selectedSeconds =
-    selectedPoint && series.metrics
-      ? (selectedPoint[0] - series.metrics.takeoffAt.getTime()) / 1000
+    selectedPoint && analysis
+      ? (selectedPoint[0] - analysis.takeoffAt) / 1000
       : null
   const active =
     selectedSeconds === null
@@ -121,13 +121,13 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
       />
       <div className="grid items-start gap-7 @min-[900px]:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0 space-y-6">
-          {points.length >= 2 && series.metrics ? (
+          {points.length >= 2 && analysis ? (
             <>
               <FlightMap
                 points={points}
                 activeIndex={activeIndex}
-                takeoffIndex={series.metrics.takeoffIndex}
-                landingIndex={series.metrics.landingIndex}
+                takeoffIndex={analysis.takeoffIndex}
+                landingIndex={analysis.landingIndex}
                 onActiveIndex={selectIndex}
                 onMapReady={mapReady}
               />
@@ -187,7 +187,7 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
                     type="range"
                     min={0}
                     max={points.length - 1}
-                    value={activeIndex ?? series.metrics.takeoffIndex}
+                    value={activeIndex ?? analysis.takeoffIndex}
                     onChange={(event) =>
                       selectIndex(Number(event.target.value))
                     }

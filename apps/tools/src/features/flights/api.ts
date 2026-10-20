@@ -10,6 +10,9 @@ export type {
   EquipmentItem,
   Flight,
   FlightDetail,
+  FlightTrackAnalysis,
+  ProfilePoint,
+  TrackPoint,
   FlightUpdate,
   ImportResult,
 } from "@mdoultremont/tools-contracts/flights"

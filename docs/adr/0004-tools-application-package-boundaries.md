@@ -1,5 +1,8 @@
 # Tools application package boundaries
 
+The shared flight-track decision below is superseded by
+[Backend ownership of flight calculations](0005-backend-owns-flight-calculations.md).
+
 The action registry serves the browser, CLI, HTTP clients, and MCP from one
 implementation. Keeping that implementation inside the web application makes
 its ownership and dependencies difficult to distinguish from the browser code.

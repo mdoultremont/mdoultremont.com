@@ -8,6 +8,8 @@ export type {
   FilePayload,
   Flight,
   FlightDetail,
+  FlightTrackAnalysis,
+  ProfilePoint,
   FlightUpdate,
   ImportResult,
   TrackPoint,

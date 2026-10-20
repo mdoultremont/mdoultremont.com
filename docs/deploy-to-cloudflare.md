@@ -55,8 +55,8 @@ your computer. Leave the build command empty; setting one would build twice.
 To skip builds that cannot change a Worker, set its build watch paths to its
 app directory plus the root `package.json`, `pnpm-lock.yaml`, and
 `pnpm-workspace.yaml`. The tools watch paths must also include
-`apps/tools-backend/*`, `packages/tools-contracts/*`, `packages/flight-track/*`,
-and `patches/*`. The CLI has no Worker deployment.
+`apps/tools-backend/*`, `packages/tools-contracts/*`, and `patches/*`.
+The CLI has no Worker deployment.
 
 For the tools, `deploy:production` builds the app, runs `wrangler d1
 migrations apply mdoultremont-data --remote`, and then `wrangler deploy`.

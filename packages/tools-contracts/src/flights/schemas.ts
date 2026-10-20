@@ -107,11 +107,42 @@ const TrackPoints = Schema.declare(
   }
 )
 
+/** Profile speedKmh uses kilometres per hour and distKm uses kilometres. */
+export const ProfilePointSchema = Schema.Struct({
+  i: Schema.Int,
+  tS: Schema.Finite,
+  altM: Nullable(Schema.Finite),
+  speedKmh: Schema.Finite,
+  varioMps: Schema.Finite,
+  distKm: Schema.Finite,
+})
+export type ProfilePoint = typeof ProfilePointSchema.Type
+
+const ProfilePoints = Schema.declare(
+  (value): value is readonly ProfilePoint[] => Array.isArray(value),
+  {
+    toCodecJson: () =>
+      Schema.link<readonly ProfilePoint[]>()(
+        Schema.Array(ProfilePointSchema),
+        SchemaTransformation.passthroughSupertype()
+      ),
+  }
+)
+
+export const FlightTrackAnalysisSchema = Schema.Struct({
+  takeoffIndex: Schema.Int,
+  landingIndex: Schema.Int,
+  takeoffAt: Schema.Finite,
+  profile: ProfilePoints,
+})
+export type FlightTrackAnalysis = typeof FlightTrackAnalysisSchema.Type
+
 export const FlightDetailSchema = Schema.Struct({
   flight: FlightSchema,
   equipment: Schema.Array(EquipmentItemSchema),
   files: Schema.Array(FileMetadataSchema),
   points: TrackPoints,
+  analysis: Nullable(FlightTrackAnalysisSchema),
 })
 export type FlightDetail = typeof FlightDetailSchema.Type
 

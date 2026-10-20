@@ -154,7 +154,7 @@
       }
     },
     {
-      "files": ["packages/tools-contracts/**", "packages/flight-track/**"],
+      "files": ["packages/tools-contracts/**"],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",

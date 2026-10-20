@@ -33,7 +33,7 @@ export const flightsActions = {
   }),
   get: action({
     description:
-      "One flight with its equipment, original file metadata and track points [epochMs, lat, lon, gpsAltM | null, baroAltM | null].",
+      "One flight with its equipment, original file metadata and track points [epochMs, lat, lon, gpsAltM | null, baroAltM | null], and nullable analysis with detected takeoff/landing indices into those points, takeoff epochMs and the full airborne profile.",
     effect: "read",
     http: { method: "GET", path: "/flights/:flightId" },
     input: FlightId,
