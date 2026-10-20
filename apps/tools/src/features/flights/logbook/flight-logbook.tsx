@@ -1,20 +1,23 @@
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { PageHeader } from "@/features/apps/shell"
-import { listFlights } from "@/features/flights/api"
+import { listFlights, prepareFlight } from "@/features/flights/api"
 import {
   formatAltitude,
   formatDate,
   formatDistance,
   formatDuration,
+  formatSpeed,
 } from "@/features/flights/format"
 import {
   EmptyState,
   LoadState,
+  message,
   useFlightResource,
 } from "@/features/flights/layout/ui"
 import { Badge } from "@/features/ui/badge"
-import { buttonVariants } from "@/features/ui/button"
+import { TrackPreview } from "./track-preview"
+import { Button, buttonVariants } from "@/features/ui/button"
 import { Label } from "@/features/ui/label"
 import {
   Select,
@@ -23,32 +26,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/features/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/features/ui/table"
 
 export function FlightLogbook() {
   const { data, error, reload } = useFlightResource(listFlights)
+  const [preparing, setPreparing] = useState(false)
+  const [progress, setProgress] = useState("")
+  const [failures, setFailures] = useState<
+    { id: string; title: string; error: string }[]
+  >([])
+  async function prepareExisting() {
+    const pending = (data?.flights ?? []).filter(
+      (flight) => flight.needsPreparation
+    )
+    setPreparing(true)
+    setFailures([])
+    const failed: typeof failures = []
+    for (const [index, flight] of pending.entries()) {
+      setProgress(`Preparing ${index + 1} of ${pending.length}…`)
+      try {
+        const result = await prepareFlight(flight.id)
+        if (result.status === "unavailable")
+          failed.push({
+            id: flight.id,
+            title: flight.title,
+            error: "Track unavailable",
+          })
+      } catch (cause) {
+        failed.push({
+          id: flight.id,
+          title: flight.title,
+          error: message(cause),
+        })
+      }
+    }
+    setFailures(failed)
+    setProgress(
+      `Finished ${pending.length} ${pending.length === 1 ? "flight" : "flights"}. ${failed.length} failed.`
+    )
+    setPreparing(false)
+    reload()
+  }
   const [year, setYear] = useState("all")
   const flights = data?.flights ?? []
   const years = [
     ...new Set(
-      flights.map((flight) =>
-        new Date(flight.takeoffAt ?? flight.startedAt).getUTCFullYear()
-      )
+      flights.map((flight) => new Date(flight.takeoffAt).getUTCFullYear())
     ),
   ]
   const filtered = flights.filter(
     (flight) =>
       year === "all" ||
-      String(
-        new Date(flight.takeoffAt ?? flight.startedAt).getUTCFullYear()
-      ) === year
+      String(new Date(flight.takeoffAt).getUTCFullYear()) === year
   )
   return (
     <section>
@@ -103,103 +131,87 @@ export function FlightLogbook() {
               {filtered.length} {filtered.length === 1 ? "flight" : "flights"}
             </output>
           </div>
-          <div className="mt-4 hidden md:block">
-            <Table className="text-xs">
-              <caption className="sr-only">
-                Flights, newest first. Durations in hours and minutes.
-              </caption>
-              <TableHeader>
-                <TableRow>
-                  {[
-                    "Date",
-                    "Takeoff site",
-                    "Duration",
-                    "Distance",
-                    "Max alt.",
-                    "Source",
-                  ].map((label) => (
-                    <TableHead key={label} className="px-1 py-3 h-auto">
-                      {label}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((flight) => (
-                  <TableRow
-                    key={flight.id}
-                    className="relative focus-within:bg-muted/50"
-                  >
-                    <TableCell className="px-1 py-4">
-                      <Link
-                        className="font-medium underline-offset-4 after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                        to="/flights/$flightId"
-                        params={{ flightId: flight.id }}
-                      >
-                        {formatDate(flight.takeoffAt ?? flight.startedAt)}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="max-w-32 px-1 py-4 break-words whitespace-normal">
-                      {flight.takeoffName || "Unnamed site"}
-                    </TableCell>
-                    <TableCell className="px-1 py-4 tabular-nums">
-                      {formatDuration(flight.durationS)}
-                    </TableCell>
-                    <TableCell className="px-1 py-4 tabular-nums">
-                      {formatDistance(flight.distanceM)}
-                    </TableCell>
-                    <TableCell className="px-1 py-4 tabular-nums">
-                      {formatAltitude(flight.maxAltM)}
-                    </TableCell>
-                    <TableCell className="px-1 py-4">
-                      <Badge variant="outline" className="uppercase">
-                        {flight.source}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <ul className="mt-4 divide-y divide-border md:hidden">
+          {flights.some((flight) => flight.needsPreparation) ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={preparing}
+                onClick={() => void prepareExisting()}
+              >
+                {preparing
+                  ? "Preparing…"
+                  : failures.length
+                    ? "Retry preparation"
+                    : "Prepare existing flights"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Save profiles and track previews for older recordings.
+              </p>
+            </div>
+          ) : null}
+          <output
+            aria-live="polite"
+            className="mt-3 block text-sm text-muted-foreground"
+          >
+            {progress}
+          </output>
+          {failures.length ? (
+            <ul
+              className="mt-2 space-y-1 break-words text-sm text-destructive"
+              aria-label="Preparation failures"
+            >
+              {failures.map((failure) => (
+                <li key={failure.id}>
+                  {failure.title}: {failure.error}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <ul className="mt-4 space-y-3" aria-label="Flights, newest first">
             {filtered.map((flight) => (
               <li key={flight.id}>
                 <Link
                   to="/flights/$flightId"
                   params={{ flightId: flight.id }}
-                  className="block rounded-xl py-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  preload={false}
+                  className="flex gap-4 rounded-xl border border-border p-4 hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:items-center sm:gap-5"
                 >
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <span className="font-medium">
-                      {formatDate(flight.takeoffAt ?? flight.startedAt)}
-                    </span>
-                    <Badge variant="outline" className="uppercase">
-                      {flight.source}
-                    </Badge>
+                  <TrackPreview
+                    preview={flight.preview}
+                    needsPreparation={flight.needsPreparation}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h2 className="break-words text-sm font-medium">
+                          {flight.title}
+                        </h2>
+                        <p className="mt-1 break-words text-xs text-muted-foreground">
+                          {formatDate(flight.takeoffAt)}
+                          {flight.takeoffName ? ` · ${flight.takeoffName}` : ""}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="uppercase">
+                        {flight.source}
+                      </Badge>
+                    </div>
+                    <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-xs sm:grid-cols-4">
+                      {[
+                        ["Duration (h:mm)", formatDuration(flight.durationS)],
+                        ["Distance", formatDistance(flight.distanceM)],
+                        ["Max altitude", formatAltitude(flight.maxAltM)],
+                        ["Max speed", formatSpeed(flight.maxSpeedMps)],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <dt className="text-muted-foreground">{label}</dt>
+                          <dd className="mt-1 font-medium tabular-nums">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
                   </div>
-                  <p className="mt-1 break-words text-sm text-muted-foreground">
-                    {flight.takeoffName || "Unnamed site"}
-                  </p>
-                  <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <dt className="text-muted-foreground">Duration</dt>
-                      <dd className="mt-1 tabular-nums">
-                        {formatDuration(flight.durationS)} h
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-foreground">Distance</dt>
-                      <dd className="mt-1 tabular-nums">
-                        {formatDistance(flight.distanceM)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-foreground">Max altitude</dt>
-                      <dd className="mt-1 tabular-nums">
-                        {formatAltitude(flight.maxAltM)}
-                      </dd>
-                    </div>
-                  </dl>
                 </Link>
               </li>
             ))}

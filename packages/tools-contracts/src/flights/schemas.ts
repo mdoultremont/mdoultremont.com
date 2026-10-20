@@ -9,7 +9,36 @@ import { Schema, SchemaTransformation } from "effect"
  */
 const Nullable = <S extends Schema.Top>(schema: S) => Schema.NullOr(schema)
 
+const PreviewCoordinate = Schema.Finite.check(
+  Schema.isBetween({ minimum: 0, maximum: 100 })
+)
+export const TrackPreviewSchema = Schema.Array(
+  Schema.Struct({
+    i: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    x: PreviewCoordinate,
+    y: PreviewCoordinate,
+  })
+).check(Schema.isMaxLength(120))
+export type TrackPreview = typeof TrackPreviewSchema.Type
+
+export const FlightSummarySchema = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  takeoffAt: Schema.Number,
+  takeoffName: Nullable(Schema.String),
+  durationS: Schema.Number,
+  distanceM: Schema.Number,
+  maxAltM: Nullable(Schema.Number),
+  maxSpeedMps: Schema.Number,
+  source: Schema.Literals(["gpx", "igc", "manual"]),
+  preview: Nullable(TrackPreviewSchema),
+  needsPreparation: Schema.Boolean,
+})
+export type FlightSummary = typeof FlightSummarySchema.Type
+
 export const FlightSchema = Schema.Struct({
+  title: Schema.String,
+  needsPreparation: Schema.Boolean,
   id: Schema.String,
   userId: Schema.String,
   startedAt: Schema.Number,
@@ -107,15 +136,52 @@ const TrackPoints = Schema.declare(
   }
 )
 
+/** Profile speedKmh uses kilometres per hour and distKm uses kilometres. */
+export const ProfilePointSchema = Schema.Struct({
+  i: Schema.Int,
+  tS: Schema.Finite,
+  altM: Nullable(Schema.Finite),
+  speedKmh: Schema.Finite,
+  varioMps: Schema.Finite,
+  distKm: Schema.Finite,
+})
+export type ProfilePoint = typeof ProfilePointSchema.Type
+
+const ProfilePoints = Schema.declare(
+  (value): value is readonly ProfilePoint[] => Array.isArray(value),
+  {
+    toCodecJson: () =>
+      Schema.link<readonly ProfilePoint[]>()(
+        Schema.Array(ProfilePointSchema),
+        SchemaTransformation.passthroughSupertype()
+      ),
+  }
+)
+
+export const FlightTrackAnalysisSchema = Schema.Struct({
+  takeoffIndex: Schema.Int,
+  landingIndex: Schema.Int,
+  takeoffAt: Schema.Finite,
+  profile: ProfilePoints,
+})
+export type FlightTrackAnalysis = typeof FlightTrackAnalysisSchema.Type
+
 export const FlightDetailSchema = Schema.Struct({
   flight: FlightSchema,
   equipment: Schema.Array(EquipmentItemSchema),
   files: Schema.Array(FileMetadataSchema),
   points: TrackPoints,
+  analysis: Nullable(FlightTrackAnalysisSchema),
 })
 export type FlightDetail = typeof FlightDetailSchema.Type
 
+export const FlightTitleSchema = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(200),
+  Schema.isPattern(/\S/u)
+)
 export const FlightUpdateSchema = Schema.Struct({
+  title: Schema.optional(FlightTitleSchema),
   takeoffName: Schema.String,
   landingName: Schema.String,
   notes: Schema.String,

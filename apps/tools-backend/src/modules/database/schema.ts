@@ -606,6 +606,23 @@ export const flights = sqliteTable(
   ]
 )
 
+export const flightTitles = sqliteTable("flight_titles", {
+  flightId: text("flight_id")
+    .primaryKey()
+    .references(() => flights.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+})
+export const flightAnalyses = sqliteTable("flight_analyses", {
+  flightId: text("flight_id")
+    .primaryKey()
+    .references(() => flights.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  objectKey: text("object_key").notNull(),
+  preview: text("preview", { mode: "json" })
+    .$type<readonly { i: number; x: number; y: number }[]>()
+    .notNull(),
+})
+
 export const flightEquipmentItems = sqliteTable(
   "equipment",
   {

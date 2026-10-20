@@ -6,7 +6,7 @@ import {
   EquipmentItemSchema,
   FilePayloadSchema,
   FlightDetailSchema,
-  FlightSchema,
+  FlightSummarySchema,
   FlightUpdateSchema,
   ImportResultSchema,
 } from "./schemas"
@@ -25,23 +25,34 @@ const EquipmentResult = Schema.Struct({ equipment: EquipmentItemSchema })
 export const flightsActions = {
   list: action({
     description:
-      "Lists the user's flights, newest first. `year` keeps only flights whose UTC takeoff falls in that year (1900-9998).",
+      "Lists the user's saved flight summaries and static track previews, newest first. `year` keeps only flights whose UTC takeoff falls in that year (1900-9998).",
     effect: "read",
     http: { method: "GET", path: "/flights" },
     input: Schema.Struct({ year: Schema.optional(Year) }),
-    output: Schema.Struct({ flights: Schema.Array(FlightSchema) }),
+    output: Schema.Struct({ flights: Schema.Array(FlightSummarySchema) }),
   }),
   get: action({
     description:
-      "One flight with its equipment, original file metadata and track points [epochMs, lat, lon, gpsAltM | null, baroAltM | null].",
+      "One flight with its equipment, original file metadata and track points [epochMs, lat, lon, gpsAltM | null, baroAltM | null], and nullable analysis with detected takeoff/landing indices into those points, takeoff epochMs and the full airborne profile.",
     effect: "read",
     http: { method: "GET", path: "/flights/:flightId" },
     input: FlightId,
     output: FlightDetailSchema,
   }),
+  prepare: action({
+    description:
+      "Prepares missing saved measurements, profile and track preview for one existing flight. Leaves edited title, sites, notes and equipment unchanged. Safe to retry; already prepared flights do no work.",
+    effect: "write",
+    http: { method: "POST", path: "/flights/:flightId/prepare" },
+    input: FlightId,
+    output: Schema.Struct({
+      flightId: Schema.String,
+      status: Schema.Literals(["prepared", "already-prepared", "unavailable"]),
+    }),
+  }),
   update: action({
     description:
-      "Replaces a flight's takeoff and landing site names, notes and equipment.",
+      "Replaces a flight's takeoff and landing site names, notes and equipment. Updates the title when provided; omission preserves the stored title.",
     effect: "write",
     http: { method: "PUT", path: "/flights/:flightId" },
     input: Schema.Struct({

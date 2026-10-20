@@ -1,5 +1,9 @@
 export { flightsActions } from "./actions"
-export { FilePayloadSchema, FlightDetailSchema } from "./schemas"
+export {
+  FilePayloadSchema,
+  FlightDetailSchema,
+  TrackPreviewSchema,
+} from "./schemas"
 export type {
   Dashboard,
   EquipmentInput,
@@ -7,7 +11,11 @@ export type {
   FileMetadata,
   FilePayload,
   Flight,
+  FlightSummary,
+  TrackPreview,
   FlightDetail,
+  FlightTrackAnalysis,
+  ProfilePoint,
   FlightUpdate,
   ImportResult,
   TrackPoint,

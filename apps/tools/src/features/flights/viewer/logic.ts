@@ -1,19 +1,17 @@
-import {
-  buildProfile,
-  computeMetrics,
-  downsampleLttb,
-  type ProfilePoint,
-  type TrackPoint,
-} from "@mdoultremont/flight-track"
+import type {
+  FlightTrackAnalysis,
+  ProfilePoint,
+  TrackPoint,
+} from "@mdoultremont/tools-contracts/flights"
+import { downsampleLttb } from "./downsample"
 
 /** Keep original fix indices through filtering and independent series downsampling. */
-export function buildViewerSeries(points: readonly TrackPoint[], target = 800) {
-  if (points.length < 2)
-    return { profile: [], altitude: [], speed: [], vario: [], metrics: null }
-  const metrics = computeMetrics(points)
-  const profile = buildProfile(points, metrics)
+export function buildViewerSeries(
+  analysis: FlightTrackAnalysis | null,
+  target = 800
+) {
+  const profile = analysis?.profile ?? []
   return {
-    metrics,
     profile,
     altitude: downsampleLttb(
       profile,

@@ -14,6 +14,7 @@ import { actionRegistry, bind, createRegistry, handlers } from "."
  */
 const legacy = {
   "oRPC flights/list": "flights.list",
+  "POST /api/flights/:flightId/prepare": "flights.prepare",
   "oRPC flights/get": "flights.get",
   "oRPC flights/update": "flights.update",
   "oRPC flights/delete": "flights.delete",
@@ -169,5 +170,86 @@ describe("the manifest", () => {
       expect(() =>
         Schema.decodeUnknownSync(points)({ points: [point] })
       ).toThrow(/points/)
+  })
+})
+
+describe("flight analysis contract", () => {
+  const analysis = Schema.toCodecJson(
+    Schema.Struct({ analysis: FlightDetailSchema.fields.analysis })
+  )
+  const profile = [
+    { i: 46, tS: 26, altM: null, speedKmh: 36, varioMps: 0, distKm: 0.26 },
+  ]
+  const value = {
+    analysis: {
+      takeoffIndex: 20,
+      landingIndex: 80,
+      takeoffAt: 1700000020000,
+      profile,
+    },
+  }
+
+  test("encodes complete profiles without copying the producer's array", () => {
+    const encoded = Schema.encodeSync(analysis)(value)
+    expect(encoded).toEqual(value)
+    expect(
+      Schema.encodeSync(FlightDetailSchema.fields.analysis)(value.analysis)!
+        .profile
+    ).toBe(profile)
+    expect(
+      Schema.decodeUnknownSync(analysis)(JSON.parse(JSON.stringify(encoded)))
+    ).toEqual(value)
+    expect(Schema.decodeUnknownSync(analysis)({ analysis: null })).toEqual({
+      analysis: null,
+    })
+    for (const invalid of [
+      { ...profile[0], i: 1.5 },
+      { ...profile[0], altM: "missing" },
+      { ...profile[0], speedKmh: Infinity },
+      { i: 1, tS: 0 },
+    ])
+      expect(() =>
+        Schema.decodeUnknownSync(analysis)({
+          analysis: { ...value.analysis, profile: [invalid] },
+        })
+      ).toThrow(/profile/)
+  })
+
+  test("publishes nullable analysis and every profile field in the manifest", () => {
+    const detail = actionRegistry
+      .describe(["flights"])
+      .find(({ name }) => name === "flights.get")!
+    const numeric = { type: "number" }
+    expect(detail.outputSchema.properties).toHaveProperty("analysis", {
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            takeoffIndex: { type: "integer" },
+            landingIndex: { type: "integer" },
+            takeoffAt: numeric,
+            profile: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  i: { type: "integer" },
+                  tS: numeric,
+                  altM: { anyOf: [numeric, { type: "null" }] },
+                  speedKmh: numeric,
+                  varioMps: numeric,
+                  distKm: numeric,
+                },
+                required: ["i", "tS", "altM", "speedKmh", "varioMps", "distKm"],
+                additionalProperties: true,
+              },
+            },
+          },
+          required: ["takeoffIndex", "landingIndex", "takeoffAt", "profile"],
+          additionalProperties: true,
+        },
+        { type: "null" },
+      ],
+    })
   })
 })

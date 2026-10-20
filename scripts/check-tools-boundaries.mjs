@@ -7,7 +7,6 @@ const packages = {
   web: "apps/tools",
   backend: "apps/tools-backend",
   contracts: "packages/tools-contracts",
-  track: "packages/flight-track",
   cli: "apps/tools-cli",
 }
 const hostEntries = new Set([
@@ -129,13 +128,13 @@ export function inspectToolsBoundaries(root) {
         }
         if (
           (owner === "backend" && ["web", "cli"].includes(targetOwner)) ||
-          (["contracts", "track"].includes(owner) &&
+          (owner === "contracts" &&
             ["web", "backend", "cli"].includes(targetOwner)) ||
           (owner === "cli" && ["web", "backend"].includes(targetOwner))
         )
           fail("dependency points into an application implementation")
         if (
-          ["backend", "contracts", "track"].includes(owner) &&
+          ["backend", "contracts"].includes(owner) &&
           /^(?:react(?:-dom)?(?:\/|$)|@tanstack\/)/.test(specifier)
         )
           fail("browser framework runtime is outside this package")

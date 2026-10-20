@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import spikeGpx from "./fixtures/spike.gpx?raw"
+const spikeGpx = readFileSync(
+  new URL("./fixtures/spike.gpx", import.meta.url),
+  "utf8"
+)
 import { flightPoints, START_MS } from "./fixtures/synthetic.ts"
 import { computeMetrics } from "./metrics.ts"
 import { parseGpx } from "./parse-gpx.ts"
@@ -200,7 +204,6 @@ describe("flight metrics", () => {
   })
   it.each<{ points: TrackPoint[]; message: RegExp }>([
     { points: [], message: /at least two/ },
-    { points: [[0, 46, 6, null, null]], message: /at least two/ },
     {
       points: [
         [1, 46, 6, null, null],

@@ -5,9 +5,13 @@ import {
   flights,
   flightFiles,
   flightTracks,
+  flightTitles,
+  flightAnalyses,
 } from "#backend/modules/database"
 
 interface ImportWrite {
+  readonly title: string
+  readonly analysis: Omit<typeof flightAnalyses.$inferInsert, "flightId">
   readonly flight: typeof flights.$inferInsert
   readonly trackKey: string
   readonly pointsSha256: string
@@ -22,9 +26,6 @@ const makeStore = Effect.gen(function* () {
     input: ImportWrite
   ) {
     const { flight, file } = input
-    // Drizzle's INSERT … SELECT emits no column list, so values must follow the
-    // table's column order. Derive them from the table definition; a test
-    // checks that this order matches the migrated database.
     const columns = Object.entries(getTableColumns(flights))
     const values = columns.map(
       ([key]) => flight[key as keyof typeof flight] ?? null
@@ -47,6 +48,16 @@ const makeStore = Effect.gen(function* () {
         db.insert(flightFiles)
           .select(sql`SELECT ${file.id},${flight.id},${flight.userId},${file.filename},${file.format},${file.contentType},${file.sizeBytes},${file.sha256},${file.objectKey}
         WHERE EXISTS (SELECT 1 FROM flights WHERE id = ${flight.id} AND user_id = ${flight.userId})`),
+        db
+          .insert(flightTitles)
+          .select(
+            sql`SELECT ${flight.id}, ${input.title} WHERE EXISTS (SELECT 1 FROM flights WHERE id = ${flight.id} AND user_id = ${flight.userId})`
+          ),
+        db
+          .insert(flightAnalyses)
+          .select(
+            sql`SELECT ${flight.id}, ${input.analysis.version}, ${input.analysis.objectKey}, ${JSON.stringify(input.analysis.preview)} WHERE EXISTS (SELECT 1 FROM flights WHERE id = ${flight.id} AND user_id = ${flight.userId})`
+          ),
         db
           .select({ flightId: flightFiles.flightId })
           .from(flightFiles)
@@ -76,7 +87,7 @@ const makeStore = Effect.gen(function* () {
           ),
       ])
     )
-    const found = result[3][0] ?? result[4][0]
+    const found = result[5][0] ?? result[6][0]
     if (!found)
       return yield* Effect.die(
         new Error("Import batch did not create or identify a flight")

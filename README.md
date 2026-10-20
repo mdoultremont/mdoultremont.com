@@ -9,7 +9,9 @@ Matthieu's personal monorepo, with two deployed sites:
   into the same Worker. `apps/tools-cli` is a separate remote HTTP client.
 
 `packages/tools-contracts` holds action declarations, schemas, and the typed
-HTTP client. `packages/flight-track` holds shared track algorithms.
+HTTP client. The backend parses and measures flights at import, then stores
+their summaries, profiles, and track previews. The web client renders the
+saved results returned by its actions.
 
 ## Develop
 

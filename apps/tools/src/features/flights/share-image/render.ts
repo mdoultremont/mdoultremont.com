@@ -1,6 +1,5 @@
 import type { Map as FlightMap } from "maplibre-gl"
 import type { FlightDetail } from "@/features/flights/api"
-import { computeMetrics } from "@mdoultremont/flight-track"
 import { formatDate } from "@/features/flights/format"
 import {
   fitText,
@@ -82,10 +81,9 @@ async function capture(map: FlightMap, detail: FlightDetail) {
     const ctx = canvas.getContext("2d")!
     ctx.drawImage(map.getCanvas(), 0, 0, 1080, 900)
     ctx.getImageData(0, 0, 1, 1) // Detect a tainted canvas before composing the final image.
-    const metrics = computeMetrics(detail.points)
     for (const [index, color] of [
-      [metrics.takeoffIndex, "#15803d"],
-      [metrics.landingIndex, "#dc2626"],
+      [detail.analysis?.takeoffIndex ?? 0, "#15803d"],
+      [detail.analysis?.landingIndex ?? detail.points.length - 1, "#dc2626"],
     ] as const) {
       const p = detail.points[index]!
       marker(ctx, map.project([p[2], p[1]]), color)
@@ -141,10 +139,12 @@ export async function renderShareImage(
     ctx.lineWidth = 7
     ctx.strokeStyle = "#b4ecd5"
     ctx.stroke()
-    const metrics =
-      detail.points.length >= 2 ? computeMetrics(detail.points) : null
-    marker(ctx, track[metrics?.takeoffIndex ?? 0], "#15803d")
-    marker(ctx, track[metrics?.landingIndex ?? track.length - 1], "#dc2626")
+    marker(ctx, track[detail.analysis?.takeoffIndex ?? 0], "#15803d")
+    marker(
+      ctx,
+      track[detail.analysis?.landingIndex ?? track.length - 1],
+      "#dc2626"
+    )
   }
   const overlay = ctx.createLinearGradient(0, 450, 0, 900)
   overlay.addColorStop(0, "#0d292600")
@@ -176,15 +176,7 @@ export async function renderShareImage(
     28,
     "#bad5c9"
   )
-  text(
-    detail.flight.takeoffName || "Unnamed takeoff",
-    72,
-    865,
-    60,
-    undefined,
-    936,
-    600
-  )
+  text(detail.flight.title, 72, 865, 60, undefined, 936, 600)
   text(
     `→ ${detail.flight.landingName || "Unnamed landing"}`,
     72,

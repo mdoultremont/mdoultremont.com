@@ -40,3 +40,13 @@ export class TrackParseError extends Error {
     this.name = "TrackParseError"
   }
 }
+
+export interface ProfilePoint {
+  /** Index into the original track points. */
+  i: number
+  tS: number
+  altM: number | null
+  speedKmh: number
+  varioMps: number
+  distKm: number
+}

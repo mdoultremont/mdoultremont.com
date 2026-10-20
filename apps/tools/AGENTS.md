@@ -11,7 +11,8 @@
 - Keep `src/server.ts` as Worker composition. Protocol routes in
   `src/routes/api/` and server functions in the apps layout and OAuth consent
   route call `@mdoultremont/tools-backend/http`. All other frontend code uses
-  contracts, the HTTP client, and `@mdoultremont/flight-track`.
+  action contracts and the HTTP client. Flight measurements and profiles come
+  from backend actions; the browser owns chart sampling and interactions.
 - Add new apps to `packages/tools-contracts/src/apps.ts` and
   `src/features/apps/catalog.ts`, wrap pages in `RequireApp`, start them with
   `PageHeader`, and grant access to existing users in the shipping migration.

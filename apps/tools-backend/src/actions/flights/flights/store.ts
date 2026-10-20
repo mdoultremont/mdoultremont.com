@@ -6,6 +6,8 @@ import {
   flights,
   flightFiles,
   flightTracks,
+  flightTitles,
+  flightAnalyses,
   flightEquipment,
   flightEquipmentItems,
 } from "#backend/modules/database"
@@ -25,7 +27,7 @@ const chunks = <T>(items: readonly T[], size: number) => {
 
 const makeStore = Effect.gen(function* () {
   const database = yield* Database
-  const list = Effect.fn("FlightStore.list")(function* (
+  const listAll = Effect.fn("FlightStore.list")(function* (
     userId: string,
     year?: number
   ) {
@@ -48,13 +50,56 @@ const makeStore = Effect.gen(function* () {
         .all()
     )
   })
+  const list = Effect.fn("FlightStore.listSummaries")(function* (
+    userId: string,
+    year?: number
+  ) {
+    return yield* database.use((db) =>
+      db
+        .select({
+          id: flights.id,
+          title: flightTitles.title,
+          takeoffAt: flights.takeoffAt,
+          takeoffName: flights.takeoffName,
+          durationS: flights.durationS,
+          distanceM: flights.distanceM,
+          maxAltM: flights.maxAltM,
+          maxSpeedMps: flights.maxSpeedMps,
+          source: flights.source,
+          preview: flightAnalyses.preview,
+          analysisId: flightAnalyses.flightId,
+          pointCount: flightTracks.pointCount,
+        })
+        .from(flights)
+        .leftJoin(flightTitles, eq(flightTitles.flightId, flights.id))
+        .leftJoin(flightAnalyses, eq(flightAnalyses.flightId, flights.id))
+        .leftJoin(flightTracks, eq(flightTracks.flightId, flights.id))
+        .where(
+          and(
+            eq(flights.userId, userId),
+            year === undefined
+              ? undefined
+              : and(
+                  gte(flights.takeoffAt, Date.UTC(year, 0, 1)),
+                  lt(flights.takeoffAt, Date.UTC(year + 1, 0, 1))
+                )
+          )
+        )
+        .orderBy(desc(flights.takeoffAt), desc(flights.id))
+        .all()
+    )
+  })
   const detail = Effect.fn("FlightStore.detail")(function* (
     userId: string,
     id: string
   ) {
     return yield* database.use((db) =>
       db.batch([
-        db.select().from(flights).where(owned(userId, id)),
+        db
+          .select({ ...getTableColumns(flights), title: flightTitles.title })
+          .from(flights)
+          .leftJoin(flightTitles, eq(flightTitles.flightId, flights.id))
+          .where(owned(userId, id)),
         db
           .select(getTableColumns(flightEquipmentItems))
           .from(flightEquipment)
@@ -79,9 +124,14 @@ const makeStore = Effect.gen(function* () {
             and(eq(flightFiles.userId, userId), eq(flightFiles.flightId, id))
           ),
         db
-          .select({ objectKey: flightTracks.objectKey })
+          .select(getTableColumns(flightTracks))
           .from(flightTracks)
           .innerJoin(flights, eq(flights.id, flightTracks.flightId))
+          .where(owned(userId, id)),
+        db
+          .select(getTableColumns(flightAnalyses))
+          .from(flightAnalyses)
+          .innerJoin(flights, eq(flights.id, flightAnalyses.flightId))
           .where(owned(userId, id)),
       ])
     )
@@ -125,6 +175,19 @@ const makeStore = Effect.gen(function* () {
               sql`EXISTS (SELECT 1 FROM flights WHERE id = ${id} AND user_id = ${userId})`
             )
           ),
+        ...(input.title === undefined
+          ? []
+          : [
+              db
+                .insert(flightTitles)
+                .select(
+                  sql`SELECT ${id}, ${input.title} WHERE EXISTS (SELECT 1 FROM flights WHERE id = ${id} AND user_id = ${userId})`
+                )
+                .onConflictDoUpdate({
+                  target: flightTitles.flightId,
+                  set: { title: input.title },
+                }),
+            ]),
         ...chunks(input.equipmentIds, EQUIPMENT_LINKS_PER_STATEMENT).map(
           (ids) =>
             db.insert(flightEquipment).select(
@@ -164,7 +227,7 @@ const makeStore = Effect.gen(function* () {
         .get()
     )
   })
-  return { list, detail, equipment, update, remove, file }
+  return { list, listAll, detail, equipment, update, remove, file }
 })
 
 export class FlightStore extends Context.Service<

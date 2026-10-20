@@ -115,6 +115,7 @@ function EditForm({
           const form = new FormData(event.currentTarget)
           void save(() =>
             updateFlight(flight.id, {
+              title: String(form.get("title")),
               takeoffName: String(form.get("takeoffName")),
               landingName: String(form.get("landingName")),
               notes: String(form.get("notes")),
@@ -125,6 +126,16 @@ function EditForm({
       >
         <fieldset disabled={busy}>
           <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="flight-title">Title</FieldLabel>
+              <Input
+                id="flight-title"
+                name="title"
+                required
+                maxLength={200}
+                defaultValue={flight.title}
+              />
+            </Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="takeoffName">Takeoff site</FieldLabel>

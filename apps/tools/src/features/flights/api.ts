@@ -9,7 +9,11 @@ export type {
   EquipmentInput,
   EquipmentItem,
   Flight,
+  FlightSummary,
   FlightDetail,
+  FlightTrackAnalysis,
+  ProfilePoint,
+  TrackPoint,
   FlightUpdate,
   ImportResult,
 } from "@mdoultremont/tools-contracts/flights"
@@ -23,6 +27,8 @@ export interface FlightDownload {
 
 /** The flights actions in `@mdoultremont/tools-contracts/flights`; wire shapes and units are documented there. */
 export const listFlights = (year?: number) => api.flights.list({ year })
+export const prepareFlight = (flightId: string) =>
+  api.flights.prepare({ flightId })
 export const getFlight = (flightId: string) => api.flights.get({ flightId })
 export const updateFlight = (flightId: string, input: FlightUpdate) =>
   api.flights.update({ flightId, ...input })

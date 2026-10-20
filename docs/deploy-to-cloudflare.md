@@ -55,8 +55,8 @@ your computer. Leave the build command empty; setting one would build twice.
 To skip builds that cannot change a Worker, set its build watch paths to its
 app directory plus the root `package.json`, `pnpm-lock.yaml`, and
 `pnpm-workspace.yaml`. The tools watch paths must also include
-`apps/tools-backend/*`, `packages/tools-contracts/*`, `packages/flight-track/*`,
-and `patches/*`. The CLI has no Worker deployment.
+`apps/tools-backend/*`, `packages/tools-contracts/*`, and `patches/*`.
+The CLI has no Worker deployment.
 
 For the tools, `deploy:production` builds the app, runs `wrangler d1
 migrations apply mdoultremont-data --remote`, and then `wrangler deploy`.
@@ -113,8 +113,10 @@ database.
 ## Writing migrations
 
 Migrations run a few seconds before the new Worker replaces the old one, so
-each migration must keep the previously deployed code working. Adding tables,
-nullable columns, or columns with defaults is safe. To rename or drop a column,
+each migration must keep the previously deployed code working. Adding tables
+preserves existing inserts. Before adding a column, check the deployed code's
+reads and writes and provide a default or allow null when old writes omit it.
+To rename or drop a column,
 first deploy code that no longer uses it, then remove it in a later migration.
 
 The repository-root pnpm workspace installs the app dependencies. Wrangler

@@ -6,29 +6,39 @@ in `apps/flights/` in the source checkout are the historical references. Its
 standalone PostgreSQL server, password authentication, Docker deployment, and
 public `/flights` routes are not the web integration architecture.
 
-## Shared track processing
+## Backend track processing
 
-`packages/flight-track/src/index.ts` is the public API for both browser and
-backend callers. The library contains no React, database, authentication,
-Cloudflare bindings, or Node runtime APIs. GPX parsing uses `fast-xml-parser`;
-IGC parsing is the prototype's fixed-width parser. MapLibre GL JS and Recharts
-are web dependencies for the viewer, not dependencies of this library.
+`apps/tools-backend/src/actions/flights/track/index.ts` is the backend unit
+for track parsing, measurements, profiles, and static track previews. Import
+and explicit preparation use it. List and detail reads load saved results
+without running those algorithms. GPX parsing uses `fast-xml-parser`; IGC parsing uses the
+prototype's fixed-width parser.
 
-The library exports `parseGpx`, `parseIgc`, `parseTrackFile`, `computeMetrics`,
-`buildProfile`, `downsampleLttb`, `haversineDistance`, and `TrackParseError`, plus
-the `TrackPoint`, `ParsedTrack`, `FlightMetrics`, and `ProfilePoint` types. A
-track point is `[UTC epoch milliseconds, latitude, longitude, GPS altitude or
-null, barometric altitude or null]`; coordinates use degrees and altitude uses
-metres. Parsers normalize ordering and remove duplicate timestamps. Metrics
-require at least two valid points with strictly increasing timestamps.
+A track point is `[UTC epoch milliseconds, latitude, longitude, GPS altitude
+or null, barometric altitude or null]`. Coordinates use degrees and altitude
+uses metres. Parsers normalize ordering and remove duplicate timestamps.
+Multi-point tracks require strictly increasing timestamps. A one-point recording
+stores zero duration and distance, a dot preview, and no profile.
 
-The complete prototype track tests and fixtures live beside the implementation.
-Run them through the flight-track package Vitest configuration from the repository root:
+The flight detail action returns the full point array and nullable `analysis`.
+Analysis contains the detected takeoff and landing indices, the takeoff
+timestamp, and the full airborne profile. The viewer and share image use
+those results. The browser owns chart sampling, cursor selection, map
+projection, formatting, and image composition.
+
+The logbook loads a small summary for each flight, including its title, date,
+duration, distance, maximum speed, maximum altitude, and static track preview.
+The preview contains saved geometry and endpoint markers without a geographic
+basemap. It needs no map tiles or detail request. Opening a flight loads its
+full points and profile for the interactive viewer.
+
+Parsing, measurement, and profile tests and fixtures live beside the backend
+implementation. Chart sampling tests live with the viewer. Run them from the
+repository root:
 
 ```sh
-pnpm --filter @mdoultremont/flight-track test
-pnpm exec oxlint --deny-warnings packages/flight-track/src
-pnpm exec oxfmt --check packages/flight-track/src docs/flights.md CONTEXT.md
+pnpm --filter @mdoultremont/tools-backend test
+pnpm --filter @mdoultremont/tools test
 ```
 
 ## Import research carried forward
@@ -87,8 +97,8 @@ the hash/time rule describes the implemented prototype behavior.
 
 Metrics estimate the recorded flight; they are not instrument certification,
 optimized cross-country distance, or contest scoring. Calendar grouping and
-display dates use UTC. Compute metrics from the full normalized track before
-downsampling a profile to roughly 1,000 display samples.
+display dates use UTC. Import computes metrics from the full normalized track.
+The viewer samples the stored profile for each chart.
 
 | Measurement            | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -120,9 +130,9 @@ places pages under `src/routes/_apps/`, the operations as actions (declared in
 private-app launcher, and wrap the page in `RequireApp`. Every action call
 checks the `flights` app independently of the page guard.
 
-Keep backend entrypoints, actions, and modules in their existing layers. Both
-the import backend and browser viewer import the shared track API from
-`@mdoultremont/flight-track`; neither should reach into the other's implementation.
+Keep backend entrypoints, actions, and modules in their existing layers.
+The browser reads flight measurements and profiles through action contracts
+in `@mdoultremont/tools-contracts/flights`.
 Load MapLibre and its worker only in the browser. Preserve the prototype's
 linked map/profile cursor, original-file download, and client-side share image
 with a projected-track fallback when map capture fails.
@@ -138,10 +148,11 @@ Searchable flight metadata and calculated metrics live in ordinary D1 columns.
 Binary data lives in R2 (binding `FILES`, bucket `mdoultremont-files`) through
 the reusable `modules/object-storage` module, which knows nothing about flights:
 
-| Object key                                   | Content                                                       |
-| -------------------------------------------- | ------------------------------------------------------------- |
-| `flights/{userId}/{flightId}/files/{fileId}` | The original upload, raw bytes, with its content type         |
-| `flights/{userId}/{flightId}/track.json.gz`  | Gzipped JSON of the full track tuples (`modules/compression`) |
+| Object key                                                 | Content                                                                                  |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `flights/{userId}/{flightId}/files/{fileId}`               | The original upload, raw bytes, with its content type                                    |
+| `flights/{userId}/{flightId}/track.json.gz`                | Gzipped JSON of the full track tuples (`modules/compression`)                            |
+| `flights/{userId}/{flightId}/analysis/{attemptId}.json.gz` | Gzipped analysis snapshot with bounds, profile, schema version, and track hash and count |
 
 D1 keeps only metadata: `flight_files` has the object key, filename, format,
 content type, byte size, and SHA-256 of the original; `flight_tracks` has the
@@ -149,10 +160,15 @@ object key, the SHA-256 and byte size of the uncompressed JSON, and the point
 count. Compression retains the full track; profile downsampling does not change
 stored data or metric calculations.
 
+`flight_titles` stores editable titles. `flight_analyses` stores the analysis
+version, snapshot key, and bounded preview geometry. Each preview contains at
+most 120 projected vertices. The list reads these small records from D1
+without fetching either R2 object.
+
 The only size limit is the **5 MB input limit**, checked before parsing (the
 prototype expressed it as 10 MiB of UTF-8 text; the web boundary defines its
 byte limit for both validation and UI messages). There is no per-value D1 cap
-any more, and no storage-limit error. The shared parser has no storage policy.
+any more, and no storage-limit error. The backend parser has no storage policy.
 
 Consistency rules (D1 and R2 cannot share a transaction):
 
@@ -162,6 +178,11 @@ Consistency rules (D1 and R2 cannot share a transaction):
   keeps its conditional duplicate predicates, so concurrent uploads cannot both
   win. If the batch fails, or loses a concurrent race, the written objects are
   deleted best-effort (a cleanup failure is logged).
+- Preparation of an existing flight writes a snapshot under a unique key,
+  then conditionally publishes its analysis row and calculated fields in one
+  D1 batch. Only the winning attempt can update the measurements. A retry
+  after publication does no calculation or storage work. Cleanup keeps objects
+  whose commit status cannot be established.
 - Deleting a flight deletes the D1 rows first, then every object under
   `flights/{userId}/{flightId}/`. If R2 fails after D1 committed, the request
   still succeeds and the orphaned objects are logged
@@ -189,7 +210,7 @@ must explicitly map an owner to a portfolio user and retain per-user ownership.
 
 ## Data model and API
 
-The additive migration creates five tables: `flights` (searchable metadata and
+The original flight migration creates five tables: `flights` (searchable metadata and
 metrics), `equipment` (a user's kit), `flight_equipment` (assignments),
 `flight_tracks` (metadata of a flight's stored point array), and `flight_files`
 (metadata of the stored original). User references target `auth_users`; deleting a
@@ -197,7 +218,17 @@ flight cascades to its track, originals, and equipment assignments. Retiring
 gear preserves assignments and allows editing flights that already use it.
 Retired gear cannot be newly assigned. Deleting gear removes its assignments.
 
-Both tables keep a SHA-256, the uncompressed byte size, and the R2 object key.
+The preparation migration adds `flight_titles` and `flight_analyses`. Both
+reference `flights` and cascade on deletion. It leaves the columns of
+`flights`, `flight_tracks`, and `flight_files` unchanged. Titles and saved
+analysis metadata have their own storage without changing the raw-track schema.
+
+Preparation keeps snapshots whose publication status is uncertain after a
+failed write or re-read. These can become orphan objects, and there is no
+automatic sweeper. Removing them requires a separate maintenance operation.
+
+`flight_tracks` and `flight_files` keep a SHA-256, the uncompressed byte size,
+and the R2 object key.
 `flight_tracks` also records the point count. The file hash is unique per user;
 `flights(user_id, takeoff_at)` supports list filters and duplicate checks.
 Import writes use one D1 `db.batch`, with duplicate predicates inside the
@@ -219,11 +250,30 @@ or a rejected value), `NOT_FOUND` 404, `PAYLOAD_TOO_LARGE` 413,
 storage, or compression failures).
 
 - `list({ year? })` returns `{ flights }`, newest takeoff first; year is
-  an optional integer from 1900 to 9998.
-- `get({ flightId })` returns `{ flight, equipment, files, points }`.
+  an optional integer from 1900 to 9998. Each summary contains `id`, `title`,
+  `takeoffAt`, `takeoffName`, `durationS`, `distanceM`, `maxAltM`,
+  `maxSpeedMps`, `source`, `preview`, and `needsPreparation`. It omits notes,
+  files, equipment, points, profiles, user IDs, and storage keys.
+- `get({ flightId })` returns `{ flight, equipment, files, points, analysis }`.
   File records contain `id`, `filename`, `format`, `sha256`, and `sizeBytes`.
-- `update({ flightId, takeoffName, landingName, notes, equipmentIds })`
-  returns `{ id }`. Names allow 200 characters; notes allow 10,000;
+  Analysis is null for fewer than two recorded points or for an existing
+  flight that has not been prepared. A detail read never computes missing
+  analysis. Stored analysis contains
+  `takeoffIndex`, `landingIndex`, `takeoffAt`, and `profile`. Each profile
+  sample contains its original point index `i`, elapsed seconds `tS`,
+  nullable altitude `altM`, speed `speedKmh`, vertical speed `varioMps`,
+  and cumulative distance `distKm`. Elapsed time starts at `analysis.takeoffAt`.
+  The stored flight row remains the source for summary statistics.
+- `prepare({ flightId })` returns `{ flightId, status }`, where status is
+  `prepared`, `already-prepared`, or `unavailable` when there is no stored
+  track. It fills missing analysis and preview data using the import
+  calculations. It preserves titles, sites, notes, and equipment. A confirmed
+  deletion during preparation removes the unpublished snapshot and returns
+  not-found.
+- `update({ flightId, title?, takeoffName, landingName, notes, equipmentIds })`
+  returns `{ id }`. Omitting the title preserves its stored value. Provided
+  titles are trimmed, nonempty, and allow 200 characters.
+  Site names allow 200 characters; notes allow 10,000;
   assignments allow up to 100 equipment IDs. Blank names and notes become null.
 - `delete({ flightId })` returns `{ id }` after cascading deletion.
 - `import({ filename, text })` returns
@@ -249,9 +299,22 @@ topSites }`. Totals contain flights, hours, and distanceM. UTC activity buckets
 
 API timestamps use UTC epoch milliseconds. Metrics use metres, seconds, and
 metres per second, except explicitly named hours. Missing altitude-derived
-metrics remain null. Flights and equipment responses include their user ID
-and created/updated timestamps. A flight read outside the user's ownership
+metrics remain null. Full flight and equipment responses include their user ID
+and created/updated timestamps; flight list summaries omit them. A flight read outside the user's ownership
 returns 404; access to the app alone grants no access to another user's data.
+
+### Prepare existing flights
+
+After deployment, open the logbook and select **Prepare existing flights**.
+The browser calls `flights.prepare` once per flight missing analysis, with
+progress and failures shown in the page. Retry failed flights after resolving
+their error. Preparation is explicit; loading the list or opening a flight
+never starts it.
+
+The same action is available to the CLI and MCP clients, and at
+`POST /api/v1/flights/:flightId/prepare`. It fills only missing results.
+Replacing previously prepared results with a different algorithm is outside
+this action's scope.
 
 ## Local operation and validation
 
