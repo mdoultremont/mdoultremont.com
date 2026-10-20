@@ -160,6 +160,26 @@ function elevationGain(samples: readonly Sample[]): number {
 }
 
 export function computeMetrics(points: readonly TrackPoint[]): FlightMetrics {
+  if (points.length === 1) {
+    const p = points[0]!
+    const altitude = p[3] ?? p[4]
+    return {
+      takeoffIndex: 0,
+      landingIndex: 0,
+      takeoffAt: new Date(p[0]),
+      landingAt: new Date(p[0]),
+      durationS: 0,
+      takeoff: { lat: p[1], lon: p[2] },
+      landing: { lat: p[1], lon: p[2] },
+      distanceM: 0,
+      maxAltM: altitude,
+      avgAltM: altitude,
+      maxSpeedMps: 0,
+      elevationGainM: altitude === null ? null : 0,
+      maxClimbMps: altitude === null ? null : 0,
+      maxSinkMps: altitude === null ? null : 0,
+    }
+  }
   const samples = samplesFor(points)
   const [start, end] = airborneBounds(samples)
   const airborne = samples.slice(start, end + 1)

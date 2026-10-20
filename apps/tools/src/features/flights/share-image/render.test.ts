@@ -46,6 +46,7 @@ function setup() {
   })
   const detail = {
     flight: {
+      title: "Saved flight title",
       takeoffAt: 0,
       durationS: 60,
       distanceM: 1000,

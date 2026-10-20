@@ -173,7 +173,7 @@ const makeStats = Effect.gen(function* () {
     userId: string
   ) {
     return shapeDashboard(
-      yield* flights.list(userId),
+      yield* flights.listAll(userId),
       yield* Clock.currentTimeMillis
     )
   })

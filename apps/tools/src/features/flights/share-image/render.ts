@@ -176,15 +176,7 @@ export async function renderShareImage(
     28,
     "#bad5c9"
   )
-  text(
-    detail.flight.takeoffName || "Unnamed takeoff",
-    72,
-    865,
-    60,
-    undefined,
-    936,
-    600
-  )
+  text(detail.flight.title, 72, 865, 60, undefined, 936, 600)
   text(
     `→ ${detail.flight.landingName || "Unnamed landing"}`,
     72,

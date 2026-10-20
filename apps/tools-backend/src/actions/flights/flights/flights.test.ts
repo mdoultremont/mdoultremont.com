@@ -22,9 +22,10 @@ import {
 } from "#backend/modules/object-storage"
 import { FlightImport } from "#backend/actions/flights/import"
 import { Equipment } from "#backend/actions/flights/equipment"
+import { FlightPreparation } from "#backend/actions/flights/prepare"
 import { FlightStats } from "#backend/actions/flights/stats"
-import { analyzeTrack, parseTrackFile } from "#backend/actions/flights/track"
-import { Flights } from "./index"
+import { prepareFlight, parseTrackFile } from "#backend/actions/flights/track"
+import { Flights, defaultTitle } from "./index"
 
 const fixture = readFileSync(
   new URL("../track/fixtures/flight.gpx", import.meta.url),
@@ -58,6 +59,7 @@ function setup(
     Flights.layer,
     Equipment.layer,
     FlightImport.layer,
+    FlightPreparation.layer,
     FlightStats.layer
   ).pipe(
     Layer.provideMerge(Database.layer(decorateBinding(d1.binding))),
@@ -87,13 +89,7 @@ describe("flight logbook", () => {
         expect(detail.points).toEqual(
           parseTrackFile("flight.gpx", fixture).points
         )
-        const expected = analyzeTrack(detail.points)!
-        expect(detail.analysis).toEqual({
-          takeoffIndex: expected.metrics.takeoffIndex,
-          landingIndex: expected.metrics.landingIndex,
-          takeoffAt: expected.metrics.takeoffAt.getTime(),
-          profile: expected.profile,
-        })
+        expect(detail.analysis).toEqual(prepareFlight(detail.points).analysis)
         expect(detail.flight.createdAt).toBe(Date.UTC(2026, 9, 16))
         expect(detail.files[0]).toMatchObject({
           filename: "flight.gpx",
@@ -125,6 +121,7 @@ describe("flight logbook", () => {
         expect(
           (yield* Effect.flip(
             logbook.update("other", imported.flightId, {
+              title: "Flight",
               takeoffName: "x",
               landingName: "x",
               notes: "x",
@@ -155,28 +152,91 @@ describe("flight logbook", () => {
     }
   )
   it.effect(
-    "recomputes detail analysis without changing saved flight statistics",
+    "returns a saved sentinel profile without recalculation and lists only summaries without R2",
     () => {
-      const { layer, sqlite } = setup()
+      let reads = 0
+      const { layer, sqlite } = setup((real) => ({
+        ...real,
+        get: (key) => {
+          reads++
+          return real.get(key)
+        },
+      }))
       return Effect.gen(function* () {
         const imported = yield* FlightImport.use((i) =>
           i.importFile("owner", bodies())
         )
-        sqlite
+        const row = sqlite
+          .prepare("SELECT object_key FROM flight_analyses WHERE flight_id = ?")
+          .get(imported.flightId)!
+        const track = sqlite
           .prepare(
-            "UPDATE flights SET takeoff_at = takeoff_at + 10000, duration_s = 17, distance_m = 123 WHERE id = ?"
+            "SELECT sha256, point_count FROM flight_tracks WHERE flight_id = ?"
           )
-          .run(imported.flightId)
-        const logbook = yield* Flights
-        const before = yield* logbook.list("owner")
-        const detail = yield* logbook.detail("owner", imported.flightId)
-        expect(detail.analysis!.takeoffAt).toBe(detail.flight.takeoffAt - 10000)
-        expect(detail.analysis!.profile[0]!.tS).toBe(0)
-        expect(detail.analysis!.profile[0]!.i).toBe(
-          detail.analysis!.takeoffIndex
+          .get(imported.flightId)!
+        const sentinel = {
+          takeoffIndex: 0,
+          landingIndex: 1,
+          takeoffAt: 123456,
+          profile: [
+            {
+              i: 0,
+              tS: 0,
+              altM: 9876,
+              speedKmh: 777,
+              varioMps: -42,
+              distKm: 0,
+            },
+            {
+              i: 1,
+              tS: 100,
+              altM: null,
+              speedKmh: 42,
+              varioMps: 12,
+              distKm: 20,
+            },
+          ],
+        }
+        yield* ObjectStorage.use((o) =>
+          gzipText(
+            JSON.stringify({
+              schemaVersion: 1,
+              pointsSha256: track.sha256,
+              pointCount: track.point_count,
+              analysis: sentinel,
+            })
+          ).pipe(
+            Effect.flatMap((bytes) => o.put(String(row.object_key), bytes))
+          )
         )
-        expect(detail.flight).toMatchObject({ durationS: 17, distanceM: 123 })
-        expect(yield* logbook.list("owner")).toEqual(before)
+        const logbook = yield* Flights
+        const before = reads
+        const summaries = yield* logbook.list("owner")
+        expect(reads).toBe(before)
+        expect(new Set(Object.keys(summaries[0]!))).toEqual(
+          new Set([
+            "id",
+            "title",
+            "takeoffAt",
+            "takeoffName",
+            "durationS",
+            "distanceM",
+            "maxAltM",
+            "maxSpeedMps",
+            "source",
+            "preview",
+            "needsPreparation",
+          ])
+        )
+        expect(summaries[0]).toMatchObject({ needsPreparation: false })
+        expect(summaries[0]!.preview!.length).toBeLessThanOrEqual(120)
+        expect(
+          (yield* logbook.detail("owner", imported.flightId)).analysis
+        ).toEqual(sentinel)
+        expect(
+          (yield* logbook.detail("owner", imported.flightId)).analysis
+        ).toEqual(sentinel)
+        expect(yield* logbook.list("owner")).toEqual(summaries)
       }).pipe(Effect.provide(layer))
     }
   )
@@ -205,23 +265,42 @@ describe("flight logbook", () => {
       }).pipe(Effect.provide(layer))
     }
   )
-  it.effect("keeps a one-point stored track with null analysis", () => {
-    const { layer } = setup()
-    return Effect.gen(function* () {
-      const imported = yield* FlightImport.use((i) =>
-        i.importFile("owner", bodies())
-      )
-      const storage = yield* ObjectStorage
-      const points = parseTrackFile("flight.gpx", fixture).points.slice(0, 1)
-      yield* storage.put(
-        `flights/owner/${imported.flightId}/track.json.gz`,
-        yield* gzipText(JSON.stringify(points))
-      )
-      expect(
-        yield* Flights.use((f) => f.detail("owner", imported.flightId))
-      ).toMatchObject({ points, analysis: null })
-    }).pipe(Effect.provide(layer))
-  })
+  it.effect(
+    "imports a real one-point GPX as ready with a dot preview and null analysis",
+    () => {
+      const { layer } = setup()
+      return Effect.gen(function* () {
+        const text =
+          '<gpx><trk><name>Solo fix</name><trkseg><trkpt lat="46" lon="6"><time>2026-01-01T12:00:00Z</time><ele>900</ele></trkpt></trkseg></trk></gpx>'
+        expect(parseTrackFile("single.gpx", text).points).toHaveLength(1)
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", { filename: "single.gpx", text })
+        )
+        const logbook = yield* Flights
+        expect(yield* logbook.detail("owner", imported.flightId)).toMatchObject(
+          {
+            flight: {
+              title: "Solo fix",
+              durationS: 0,
+              distanceM: 0,
+              needsPreparation: false,
+            },
+            points: [[Date.UTC(2026, 0, 1, 12), 46, 6, 900, null]],
+            analysis: null,
+          }
+        )
+        expect((yield* logbook.list("owner"))[0]).toMatchObject({
+          preview: [{ i: 0, x: 50, y: 50 }],
+          needsPreparation: false,
+        })
+        expect(
+          yield* FlightPreparation.use((p) =>
+            p.prepare("owner", imported.flightId)
+          )
+        ).toMatchObject({ status: "already-prepared" })
+      }).pipe(Effect.provide(layer))
+    }
+  )
   it.effect(
     "returns profiles with null altitude and original indices around GPS spikes",
     () => {
@@ -231,20 +310,15 @@ describe("flight logbook", () => {
           new URL("../track/fixtures/spike.gpx", import.meta.url),
           "utf8"
         )
+        const missingAltitude = text.replace(/<ele>[^<]*<\/ele>/gu, "")
         const imported = yield* FlightImport.use((i) =>
-          i.importFile("owner", { filename: "spike.gpx", text })
+          i.importFile("owner", {
+            filename: "spike.gpx",
+            text: missingAltitude,
+          })
         )
-        const points = parseTrackFile("spike.gpx", text).points.map((p) => [
-          p[0],
-          p[1],
-          p[2],
-          null,
-          null,
-        ])
-        const storage = yield* ObjectStorage
-        yield* storage.put(
-          `flights/owner/${imported.flightId}/track.json.gz`,
-          yield* gzipText(JSON.stringify(points))
+        const points = parseTrackFile("spike.gpx", missingAltitude).points.map(
+          (p) => [p[0], p[1], p[2], null, null]
         )
         const detail = yield* Flights.use((f) =>
           f.detail("owner", imported.flightId)
@@ -363,6 +437,7 @@ describe("flight logbook", () => {
           retired: false,
         })
         const values = {
+          title: "Edited title",
           takeoffName: "Launch",
           landingName: "Field",
           notes: "Nice day",
@@ -545,22 +620,41 @@ describe("flight logbook", () => {
       expect(objects.size).toBe(0)
     }).pipe(Effect.provide(layer))
   })
-  it.effect("removes the first object when the second write fails", () => {
-    const { layer, objects } = setup((real) => ({
-      ...real,
-      put: (key, body, options) =>
-        key.endsWith("track.json.gz")
-          ? Effect.fail(new ObjectStorageError({ reason: "PutFailed", key }))
-          : real.put(key, body, options),
-    }))
-    return Effect.gen(function* () {
-      const result = yield* Effect.flip(
-        FlightImport.use((i) => i.importFile("owner", bodies()))
-      )
-      expect(result._tag).toBe("ObjectStorageError")
-      expect(objects.size).toBe(0)
-    }).pipe(Effect.provide(layer))
-  })
+  for (const objectPart of ["/files/", "/track.json.gz", "/analysis/"]) {
+    it.effect(
+      `cleans import objects when the ${objectPart} upload fails after a partial write`,
+      () => {
+        const { layer, objects, sqlite } = setup((real) => ({
+          ...real,
+          put: (key, body, options) =>
+            real
+              .put(key, body, options)
+              .pipe(
+                Effect.flatMap(() =>
+                  key.includes(objectPart)
+                    ? Effect.fail(
+                        new ObjectStorageError({ reason: "PutFailed", key })
+                      )
+                    : Effect.void
+                )
+              ),
+        }))
+        return Effect.gen(function* () {
+          const result = yield* Effect.flip(
+            FlightImport.use((i) => i.importFile("owner", bodies()))
+          )
+          expect(result._tag).toBe("ObjectStorageError")
+          expect(objects.size).toBe(0)
+          expect(
+            sqlite.prepare("SELECT count(*) AS n FROM flights").get()?.n
+          ).toBe(0)
+          expect(
+            sqlite.prepare("SELECT count(*) AS n FROM flight_analyses").get()?.n
+          ).toBe(0)
+        }).pipe(Effect.provide(layer))
+      }
+    )
+  }
   it.effect(
     "keeps objects when the D1 batch committed but then errored",
     () => {
@@ -572,8 +666,7 @@ describe("flight logbook", () => {
             prepare: binding.prepare.bind(binding),
             batch: async (statements: D1PreparedStatement[]) => {
               const results = await binding.batch(statements)
-              // Only the 5-statement import batch loses its response.
-              if (statements.length === 5)
+              if (sqlite.prepare("SELECT count(*) AS n FROM flights").get()?.n)
                 throw new Error("response lost after commit")
               return results
             },
@@ -586,21 +679,88 @@ describe("flight logbook", () => {
         expect(
           sqlite.prepare("SELECT count(*) AS count FROM flights").get()?.count
         ).toBe(1)
-        expect(objects.size).toBe(2)
+        expect(objects.size).toBe(3)
       }).pipe(Effect.provide(layer))
     }
   )
-  it("names every flights column in the import insert", () => {
+  it("preserves existing flight tables and accepts previous-schema inserts", () => {
     const d1 = makeTestD1()
     cleanups.push(d1.close)
-    const actual = d1.sqlite
-      .prepare("SELECT name FROM pragma_table_info('flights')")
-      .all()
-      .map((row) => String(row.name))
-    // Fails when the schema and migrations diverge, or a column is added
-    // without the import store learning about it.
+    d1.seedOwner("owner")
+    const previous = JSON.parse(
+      readFileSync(
+        new URL(
+          "../../../../migrations/meta/0003_snapshot.json",
+          import.meta.url
+        ),
+        "utf8"
+      )
+    )
+    for (const name of ["flights", "flight_tracks", "flight_files"]) {
+      const actual = d1.sqlite
+        .prepare(`SELECT name FROM pragma_table_info('${name}')`)
+        .all()
+        .map((row) => String(row.name))
+      expect(actual).toEqual(Object.keys(previous.tables[name].columns))
+    }
+    d1.sqlite
+      .prepare(
+        `INSERT INTO flights (${Object.keys(previous.tables.flights.columns).join(", ")}) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?`
+      )
+      .run(
+        "old",
+        "owner",
+        1,
+        1,
+        2,
+        1,
+        46,
+        6,
+        null,
+        46,
+        6,
+        null,
+        10,
+        null,
+        null,
+        1,
+        null,
+        null,
+        null,
+        null,
+        "gpx",
+        null,
+        1,
+        1
+      )
+    d1.sqlite
+      .prepare(
+        `INSERT INTO flight_tracks (${Object.keys(previous.tables.flight_tracks.columns).join(", ")}) SELECT ?,?,?,?,?`
+      )
+      .run("old", "old-track", "hash", 10, 2)
+    d1.sqlite
+      .prepare(
+        `INSERT INTO flight_files (${Object.keys(previous.tables.flight_files.columns).join(", ")}) SELECT ?,?,?,?,?,?,?,?,?`
+      )
+      .run(
+        "file",
+        "old",
+        "owner",
+        "old.gpx",
+        "gpx",
+        "application/xml",
+        10,
+        "hash",
+        "original"
+      )
+    expect(
+      d1.sqlite.prepare("SELECT count(*) AS n FROM flight_tracks").get()?.n
+    ).toBe(1)
+    expect(
+      d1.sqlite.prepare("SELECT count(*) AS n FROM flight_analyses").get()?.n
+    ).toBe(0)
     expect(Object.values(getTableColumns(flights)).map((c) => c.name)).toEqual(
-      actual
+      Object.keys(previous.tables.flights.columns)
     )
   })
   it.effect("succeeds on delete even when object cleanup fails", () => {
@@ -641,6 +801,474 @@ describe("flight logbook", () => {
       ).toBe("ObjectStorageError")
     }).pipe(Effect.provide(layer))
   })
+  it.effect(
+    "prepares legacy data once, preserves edited metadata and kit, and does no work on retry",
+    () => {
+      let puts = 0
+      let reads = 0
+      const { layer, sqlite } = setup((real) => ({
+        ...real,
+        put: (...args) => {
+          puts++
+          return real.put(...args)
+        },
+        get: (key) => {
+          reads++
+          return real.get(key)
+        },
+      }))
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        const logbook = yield* Flights
+        const original = yield* logbook.detail("owner", imported.flightId)
+        const kit = yield* Equipment.use((e) =>
+          e.create("owner", {
+            kind: "wing",
+            name: "Wing",
+            notes: "",
+            retired: false,
+          })
+        )
+        yield* logbook.update("owner", imported.flightId, {
+          title: "  My title  ",
+          takeoffName: "Edited launch",
+          landingName: "Edited landing",
+          notes: "My notes",
+          equipmentIds: [kit.id],
+        })
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        sqlite
+          .prepare(
+            "UPDATE flights SET duration_s = 17, distance_m = 123, max_speed_mps = 1 WHERE id = ?"
+          )
+          .run(imported.flightId)
+        const legacy = yield* logbook.detail("owner", imported.flightId)
+        expect(legacy.points).toEqual(original.points)
+        expect(legacy.analysis).toBeNull()
+        expect(legacy.flight.needsPreparation).toBe(true)
+        expect((yield* logbook.list("owner"))[0]).toMatchObject({
+          preview: null,
+          needsPreparation: true,
+        })
+        const preparation = yield* FlightPreparation
+        expect(yield* preparation.prepare("owner", imported.flightId)).toEqual({
+          flightId: imported.flightId,
+          status: "prepared",
+        })
+        const ready = yield* logbook.detail("owner", imported.flightId)
+        expect(ready.analysis).toEqual(original.analysis)
+        expect(ready.points).toEqual(original.points)
+        expect(ready.flight).toMatchObject({
+          title: "My title",
+          takeoffName: "Edited launch",
+          landingName: "Edited landing",
+          notes: "My notes",
+          durationS: original.flight.durationS,
+          distanceM: original.flight.distanceM,
+          maxSpeedMps: original.flight.maxSpeedMps,
+        })
+        expect(ready.equipment.map((e) => e.id)).toEqual([kit.id])
+        const before = { puts, reads }
+        expect(
+          yield* preparation.prepare("owner", imported.flightId)
+        ).toMatchObject({ status: "already-prepared" })
+        expect({ puts, reads }).toEqual(before)
+        expect(
+          yield* Effect.flip(preparation.prepare("other", imported.flightId))
+        ).toMatchObject({ _tag: "FlightNotFound" })
+        expect({ puts, reads }).toEqual(before)
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        sqlite
+          .prepare("DELETE FROM flight_tracks WHERE flight_id = ?")
+          .run(imported.flightId)
+        expect(
+          yield* preparation.prepare("owner", imported.flightId)
+        ).toMatchObject({ status: "unavailable" })
+        expect({ puts, reads }).toEqual(before)
+        expect((yield* logbook.list("owner"))[0]).toMatchObject({
+          preview: null,
+          needsPreparation: false,
+        })
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "preserves edits made while an existing flight is being prepared",
+    () => {
+      let editing = ""
+      const { layer, sqlite } = setup((real) => ({
+        ...real,
+        put: (key, body, options) =>
+          real.put(key, body, options).pipe(
+            Effect.tap(() =>
+              Effect.sync(() => {
+                if (editing && key.includes("/analysis/")) {
+                  sqlite
+                    .prepare(
+                      "UPDATE flights SET notes = 'Concurrent notes', takeoff_name = 'Concurrent launch', landing_name = 'Concurrent landing' WHERE id = ?"
+                    )
+                    .run(editing)
+                  sqlite
+                    .prepare(
+                      "UPDATE flight_titles SET title = 'Concurrent title' WHERE flight_id = ?"
+                    )
+                    .run(editing)
+                }
+              })
+            )
+          ),
+      }))
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        editing = imported.flightId
+        expect(
+          yield* FlightPreparation.use((p) =>
+            p.prepare("owner", imported.flightId)
+          )
+        ).toMatchObject({ status: "prepared" })
+        expect(
+          (yield* Flights.use((f) => f.detail("owner", imported.flightId)))
+            .flight
+        ).toMatchObject({
+          title: "Concurrent title",
+          notes: "Concurrent notes",
+          takeoffName: "Concurrent launch",
+          landingName: "Concurrent landing",
+        })
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "validates edited titles and selects sanitized import defaults",
+    () => {
+      const { layer } = setup()
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        const logbook = yield* Flights
+        for (const title of [
+          "",
+          "   ",
+          "a".repeat(201),
+          "hidden\u0000text",
+          "hidden\u0085text",
+        ]) {
+          expect(
+            yield* Effect.flip(
+              logbook.update("owner", imported.flightId, {
+                title,
+                takeoffName: "",
+                landingName: "",
+                notes: "",
+                equipmentIds: [],
+              })
+            )
+          ).toMatchObject({ _tag: "FlightInputError" })
+        }
+        expect(defaultTitle(0, "  Track\u0000 name  ", "Launch")).toBe(
+          "Track name"
+        )
+        expect(defaultTitle(0, "\u0000 ", " Launch ")).toBe("Launch")
+        expect(defaultTitle(0)).toBe("Flight 1970-01-01 00:00 UTC")
+        expect(defaultTitle(0, "a".repeat(300))).toHaveLength(200)
+        expect(defaultTitle(0, `${"a".repeat(199)}🪂`)).toBe("a".repeat(199))
+        expect(defaultTitle(0, `${"a".repeat(198)}🪂`)).toBe(
+          `${"a".repeat(198)}🪂`
+        )
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "rejects missing, corrupt, mismatched and out-of-range snapshots as typed errors",
+    () => {
+      const { layer, sqlite, objects } = setup()
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        const row = sqlite
+          .prepare("SELECT object_key FROM flight_analyses WHERE flight_id = ?")
+          .get(imported.flightId)!
+        const key = String(row.object_key)
+        const stored = objects.get(key)!
+        const snapshot = JSON.parse(yield* gunzipText(stored.bytes))
+        const logbook = yield* Flights
+        objects.delete(key)
+        expect(
+          yield* Effect.flip(logbook.detail("owner", imported.flightId))
+        ).toMatchObject({ _tag: "ObjectStorageError", reason: "MissingObject" })
+        for (const damaged of [
+          "not json",
+          {},
+          { ...snapshot, schemaVersion: 999 },
+          { ...snapshot, pointsSha256: "wrong" },
+          { ...snapshot, pointCount: 1 },
+          {
+            ...snapshot,
+            analysis: {
+              ...snapshot.analysis,
+              landingIndex: snapshot.pointCount,
+            },
+          },
+          {
+            ...snapshot,
+            analysis: {
+              ...snapshot.analysis,
+              profile: [{ ...snapshot.analysis.profile[0], i: -1 }],
+            },
+          },
+          {
+            ...snapshot,
+            analysis: {
+              ...snapshot.analysis,
+              profile: [
+                { ...snapshot.analysis.profile[0], speedKmh: "not a number" },
+              ],
+            },
+          },
+        ]) {
+          yield* ObjectStorage.use((o) =>
+            gzipText(JSON.stringify(damaged)).pipe(
+              Effect.flatMap((bytes) => o.put(key, bytes))
+            )
+          )
+          expect(
+            yield* Effect.flip(logbook.detail("owner", imported.flightId))
+          ).toMatchObject({ _tag: "CompressionError" })
+        }
+        objects.set(key, stored)
+        expect(
+          (yield* logbook.detail("owner", imported.flightId)).analysis
+        ).toEqual(snapshot.analysis)
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        sqlite
+          .prepare(
+            "UPDATE flight_tracks SET sha256 = 'wrong' WHERE flight_id = ?"
+          )
+          .run(imported.flightId)
+        const size = objects.size
+        expect(
+          yield* Effect.flip(
+            FlightPreparation.use((p) => p.prepare("owner", imported.flightId))
+          )
+        ).toMatchObject({ _tag: "CompressionError" })
+        expect(objects.size).toBe(size)
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "cleans only its unpublished attempt when analysis upload fails",
+    () => {
+      let fail = false
+      const { layer, sqlite, objects } = setup((real) => ({
+        ...real,
+        put: (key, body, options) =>
+          real
+            .put(key, body, options)
+            .pipe(
+              Effect.flatMap(() =>
+                fail && key.includes("/analysis/")
+                  ? Effect.fail(
+                      new ObjectStorageError({ reason: "PutFailed", key })
+                    )
+                  : Effect.void
+              )
+            ),
+      }))
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        const before = [...objects.keys()]
+        fail = true
+        expect(
+          yield* Effect.flip(
+            FlightPreparation.use((p) => p.prepare("owner", imported.flightId))
+          )
+        ).toMatchObject({ _tag: "ObjectStorageError" })
+        expect([...objects.keys()]).toEqual(before)
+        expect(
+          sqlite.prepare("SELECT count(*) AS n FROM flight_analyses").get()?.n
+        ).toBe(0)
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  it.effect(
+    "concurrent preparation publishes once and a loser cannot overwrite winner measurements",
+    () => {
+      let racing = false
+      let publications = 0
+      const { layer, sqlite, objects } = setup(
+        undefined,
+        (binding) =>
+          ({
+            ...binding,
+            prepare: binding.prepare.bind(binding),
+            batch: async (statements: D1PreparedStatement[]) => {
+              const result = await binding.batch(statements)
+              if (racing && statements.length === 2 && ++publications === 1)
+                sqlite.prepare("UPDATE flights SET max_speed_mps = 777").run()
+              return result
+            },
+          }) as D1Database
+      )
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        const before = objects.size
+        racing = true
+        const p = yield* FlightPreparation
+        const results = yield* Effect.all(
+          [
+            p.prepare("owner", imported.flightId),
+            p.prepare("owner", imported.flightId),
+          ],
+          { concurrency: "unbounded" }
+        )
+        expect(new Set(results.map((r) => r.status))).toEqual(
+          new Set(["already-prepared", "prepared"])
+        )
+        expect(publications).toBe(2)
+        expect(
+          sqlite.prepare("SELECT count(*) AS n FROM flight_analyses").get()?.n
+        ).toBe(1)
+        expect(objects.size).toBe(before + 1)
+        expect(
+          (yield* Flights.use((f) => f.list("owner")))[0]!.maxSpeedMps
+        ).toBe(777)
+        const ready = yield* Flights.use((f) =>
+          f.detail("owner", imported.flightId)
+        )
+        expect(ready.analysis).not.toBeNull()
+      }).pipe(Effect.provide(layer))
+    }
+  )
+  for (const fault of [
+    "before-commit",
+    "lost-response",
+    "failed-read",
+  ] as const) {
+    it.effect(`retains uncertain preparation objects after ${fault}`, () => {
+      let enabled = false
+      let failedReads = false
+      const { layer, sqlite, objects } = setup(
+        undefined,
+        (binding) =>
+          ({
+            ...binding,
+            prepare: (query: string) => {
+              if (failedReads && query.startsWith("select"))
+                throw new Error("read unavailable")
+              return binding.prepare(query)
+            },
+            batch: async (statements: D1PreparedStatement[]) => {
+              if (enabled && statements.length === 2) {
+                if (fault === "before-commit")
+                  throw new Error("ambiguous write failure")
+                const result = await binding.batch(statements)
+                if (fault === "lost-response")
+                  throw new Error("lost committed response")
+                failedReads = true
+                return result
+              }
+              return binding.batch(statements)
+            },
+          }) as D1Database
+      )
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        const before = [...objects.keys()]
+        enabled = true
+        expect(
+          yield* Effect.flip(
+            FlightPreparation.use((p) => p.prepare("owner", imported.flightId))
+          )
+        ).toMatchObject({ _tag: "DatabaseError" })
+        expect(objects.size).toBe(before.length + 1)
+        expect(before.every((key) => objects.has(key))).toBe(true)
+        enabled = false
+        failedReads = false
+        const result = yield* FlightPreparation.use((p) =>
+          p.prepare("owner", imported.flightId)
+        )
+        expect(result.status).toBe(
+          fault === "before-commit" ? "prepared" : "already-prepared"
+        )
+        expect(
+          (yield* Flights.use((f) => f.detail("owner", imported.flightId)))
+            .analysis
+        ).not.toBeNull()
+      }).pipe(Effect.provide(layer))
+    })
+  }
+  it.effect(
+    "cannot resurrect a flight deleted while its preparation object is uploaded",
+    () => {
+      let deleting = ""
+      const { layer, sqlite, objects } = setup((real) => ({
+        ...real,
+        put: (key, body, options) =>
+          real.put(key, body, options).pipe(
+            Effect.tap(() =>
+              Effect.sync(() => {
+                if (deleting && key.includes("/analysis/"))
+                  sqlite
+                    .prepare("DELETE FROM flights WHERE id = ?")
+                    .run(deleting)
+              })
+            )
+          ),
+      }))
+      return Effect.gen(function* () {
+        const imported = yield* FlightImport.use((i) =>
+          i.importFile("owner", bodies())
+        )
+        sqlite
+          .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+          .run(imported.flightId)
+        deleting = imported.flightId
+        const before = objects.size
+        expect(
+          yield* Effect.flip(
+            FlightPreparation.use((p) => p.prepare("owner", imported.flightId))
+          )
+        ).toMatchObject({ _tag: "FlightNotFound" })
+        expect(
+          sqlite.prepare("SELECT count(*) AS n FROM flight_analyses").get()?.n
+        ).toBe(0)
+        expect(
+          sqlite.prepare("SELECT count(*) AS n FROM flights").get()?.n
+        ).toBe(0)
+        expect(objects.size).toBe(before)
+      }).pipe(Effect.provide(layer))
+    }
+  )
 })
 it.effect("gzip is lossless for unicode and compact track JSON", () =>
   Effect.gen(function* () {

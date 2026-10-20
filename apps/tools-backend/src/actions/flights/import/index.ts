@@ -4,13 +4,17 @@ import {
   FlightInputError,
   fileKey,
   trackKey,
+  analysisKey,
+  defaultTitle,
   type Flight,
 } from "#backend/actions/flights/flights"
 import { gzipText } from "#backend/modules/compression"
 import { ObjectStorage } from "#backend/modules/object-storage"
 import { sha256Hex } from "#backend/modules/hashing"
 import {
-  computeMetrics,
+  prepareFlight,
+  measuredColumns,
+  ANALYSIS_VERSION,
   haversineDistance,
   parseTrackFile,
 } from "#backend/actions/flights/track"
@@ -93,7 +97,9 @@ const makeImport = Effect.gen(function* () {
           message: cause instanceof Error ? cause.message : "Invalid track",
         }),
     })
-    const metrics = computeMetrics(parsed.points)
+    const prepared = prepareFlight(parsed.points)
+    const metrics = prepared.metrics!
+
     const pointsJson = JSON.stringify(parsed.points)
     const pointsGzip = yield* gzipText(pointsJson)
     const sha256 = yield* sha256Hex(input.text)
@@ -102,12 +108,13 @@ const makeImport = Effect.gen(function* () {
     // Duplicates are decided in D1 before any object is written.
     const existing = yield* store.findDuplicate(userId, sha256, takeoffAt)
     if (existing) return { status: "duplicate" as const, flightId: existing }
-    const earlier = yield* flights.list(userId)
+    const earlier = yield* flights.listAll(userId)
     const now = yield* Clock.currentTimeMillis
     const id = crypto.randomUUID()
     const fileId = crypto.randomUUID()
     const originalKey = fileKey(userId, id, fileId)
     const pointsKey = trackKey(userId, id)
+    const snapshotKey = analysisKey(userId, id, crypto.randomUUID())
     const contentType =
       parsed.source === "gpx"
         ? "application/gpx+xml; charset=utf-8"
@@ -115,7 +122,7 @@ const makeImport = Effect.gen(function* () {
     // Objects first, then the D1 batch: a flight row never points at a missing
     // object. Keys are unique per attempt, so a failed attempt only leaves
     // orphans, which are removed best-effort below.
-    const cleanup = storage.delete([originalKey, pointsKey]).pipe(
+    const cleanup = storage.delete([originalKey, pointsKey, snapshotKey]).pipe(
       Effect.catch((error) =>
         Effect.logError("Orphaned flight objects after failed import", {
           userId,
@@ -144,25 +151,38 @@ const makeImport = Effect.gen(function* () {
       yield* storage.put(pointsKey, pointsGzip, {
         contentType: "application/gzip",
       })
+      yield* storage.put(
+        snapshotKey,
+        yield* gzipText(
+          JSON.stringify({
+            schemaVersion: 1,
+            pointsSha256,
+            pointCount: parsed.points.length,
+            analysis: prepared.analysis,
+          })
+        ),
+        { contentType: "application/gzip" }
+      )
+      const takeoffName = matchSiteName(
+        metrics.takeoff.lat,
+        metrics.takeoff.lon,
+        takeoffAt,
+        earlier,
+        "takeoff"
+      )
       return yield* store.write({
+        title: defaultTitle(takeoffAt, parsed.name, takeoffName),
+        analysis: {
+          version: ANALYSIS_VERSION,
+          objectKey: snapshotKey,
+          preview: prepared.preview,
+        },
         flight: {
           id,
           userId,
           startedAt: parsed.startedAt.getTime(),
-          takeoffAt: metrics.takeoffAt.getTime(),
-          landingAt: metrics.landingAt.getTime(),
-          durationS: Math.round(metrics.durationS),
-          takeoffLat: metrics.takeoff.lat,
-          takeoffLon: metrics.takeoff.lon,
-          landingLat: metrics.landing.lat,
-          landingLon: metrics.landing.lon,
-          takeoffName: matchSiteName(
-            metrics.takeoff.lat,
-            metrics.takeoff.lon,
-            metrics.takeoffAt.getTime(),
-            earlier,
-            "takeoff"
-          ),
+          ...measuredColumns(metrics),
+          takeoffName,
           landingName: matchSiteName(
             metrics.landing.lat,
             metrics.landing.lon,
@@ -170,13 +190,6 @@ const makeImport = Effect.gen(function* () {
             earlier,
             "landing"
           ),
-          distanceM: metrics.distanceM,
-          maxAltM: metrics.maxAltM,
-          avgAltM: metrics.avgAltM,
-          maxSpeedMps: metrics.maxSpeedMps,
-          elevationGainM: metrics.elevationGainM,
-          maxClimbMps: metrics.maxClimbMps,
-          maxSinkMps: metrics.maxSinkMps,
           source: parsed.source,
           sourceDetail: parsed.sourceDetail ?? null,
           createdAt: now,

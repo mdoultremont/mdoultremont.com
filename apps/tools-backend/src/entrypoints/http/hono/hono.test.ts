@@ -221,6 +221,7 @@ describe("flights", () => {
     })
     await api.client.flights.update({
       flightId,
+      title: "Edited flight",
       takeoffName: "Site",
       landingName: "Field",
       notes: "",
@@ -229,6 +230,18 @@ describe("flights", () => {
     expect((await api.client.flights.get({ flightId })).equipment).toHaveLength(
       1
     )
+    await api.client.flights.update({
+      flightId,
+      takeoffName: "Updated site",
+      landingName: "Field",
+      notes: "Updated without a title",
+      equipmentIds: [item.equipment.id],
+    })
+    expect((await api.client.flights.get({ flightId })).flight).toMatchObject({
+      title: "Edited flight",
+      takeoffName: "Updated site",
+      notes: "Updated without a title",
+    })
     await api.client.flights.equipment.update({
       equipmentId: item.equipment.id,
       kind: "wing",
@@ -270,6 +283,7 @@ describe("flights", () => {
     )
 
     const update = {
+      title: "Edited flight",
       takeoffName: "Site",
       landingName: "Field",
       notes: "",
@@ -300,6 +314,76 @@ describe("flights", () => {
     expect(await gone.json()).toEqual({
       error: { code: "NOT_FOUND", message: "Flight not found" },
     })
+  })
+
+  test("publishes preparation in the manifest and serves one shared authenticated HTTP/oRPC write", async () => {
+    api.signIn(["flights"])
+    const { flightId } = await api.client.flights.import({
+      filename: "flight.gpx",
+      text: fixture,
+    })
+    const manifest = actionRegistry
+      .describe(["flights"])
+      .find((entry) => entry.name === "flights.prepare")!
+    expect(manifest).toMatchObject({
+      effect: "write",
+      http: { method: "POST", path: "/flights/:flightId/prepare" },
+    })
+    api.d1.sqlite
+      .prepare("DELETE FROM flight_analyses WHERE flight_id = ?")
+      .run(flightId)
+    expect((await api.client.flights.get({ flightId })).analysis).toBeNull()
+    const prepared = await api.request(
+      `/api/v1/flights/${flightId}/prepare`,
+      jsonRequest("POST", {})
+    )
+    expect(prepared.status).toBe(200)
+    expect(await prepared.json()).toEqual({ flightId, status: "prepared" })
+    expect((await api.client.flights.get({ flightId })).analysis).not.toBeNull()
+    expect(await api.client.flights.prepare({ flightId })).toEqual({
+      flightId,
+      status: "already-prepared",
+    })
+    const summaries = (await api.client.flights.list()).flights
+    expect(summaries[0]).toHaveProperty("preview")
+    for (const key of [
+      "userId",
+      "notes",
+      "equipment",
+      "files",
+      "points",
+      "profile",
+      "objectKey",
+    ])
+      expect(summaries[0]).not.toHaveProperty(key)
+    expect(
+      await code(
+        api.client.flights.update({
+          flightId,
+          title: "   ",
+          takeoffName: "",
+          landingName: "",
+          notes: "",
+          equipmentIds: [],
+        })
+      )
+    ).toBe("BAD_REQUEST")
+    expect(
+      await code(
+        api.client.flights.update({
+          flightId,
+          title: "a".repeat(201),
+          takeoffName: "",
+          landingName: "",
+          notes: "",
+          equipmentIds: [],
+        })
+      )
+    ).toBe("BAD_REQUEST")
+    api.signIn(["flights"], "other")
+    expect(await code(api.client.flights.prepare({ flightId }))).toBe(
+      "NOT_FOUND"
+    )
   })
 
   test("keeps saved statistics separate from analysis and returns null for an absent track", async () => {

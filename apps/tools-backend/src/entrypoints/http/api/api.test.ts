@@ -328,7 +328,7 @@ describe("one OAuth sign-in serves REST, MCP and the CLI", () => {
       )
       try {
         const { tools } = await client.listTools()
-        expect(tools).toHaveLength(37)
+        expect(tools).toHaveLength(38)
         const created = await client.callTool({
           name: "flights.equipment.create",
           arguments: wing,
@@ -361,7 +361,7 @@ describe("one OAuth sign-in serves REST, MCP and the CLI", () => {
     expect({ code: listed.code, stderr: listed.stderr }).toMatchObject({
       code: 0,
     })
-    expect(JSON.parse(listed.stdout).actions).toHaveLength(37)
+    expect(JSON.parse(listed.stdout).actions).toHaveLength(38)
 
     const created = await runCli([
       "call",

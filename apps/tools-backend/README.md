@@ -11,8 +11,10 @@ routes and server functions, and `@mdoultremont/tools-backend/worker` for
 Worker mounting, queues, and cron. It ships inside the existing `apps/tools`
 Worker. Action declarations and the typed HTTP client are in
 `packages/tools-contracts`. Flight parsing, measurements, and profiles belong
-to `actions/flights/track`. The flight detail action returns the computed
-profile and flight bounds to clients. Internal `#backend/*` imports stay within
+to `actions/flights/track`. Import stores the profile, flight bounds, summary
+measurements, and static preview. List and detail actions read those results;
+existing recordings can be prepared through an explicit action.
+Internal `#backend/*` imports stay within
 this package.
 
 The schema, Drizzle config, and SQL migrations live here. Generate migrations

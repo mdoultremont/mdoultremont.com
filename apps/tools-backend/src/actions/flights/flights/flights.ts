@@ -1,10 +1,7 @@
-import { analyzeTrack } from "#backend/actions/flights/track"
-import { Clock, Context, Effect, Layer, Option, Schema } from "effect"
-import { CompressionError, gunzipText } from "#backend/modules/compression"
+import { Clock, Context, Effect, Layer, Option } from "effect"
 import {
   ObjectStorage,
   ObjectStorageError,
-  readBytes,
 } from "#backend/modules/object-storage"
 import {
   type FlightDetail,
@@ -15,6 +12,8 @@ import {
   type OriginalFile,
 } from "./errors"
 import { flightPrefix } from "./keys"
+import { loadTrack, loadSnapshot } from "./objects"
+import { cleanTitle, defaultTitle } from "./title"
 import { FlightStore } from "./store"
 
 const missing = () => new FlightNotFound({ message: "Flight not found" })
@@ -31,80 +30,55 @@ const makeFlights = Effect.gen(function* () {
       (!Number.isInteger(year) || year < 1900 || year > 9998)
     )
       return yield* new FlightInputError({ message: "Choose a valid year" })
-    return yield* store.list(userId, year)
-  })
-  const loadTrack = Effect.fn("Flights.loadTrack")(function* (
-    objectKey: string
-  ) {
-    const object = yield* storage.get(objectKey)
-    if (Option.isNone(object))
-      return yield* new ObjectStorageError({
-        reason: "MissingObject",
-        key: objectKey,
-      })
-    const bytes = yield* readBytes(objectKey, object.value)
-    return yield* gunzipText(bytes).pipe(
-      Effect.flatMap(
-        Schema.decodeUnknownEffect(
-          Schema.fromJsonString(
-            Schema.Array(
-              Schema.mutable(
-                Schema.Tuple([
-                  Schema.Finite,
-                  Schema.Finite.check(
-                    Schema.isBetween({ minimum: -90, maximum: 90 })
-                  ),
-                  Schema.Finite.check(
-                    Schema.isBetween({ minimum: -180, maximum: 180 })
-                  ),
-                  Schema.NullOr(Schema.Finite),
-                  Schema.NullOr(Schema.Finite),
-                ])
-              )
-            )
-          )
-        )
-      ),
-      Effect.mapError(
-        (cause) =>
-          new CompressionError({
-            reason: "InvalidData",
-            message: "Stored track is unreadable",
-            cause,
-          })
-      )
-    )
+    const rows = yield* store.list(userId, year)
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title ?? defaultTitle(row.takeoffAt, null, row.takeoffName),
+      takeoffAt: row.takeoffAt,
+      takeoffName: row.takeoffName,
+      durationS: row.durationS,
+      distanceM: row.distanceM,
+      maxAltM: row.maxAltM,
+      maxSpeedMps: row.maxSpeedMps,
+      source: row.source,
+      preview: row.preview,
+      needsPreparation: row.analysisId === null && (row.pointCount ?? 0) >= 1,
+    }))
   })
   const detail = Effect.fn("Flights.detail")(function* (
     userId: string,
     id: string
   ): Effect.fn.Return<FlightDetail, FlightsError> {
-    const [rows, equipment, files, tracks] = yield* store.detail(userId, id)
+    const [rows, equipment, files, tracks, analyses] = yield* store.detail(
+      userId,
+      id
+    )
     const flight = rows[0]
     if (!flight) return yield* missing()
-    const points = tracks[0] ? yield* loadTrack(tracks[0].objectKey) : []
-    const analyzed = yield* Effect.try({
-      try: () => analyzeTrack(points),
-      catch: (cause) =>
-        new CompressionError({
-          reason: "InvalidData",
-          message: "Stored track is unreadable",
-          cause,
-        }),
-    })
+    const track = tracks[0]
+    const points = track
+      ? yield* loadTrack(track).pipe(
+          Effect.provideService(ObjectStorage, storage)
+        )
+      : []
+    const analysis =
+      track && analyses[0]
+        ? yield* loadSnapshot(analyses[0].objectKey, track).pipe(
+            Effect.provideService(ObjectStorage, storage)
+          )
+        : null
     return {
-      flight,
+      flight: {
+        ...flight,
+        title:
+          flight.title ??
+          defaultTitle(flight.takeoffAt, null, flight.takeoffName),
+        needsPreparation: !!track && track.pointCount >= 1 && !analyses[0],
+      },
       equipment,
       files,
       points,
-      analysis: analyzed
-        ? {
-            takeoffIndex: analyzed.metrics.takeoffIndex,
-            landingIndex: analyzed.metrics.landingIndex,
-            takeoffAt: analyzed.metrics.takeoffAt.getTime(),
-            profile: analyzed.profile,
-          }
-        : null,
+      analysis,
     }
   })
   const update = Effect.fn("Flights.update")(function* (
@@ -112,6 +86,15 @@ const makeFlights = Effect.gen(function* () {
     id: string,
     input: FlightUpdate
   ) {
+    if (
+      input.title !== undefined &&
+      (!input.title.trim() ||
+        input.title.length > 200 ||
+        cleanTitle(input.title) !== input.title.trim())
+    )
+      return yield* new FlightInputError({
+        message: "Enter a title of 1–200 characters without control characters",
+      })
     if (
       input.takeoffName.length > 200 ||
       input.landingName.length > 200 ||
@@ -144,6 +127,7 @@ const makeFlights = Effect.gen(function* () {
       userId,
       id,
       {
+        title: input.title?.trim(),
         takeoffName: input.takeoffName.trim(),
         landingName: input.landingName.trim(),
         notes: input.notes.trim(),
@@ -195,7 +179,7 @@ const makeFlights = Effect.gen(function* () {
       body: object.value.body,
     } satisfies OriginalFile
   })
-  return { list, detail, update, remove, download }
+  return { list, listAll: store.listAll, detail, update, remove, download }
 })
 export class Flights extends Context.Service<
   Flights,

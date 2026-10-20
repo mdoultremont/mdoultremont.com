@@ -8,5 +8,10 @@ export const flightPrefix = (userId: string, flightId: string) =>
   `flights/${userId}/${flightId}/`
 export const fileKey = (userId: string, flightId: string, fileId: string) =>
   `${flightPrefix(userId, flightId)}files/${fileId}`
+export const analysisKey = (
+  userId: string,
+  flightId: string,
+  attemptId: string
+) => `${flightPrefix(userId, flightId)}analysis/${attemptId}.json.gz`
 export const trackKey = (userId: string, flightId: string) =>
   `${flightPrefix(userId, flightId)}track.json.gz`

@@ -9,7 +9,36 @@ import { Schema, SchemaTransformation } from "effect"
  */
 const Nullable = <S extends Schema.Top>(schema: S) => Schema.NullOr(schema)
 
+const PreviewCoordinate = Schema.Finite.check(
+  Schema.isBetween({ minimum: 0, maximum: 100 })
+)
+export const TrackPreviewSchema = Schema.Array(
+  Schema.Struct({
+    i: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    x: PreviewCoordinate,
+    y: PreviewCoordinate,
+  })
+).check(Schema.isMaxLength(120))
+export type TrackPreview = typeof TrackPreviewSchema.Type
+
+export const FlightSummarySchema = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  takeoffAt: Schema.Number,
+  takeoffName: Nullable(Schema.String),
+  durationS: Schema.Number,
+  distanceM: Schema.Number,
+  maxAltM: Nullable(Schema.Number),
+  maxSpeedMps: Schema.Number,
+  source: Schema.Literals(["gpx", "igc", "manual"]),
+  preview: Nullable(TrackPreviewSchema),
+  needsPreparation: Schema.Boolean,
+})
+export type FlightSummary = typeof FlightSummarySchema.Type
+
 export const FlightSchema = Schema.Struct({
+  title: Schema.String,
+  needsPreparation: Schema.Boolean,
   id: Schema.String,
   userId: Schema.String,
   startedAt: Schema.Number,
@@ -146,7 +175,13 @@ export const FlightDetailSchema = Schema.Struct({
 })
 export type FlightDetail = typeof FlightDetailSchema.Type
 
+export const FlightTitleSchema = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(200),
+  Schema.isPattern(/\S/u)
+)
 export const FlightUpdateSchema = Schema.Struct({
+  title: Schema.optional(FlightTitleSchema),
   takeoffName: Schema.String,
   landingName: Schema.String,
   notes: Schema.String,

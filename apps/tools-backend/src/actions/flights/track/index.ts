@@ -8,4 +8,4 @@ export type {
 export { parseTrackFile } from "./parse.ts"
 export { haversineDistance } from "./geo.ts"
 export { computeMetrics } from "./metrics.ts"
-export { analyzeTrack } from "./analyze.ts"
+export { prepareFlight, measuredColumns, ANALYSIS_VERSION } from "./prepare.ts"

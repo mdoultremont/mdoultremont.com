@@ -93,10 +93,16 @@ export const FlightMap = memo(function FlightMap({
             data: {
               type: "Feature",
               properties: {},
-              geometry: {
-                type: "LineString",
-                coordinates: points.map((p) => [p[2], p[1]]),
-              },
+              geometry:
+                points.length === 1
+                  ? {
+                      type: "Point",
+                      coordinates: [points[0]![2], points[0]![1]],
+                    }
+                  : {
+                      type: "LineString",
+                      coordinates: points.map((p) => [p[2], p[1]]),
+                    },
             },
           })
           map.addLayer({

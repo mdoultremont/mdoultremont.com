@@ -204,7 +204,6 @@ describe("flight metrics", () => {
   })
   it.each<{ points: TrackPoint[]; message: RegExp }>([
     { points: [], message: /at least two/ },
-    { points: [[0, 46, 6, null, null]], message: /at least two/ },
     {
       points: [
         [1, 46, 6, null, null],

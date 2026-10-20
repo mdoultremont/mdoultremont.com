@@ -28,7 +28,10 @@ export type FileMetadata = Omit<
   "objectKey" | "contentType" | "userId" | "flightId"
 >
 export interface FlightDetail {
-  readonly flight: Flight
+  readonly flight: Flight & {
+    readonly title: string
+    readonly needsPreparation: boolean
+  }
   readonly equipment: readonly EquipmentItem[]
   readonly files: readonly FileMetadata[]
   readonly analysis: {
@@ -40,6 +43,7 @@ export interface FlightDetail {
   readonly points: readonly TrackPoint[]
 }
 export interface FlightUpdate {
+  readonly title?: string
   readonly takeoffName: string
   readonly landingName: string
   readonly notes: string

@@ -10,9 +10,13 @@ import {
   formatSpeed,
   formatVario,
 } from "@/features/flights/format"
-import type { FlightDetail } from "@/features/flights/api"
+import {
+  prepareFlight,
+  getFlight,
+  type FlightDetail,
+} from "@/features/flights/api"
 import { PageHeader } from "@/features/apps/shell"
-import { buttonVariants } from "@/features/ui/button"
+import { Button, buttonVariants } from "@/features/ui/button"
 import { Card } from "@/features/ui/card"
 import { ShareImage } from "../share-image"
 // oxlint-disable-next-line import/no-unassigned-import
@@ -36,7 +40,34 @@ const valueOrDash = (
   format: (value: number) => string
 ) => (value === null ? "—" : format(value))
 
-export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
+export function FlightViewer({
+  detail: initialDetail,
+  onMapReady,
+}: FlightViewerProps) {
+  const [detail, setDetail] = useState(initialDetail)
+  useEffect(() => setDetail(initialDetail), [initialDetail])
+  const [preparing, setPreparing] = useState(false)
+  const [preparationError, setPreparationError] = useState("")
+  async function prepare() {
+    setPreparing(true)
+    setPreparationError("")
+    try {
+      const result = await prepareFlight(detail.flight.id)
+      if (result.status === "unavailable")
+        setPreparationError(
+          "The recording is unavailable. Try again from the logbook."
+        )
+      else setDetail(await getFlight(detail.flight.id))
+    } catch (cause) {
+      setPreparationError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not prepare this flight. Try again."
+      )
+    } finally {
+      setPreparing(false)
+    }
+  }
   const { flight, points, equipment, files, analysis } = detail
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const mapReady = useCallback(
@@ -97,9 +128,7 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
         ← All flights
       </Link>
       <PageHeader
-        title={
-          <span className="break-words">{flight.takeoffName || "Flight"}</span>
-        }
+        title={<span className="break-words">{flight.title}</span>}
         description={
           <>
             {formatDate(flight.takeoffAt ?? flight.startedAt)}
@@ -121,16 +150,18 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
       />
       <div className="grid items-start gap-7 @min-[900px]:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0 space-y-6">
+          {points.length ? (
+            <FlightMap
+              points={points}
+              activeIndex={activeIndex}
+              takeoffIndex={analysis?.takeoffIndex ?? 0}
+              landingIndex={analysis?.landingIndex ?? points.length - 1}
+              onActiveIndex={selectIndex}
+              onMapReady={mapReady}
+            />
+          ) : null}
           {points.length >= 2 && analysis ? (
             <>
-              <FlightMap
-                points={points}
-                activeIndex={activeIndex}
-                takeoffIndex={analysis.takeoffIndex}
-                landingIndex={analysis.landingIndex}
-                onActiveIndex={selectIndex}
-                onMapReady={mapReady}
-              />
               <section aria-label="Selected track point">
                 <Card className="px-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
@@ -204,11 +235,36 @@ export function FlightViewer({ detail, onMapReady }: FlightViewerProps) {
             </>
           ) : (
             <Card className="p-8">
-              <h2 className="font-semibold">No recorded track</h2>
+              <h2 className="font-semibold">
+                {points.length === 0
+                  ? "No recorded track"
+                  : points.length === 1
+                    ? "One recorded point"
+                    : "Profile not prepared yet"}
+              </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                This flight has no GPS track. Its saved details are shown
-                alongside.
+                {points.length === 0
+                  ? "This flight has no GPS track. Its saved details are shown alongside."
+                  : points.length === 1
+                    ? "This recording contains one position. A flight profile needs at least two points."
+                    : "The recording is available. Prepare this flight to save its measurements and profile."}
               </p>
+              {flight.needsPreparation ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={preparing}
+                  className="mt-4"
+                  onClick={() => void prepare()}
+                >
+                  {preparing ? "Preparing…" : "Prepare flight"}
+                </Button>
+              ) : null}
+              {preparationError ? (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  {preparationError}
+                </p>
+              ) : null}
             </Card>
           )}
         </div>

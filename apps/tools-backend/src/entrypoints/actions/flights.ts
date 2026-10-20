@@ -2,6 +2,7 @@ import { Effect } from "effect"
 import { Base64 } from "effect/encoding"
 import { Equipment } from "#backend/actions/flights/equipment"
 import { Flights } from "#backend/actions/flights/flights"
+import { FlightPreparation } from "#backend/actions/flights/prepare"
 import { FlightImport } from "#backend/actions/flights/import"
 import { FlightStats } from "#backend/actions/flights/stats"
 import { catalog } from "@mdoultremont/tools-contracts"
@@ -22,6 +23,11 @@ export const flightsHandlers = {
   ),
   get: bind(actions.get, Flights.layer, (input, caller) =>
     Flights.use((flights) => flights.detail(caller.userId, input.flightId))
+  ),
+  prepare: bind(actions.prepare, FlightPreparation.layer, (input, caller) =>
+    FlightPreparation.use((preparation) =>
+      preparation.prepare(caller.userId, input.flightId)
+    )
   ),
   update: bind(
     actions.update,

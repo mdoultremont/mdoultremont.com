@@ -14,6 +14,7 @@ import { actionRegistry, bind, createRegistry, handlers } from "."
  */
 const legacy = {
   "oRPC flights/list": "flights.list",
+  "POST /api/flights/:flightId/prepare": "flights.prepare",
   "oRPC flights/get": "flights.get",
   "oRPC flights/update": "flights.update",
   "oRPC flights/delete": "flights.delete",
