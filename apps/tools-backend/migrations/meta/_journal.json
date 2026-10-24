@@ -36,6 +36,13 @@
       "when": 1792500712743,
       "tag": "0004_pretty_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792849703511,
+      "tag": "0005_naive_centennial",
+      "breakpoints": true
     }
   ]
 }

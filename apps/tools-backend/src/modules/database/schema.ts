@@ -457,6 +457,64 @@ export const musicLikedTracks = sqliteTable(
   ]
 )
 
+export const musicSources = sqliteTable(
+  "music_sources",
+  {
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
+    sourceId: text("source_id").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    snapshotId: text("snapshot_id"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.ownerId, table.sourceId] })]
+)
+
+export const musicTracks = sqliteTable(
+  "music_tracks",
+  {
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
+    trackId: text("track_id").notNull(),
+    name: text("name").notNull(),
+    artistNames: text("artist_names", { mode: "json" })
+      .$type<readonly string[]>()
+      .notNull(),
+    isrc: text("isrc"),
+    addedAt: text("added_at").notNull(),
+    firstSeenAt: integer("first_seen_at").notNull(),
+    lastSeenAt: integer("last_seen_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.trackId] }),
+    index("music_tracks_isrc_idx").on(table.isrc),
+  ]
+)
+
+export const musicSourceTracks = sqliteTable(
+  "music_source_tracks",
+  {
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
+    sourceId: text("source_id").notNull(),
+    trackId: text("track_id").notNull(),
+    addedAt: text("added_at").notNull(),
+    present: integer("present", { mode: "boolean" }).notNull(),
+    lastSeenAt: integer("last_seen_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.sourceId, table.trackId] }),
+    index("music_source_tracks_owner_track_idx").on(
+      table.ownerId,
+      table.trackId
+    ),
+  ]
+)
+
 export const musicIngestions = sqliteTable(
   "music_ingestions",
   {
@@ -464,6 +522,8 @@ export const musicIngestions = sqliteTable(
     ownerId: text("owner_id")
       .notNull()
       .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
+    sourceId: text("source_id").notNull().default("liked"),
+    snapshotId: text("snapshot_id"),
     kind: text("kind", { enum: ["full", "incremental"] }).notNull(),
     status: text("status", {
       enum: ["queued", "running", "completed", "failed"],
@@ -480,9 +540,9 @@ export const musicIngestions = sqliteTable(
     finishedAt: integer("finished_at"),
   },
   (table) => [
-    // At most one ingestion in progress per owner.
-    uniqueIndex("music_ingestions_active_owner_idx")
-      .on(table.ownerId)
+    // Each source can make progress independently.
+    uniqueIndex("music_ingestions_active_source_idx")
+      .on(table.ownerId, table.sourceId)
       .where(sql`${table.status} IN ('queued', 'running')`),
     index("music_ingestions_owner_started_idx").on(
       table.ownerId,
