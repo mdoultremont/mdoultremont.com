@@ -52,6 +52,7 @@ test("music sections show configured input, output, and review tracks", async ({
     page.getByRole("heading", { name: "Late night jazz", exact: true })
   ).toBeVisible()
   await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
+  await expect(page.getByText("1 track loaded · 1 Spotify item")).toBeVisible()
   await page.getByRole("button", { name: /To discover/ }).click()
   await expect(
     page.getByText("No available tracks in this playlist.")

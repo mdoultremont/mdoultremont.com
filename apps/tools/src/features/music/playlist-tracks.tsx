@@ -127,7 +127,10 @@ export function PlaylistTracks({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-heading text-xl font-medium">{name}</h2>
         <output aria-live="polite" className="text-sm text-muted-foreground">
-          {page.items.length} tracks loaded · {page.total} Spotify items
+          {page.items.length} {page.items.length === 1 ? "track" : "tracks"}{" "}
+          loaded
+          {" · "}
+          {page.total} Spotify {page.total === 1 ? "item" : "items"}
         </output>
       </div>
       {page.items.length === 0 ? (
