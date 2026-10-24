@@ -541,8 +541,12 @@ const make = Effect.gen(function* () {
             message: "Playlist name must be 1 to 100 characters",
           })
         )
-      return yield* authorized(ownerId, (accessToken, connection) =>
-        apiPost("/v1/me/playlists", accessToken, {
+      return yield* authorized(ownerId, (accessToken, connection) => {
+        if (
+          !connection.scopes.split(/\s+/u).includes("playlist-modify-private")
+        )
+          return markReconnect(ownerId, connection)
+        return apiPost("/v1/me/playlists", accessToken, {
           name: trimmed,
           public: false,
         }).pipe(
@@ -563,7 +567,7 @@ const make = Effect.gen(function* () {
               )
           )
         )
-      )
+      })
     }
   )
 

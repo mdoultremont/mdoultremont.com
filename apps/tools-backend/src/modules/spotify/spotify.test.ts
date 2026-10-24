@@ -397,6 +397,35 @@ describe("Spotify reads", () => {
     }
   )
 
+  it.effect(
+    "requires reconnecting an older connection before creating a private playlist without permission",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.setConnection({
+            ...setup.getConnection()!,
+            scopes: "user-library-read playlist-read-private",
+          })
+          setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+          expect(
+            (yield* failureReason(
+              spotify.createPrivatePlaylist("github-42", "New list")
+            ))._tag
+          ).toBe("ReconnectNeeded")
+          expect(setup.getConnection()?.needsReconnect).toBe(true)
+          expect(
+            setup.fetcher.mock.calls.some(([url]) =>
+              String(url).endsWith("/v1/me/playlists")
+            )
+          ).toBe(false)
+        })
+      )
+    }
+  )
+
   it.effect("follows playlist pagination and maps only useful fields", () => {
     const setup = testSetup()
     return setup.run(

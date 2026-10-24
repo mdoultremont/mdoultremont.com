@@ -5,6 +5,7 @@ import {
   DeliveryStatusSchema,
   DestinationConfigurationSchema,
   DestinationSchema,
+  DestinationSuggestionsSchema,
   EnrichmentStatusSchema,
   IngestionKindSchema,
   IngestionSchema,
@@ -173,6 +174,14 @@ export const musicActions = {
     }),
   },
   destinations: {
+    suggest: action({
+      description:
+        "Suggests up to five new destinations from grouped recording data of collected tracks in enabled sources, excluding existing destinations. Counts are estimates. Does not create or save anything.",
+      effect: "read",
+      http: { method: "POST", path: "/music/destinations/suggestions" },
+      input: NoInput,
+      output: DestinationSuggestionsSchema,
+    }),
     get: action({
       description:
         "The destination playlists with their classification descriptions, the review playlist, and whether setup is marked ready.",
@@ -195,10 +204,14 @@ export const musicActions = {
     }),
     create: action({
       description:
-        "Creates a private Spotify playlist (name of 1-100 characters) and adds it as a destination, enabled when it has a description.",
+        "Creates a private Spotify playlist (name of 1-100 characters) and adds it as a destination. Pass enabled: false when accepting a suggestion so nothing is delivered until explicitly enabled. Otherwise enabled defaults to whether a description is present.",
       effect: "write",
       http: { method: "POST", path: "/music/destinations" },
-      input: Schema.Struct({ name: Schema.String, description: Schema.String }),
+      input: Schema.Struct({
+        name: Schema.String,
+        description: Schema.String,
+        enabled: Schema.optional(Schema.Boolean),
+      }),
       output: Schema.Struct({
         playlist: OwnedPlaylistSchema,
         destination: DestinationSchema,
