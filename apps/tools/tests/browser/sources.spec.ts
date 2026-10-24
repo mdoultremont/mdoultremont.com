@@ -128,7 +128,8 @@ for (const width of [1280, 390]) {
         writes.push({ action, input })
       await route.fulfill({ json: { json: actions[action]!(input) } })
     })
-    await page.goto("/music")
+    await page.goto("/music/input")
+    await page.waitForLoadState("networkidle")
     await page.evaluate(async (modulePath) => {
       const module = await import(modulePath)
       module.mountSourcesPanel()

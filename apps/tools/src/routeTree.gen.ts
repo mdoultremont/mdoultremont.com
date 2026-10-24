@@ -13,7 +13,7 @@ import { Route as AppsRouteRouteImport } from './routes/_apps/route'
 import { Route as AppsIndexRouteImport } from './routes/_apps/index'
 import { Route as AppsBackOfficeRouteImport } from './routes/_apps/back-office'
 import { Route as AppsFlightsRouteRouteImport } from './routes/_apps/flights/route'
-import { Route as AppsMusicRouteImport } from './routes/_apps/music'
+import { Route as AppsMusicRouteRouteImport } from './routes/_apps/music/route'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthSignInRouteImport } from './routes/oauth/sign-in'
 import { Route as AppsFlightsIndexRouteImport } from './routes/_apps/flights/index'
@@ -21,6 +21,10 @@ import { Route as AppsFlightsFlightIdRouteImport } from './routes/_apps/flights/
 import { Route as AppsFlightsEquipmentRouteImport } from './routes/_apps/flights/equipment'
 import { Route as AppsFlightsImportRouteImport } from './routes/_apps/flights/import'
 import { Route as AppsFlightsLogbookRouteImport } from './routes/_apps/flights/logbook'
+import { Route as AppsMusicIndexRouteImport } from './routes/_apps/music/index'
+import { Route as AppsMusicInputRouteImport } from './routes/_apps/music/input'
+import { Route as AppsMusicOutputRouteImport } from './routes/_apps/music/output'
+import { Route as AppsMusicSettingsRouteImport } from './routes/_apps/music/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
 import { Route as AppsFlightsFlightIdEditRouteImport } from './routes/_apps/flights/$flightId_.edit'
@@ -46,7 +50,7 @@ const AppsFlightsRouteRoute = AppsFlightsRouteRouteImport.update({
   path: '/flights',
   getParentRoute: () => AppsRouteRoute,
 } as any)
-const AppsMusicRoute = AppsMusicRouteImport.update({
+const AppsMusicRouteRoute = AppsMusicRouteRouteImport.update({
   id: '/music',
   path: '/music',
   getParentRoute: () => AppsRouteRoute,
@@ -86,6 +90,26 @@ const AppsFlightsLogbookRoute = AppsFlightsLogbookRouteImport.update({
   path: '/logbook',
   getParentRoute: () => AppsFlightsRouteRoute,
 } as any)
+const AppsMusicIndexRoute = AppsMusicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
+const AppsMusicInputRoute = AppsMusicInputRouteImport.update({
+  id: '/input',
+  path: '/input',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
+const AppsMusicOutputRoute = AppsMusicOutputRouteImport.update({
+  id: '/output',
+  path: '/output',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
+const AppsMusicSettingsRoute = AppsMusicSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -115,24 +139,27 @@ const ApiMusicSpotifyConnectRoute = ApiMusicSpotifyConnectRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppsIndexRoute
   '/flights': typeof AppsFlightsRouteRouteWithChildren
+  '/music': typeof AppsMusicRouteRouteWithChildren
   '/back-office': typeof AppsBackOfficeRoute
-  '/music': typeof AppsMusicRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/sign-in': typeof OauthSignInRoute
   '/flights/$flightId': typeof AppsFlightsFlightIdRoute
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
+  '/music/input': typeof AppsMusicInputRoute
+  '/music/output': typeof AppsMusicOutputRoute
+  '/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
   '/flights/': typeof AppsFlightsIndexRoute
+  '/music/': typeof AppsMusicIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
 }
 export interface FileRoutesByTo {
   '/back-office': typeof AppsBackOfficeRoute
-  '/music': typeof AppsMusicRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/sign-in': typeof OauthSignInRoute
   '/': typeof AppsIndexRoute
@@ -140,9 +167,13 @@ export interface FileRoutesByTo {
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
+  '/music/input': typeof AppsMusicInputRoute
+  '/music/output': typeof AppsMusicOutputRoute
+  '/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
   '/flights': typeof AppsFlightsIndexRoute
+  '/music': typeof AppsMusicIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
@@ -151,8 +182,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_apps': typeof AppsRouteRouteWithChildren
   '/_apps/flights': typeof AppsFlightsRouteRouteWithChildren
+  '/_apps/music': typeof AppsMusicRouteRouteWithChildren
   '/_apps/back-office': typeof AppsBackOfficeRoute
-  '/_apps/music': typeof AppsMusicRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/sign-in': typeof OauthSignInRoute
   '/_apps/': typeof AppsIndexRoute
@@ -160,9 +191,13 @@ export interface FileRoutesById {
   '/_apps/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/_apps/flights/import': typeof AppsFlightsImportRoute
   '/_apps/flights/logbook': typeof AppsFlightsLogbookRoute
+  '/_apps/music/input': typeof AppsMusicInputRoute
+  '/_apps/music/output': typeof AppsMusicOutputRoute
+  '/_apps/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
   '/_apps/flights/': typeof AppsFlightsIndexRoute
+  '/_apps/music/': typeof AppsMusicIndexRoute
   '/_apps/flights/$flightId_/edit': typeof AppsFlightsFlightIdEditRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
@@ -172,24 +207,27 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/flights'
-    | '/back-office'
     | '/music'
+    | '/back-office'
     | '/oauth/consent'
     | '/oauth/sign-in'
     | '/flights/$flightId'
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
+    | '/music/input'
+    | '/music/output'
+    | '/music/settings'
     | '/api/auth/$'
     | '/api/invitations/accept'
     | '/flights/'
+    | '/music/'
     | '/flights/$flightId/edit'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/back-office'
-    | '/music'
     | '/oauth/consent'
     | '/oauth/sign-in'
     | '/'
@@ -197,9 +235,13 @@ export interface FileRouteTypes {
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
+    | '/music/input'
+    | '/music/output'
+    | '/music/settings'
     | '/api/auth/$'
     | '/api/invitations/accept'
     | '/flights'
+    | '/music'
     | '/flights/$flightId/edit'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
@@ -207,8 +249,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_apps'
     | '/_apps/flights'
-    | '/_apps/back-office'
     | '/_apps/music'
+    | '/_apps/back-office'
     | '/oauth/consent'
     | '/oauth/sign-in'
     | '/_apps/'
@@ -216,9 +258,13 @@ export interface FileRouteTypes {
     | '/_apps/flights/equipment'
     | '/_apps/flights/import'
     | '/_apps/flights/logbook'
+    | '/_apps/music/input'
+    | '/_apps/music/output'
+    | '/_apps/music/settings'
     | '/api/auth/$'
     | '/api/invitations/accept'
     | '/_apps/flights/'
+    | '/_apps/music/'
     | '/_apps/flights/$flightId_/edit'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
@@ -268,7 +314,7 @@ declare module '@tanstack/react-router' {
       id: '/_apps/music'
       path: '/music'
       fullPath: '/music'
-      preLoaderRoute: typeof AppsMusicRouteImport
+      preLoaderRoute: typeof AppsMusicRouteRouteImport
       parentRoute: typeof AppsRouteRoute
     }
     '/oauth/consent': {
@@ -319,6 +365,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/flights/logbook'
       preLoaderRoute: typeof AppsFlightsLogbookRouteImport
       parentRoute: typeof AppsFlightsRouteRoute
+    }
+    '/_apps/music/': {
+      id: '/_apps/music/'
+      path: '/'
+      fullPath: '/music/'
+      preLoaderRoute: typeof AppsMusicIndexRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
+    }
+    '/_apps/music/input': {
+      id: '/_apps/music/input'
+      path: '/input'
+      fullPath: '/music/input'
+      preLoaderRoute: typeof AppsMusicInputRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
+    }
+    '/_apps/music/output': {
+      id: '/_apps/music/output'
+      path: '/output'
+      fullPath: '/music/output'
+      preLoaderRoute: typeof AppsMusicOutputRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
+    }
+    '/_apps/music/settings': {
+      id: '/_apps/music/settings'
+      path: '/settings'
+      fullPath: '/music/settings'
+      preLoaderRoute: typeof AppsMusicSettingsRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -379,17 +453,35 @@ const AppsFlightsRouteRouteChildren: AppsFlightsRouteRouteChildren = {
 const AppsFlightsRouteRouteWithChildren =
   AppsFlightsRouteRoute._addFileChildren(AppsFlightsRouteRouteChildren)
 
+interface AppsMusicRouteRouteChildren {
+  AppsMusicInputRoute: typeof AppsMusicInputRoute
+  AppsMusicOutputRoute: typeof AppsMusicOutputRoute
+  AppsMusicSettingsRoute: typeof AppsMusicSettingsRoute
+  AppsMusicIndexRoute: typeof AppsMusicIndexRoute
+}
+
+const AppsMusicRouteRouteChildren: AppsMusicRouteRouteChildren = {
+  AppsMusicInputRoute: AppsMusicInputRoute,
+  AppsMusicOutputRoute: AppsMusicOutputRoute,
+  AppsMusicSettingsRoute: AppsMusicSettingsRoute,
+  AppsMusicIndexRoute: AppsMusicIndexRoute,
+}
+
+const AppsMusicRouteRouteWithChildren = AppsMusicRouteRoute._addFileChildren(
+  AppsMusicRouteRouteChildren,
+)
+
 interface AppsRouteRouteChildren {
   AppsFlightsRouteRoute: typeof AppsFlightsRouteRouteWithChildren
+  AppsMusicRouteRoute: typeof AppsMusicRouteRouteWithChildren
   AppsBackOfficeRoute: typeof AppsBackOfficeRoute
-  AppsMusicRoute: typeof AppsMusicRoute
   AppsIndexRoute: typeof AppsIndexRoute
 }
 
 const AppsRouteRouteChildren: AppsRouteRouteChildren = {
   AppsFlightsRouteRoute: AppsFlightsRouteRouteWithChildren,
+  AppsMusicRouteRoute: AppsMusicRouteRouteWithChildren,
   AppsBackOfficeRoute: AppsBackOfficeRoute,
-  AppsMusicRoute: AppsMusicRoute,
   AppsIndexRoute: AppsIndexRoute,
 }
 

@@ -105,6 +105,15 @@ export function SpotifyConnectionPanel({
           </AlertDescription>
         </Alert>
       ) : null}
+      {message === "ingestion_failed" ? (
+        <Alert>
+          <CircleAlertIcon aria-hidden="true" />
+          <AlertDescription>
+            Spotify is connected, but the first read could not be started. Open
+            Input playlists to retry reading your sources.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {state.kind === "error" ? (
         <Alert variant="destructive">
           <CircleAlertIcon aria-hidden="true" />

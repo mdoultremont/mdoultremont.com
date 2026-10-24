@@ -29,8 +29,10 @@ const pollMilliseconds = 3000
 
 export function IngestionPanel({
   initialStatus,
+  onChange,
 }: {
   readonly initialStatus?: IngestionStatus
+  readonly onChange?: () => void
 }) {
   const controlId = useId()
   const [sources, setSources] = useState<readonly Source[] | null>(
@@ -120,6 +122,7 @@ export function IngestionPanel({
         ])
         setSources(next.sources)
         setDestinations(config)
+        onChange?.()
       } catch {
         setError(
           "Saved, but the latest sources could not be loaded. Refresh this page to check them."
