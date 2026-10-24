@@ -1,5 +1,5 @@
 import { and, count, eq, sql } from "drizzle-orm"
-import { Context, Data, Effect, Layer, Schema } from "effect"
+import { Array, Context, Data, Effect, Layer, Schema } from "effect"
 import { eligibleTrack } from "#backend/actions/music/collection"
 import {
   Database,
@@ -19,7 +19,7 @@ export class SuggestionPersistenceError extends Data.TaggedError(
 }
 
 const decodeCounts = Schema.decodeUnknownSync(
-  Schema.fromJsonString(Schema.Array(Schema.Number))
+  Schema.fromJsonString(Schema.Array(Schema.Array(Schema.Number)))
 )
 
 export class SuggestionStore extends Context.Service<
@@ -43,12 +43,18 @@ export class SuggestionStore extends Context.Service<
                   eligibleTracks: count(),
                   analyzedTracks: sql<number>`coalesce(sum(${musicRecordings.acoustic} IS NOT NULL), 0)`,
                   counts: sql<string>`json_array(${sql.join(
-                    recordingGroups.map(
-                      (group) =>
-                        sql`coalesce(sum(CASE WHEN ${group.matches} THEN 1 ELSE 0 END), 0)`
+                    Array.chunksOf(recordingGroups, 30).map(
+                      (groups) =>
+                        sql`json_array(${sql.join(
+                          groups.map(
+                            (group) =>
+                              sql`coalesce(sum(CASE WHEN ${group.matches} THEN 1 ELSE 0 END), 0)`
+                          ),
+                          sql`, `
+                        )})`
                     ),
                     sql`, `
-                  )})`.mapWith(decodeCounts),
+                  )})`.mapWith((value) => decodeCounts(value).flat()),
                 })
                 .from(musicTracks)
                 .leftJoin(

@@ -1,53 +1,74 @@
 import { sql, type SQL } from "drizzle-orm"
 import { Array, Order } from "effect"
 import { musicRecordings } from "#backend/modules/database"
-import type { DestinationSuggestion } from "@mdoultremont/tools-contracts/music"
 
 interface RecordingGroup {
-  readonly name: string
-  readonly description: string
+  readonly id: string
+  readonly criteria: readonly string[]
   readonly matches: SQL
 }
 
-const genres = [
-  ["alternative", "Alternative"],
-  ["blues", "Blues"],
-  ["electronic", "Electronic"],
-  ["folkcountry", "Folk and country"],
-  ["funksoulrnb", "Funk, soul and R&B"],
-  ["jazz", "Jazz"],
-  ["pop", "Pop"],
-  ["raphiphop", "Rap and hip-hop"],
-  ["rock", "Rock"],
-] as const
-const moods = [
-  ["happy", "Happy listening", "Happy, cheerful tracks with a positive mood."],
-  ["party", "Party", "Upbeat tracks with a party mood."],
-  ["relaxed", "Relaxed listening", "Relaxed tracks with a calm mood."],
-  ["sad", "Melancholy", "Sad, melancholy tracks."],
-] as const
+// These fixed JSON paths are SQL literals to keep combinations below D1's
+// bound-parameter limit.
+const genres: readonly RecordingGroup[] = [
+  ["alternative", "alternative"],
+  ["blues", "blues"],
+  ["electronic", "electronic"],
+  ["folkcountry", "folk and country"],
+  ["funksoulrnb", "funk, soul and R&B"],
+  ["jazz", "jazz"],
+  ["pop", "pop"],
+  ["raphiphop", "rap and hip-hop"],
+  ["rock", "rock"],
+].map(([genre, label]) => ({
+  id: `genre:${genre}`,
+  criteria: [`${label} genre probability >= 0.6`],
+  matches: sql`json_extract(${musicRecordings.acoustic}, ${sql.raw(`'$.genre."genre_dortmund:${genre}"'`)}) >= 0.6`,
+}))
 
-export const recordingGroups: readonly RecordingGroup[] = [
-  ...genres.map(([genre, name]) => ({
-    name,
-    description: `Tracks with ${/^[aeiou]/iu.test(name) ? "an" : "a"} ${name.toLowerCase()} sound.`,
-    matches: sql`json_extract(${musicRecordings.acoustic}, ${`$.genre."genre_dortmund:${genre}"`}) >= 0.6`,
-  })),
-  ...moods.map(([mood, name, description]) => ({
-    name,
-    description,
-    matches: sql`json_extract(${musicRecordings.acoustic}, ${`$.mood.${mood}`}) >= 0.6`,
-  })),
+const moods: readonly RecordingGroup[] = [
+  "happy",
+  "party",
+  "relaxed",
+  "sad",
+].map((mood) => ({
+  id: `mood:${mood}`,
+  criteria: [`${mood} mood probability >= 0.6`],
+  matches: sql`json_extract(${musicRecordings.acoustic}, ${sql.raw(`'$.mood.${mood}'`)}) >= 0.6`,
+}))
+
+const tempos: readonly RecordingGroup[] = [
   {
-    name: "Slow tempo",
-    description: "Slow-paced tracks with a tempo below 90 BPM.",
+    id: "tempo:slow",
+    criteria: ["tempo > 0 and < 90 BPM"],
     matches: sql`json_extract(${musicRecordings.acoustic}, '$.bpm') > 0 AND json_extract(${musicRecordings.acoustic}, '$.bpm') < 90`,
   },
   {
-    name: "Fast tempo",
-    description: "Fast-paced tracks with a tempo of at least 130 BPM.",
+    id: "tempo:fast",
+    criteria: ["tempo >= 130 BPM"],
     matches: sql`json_extract(${musicRecordings.acoustic}, '$.bpm') >= 130`,
   },
+]
+
+const combinations = (
+  left: readonly RecordingGroup[],
+  right: readonly RecordingGroup[]
+): readonly RecordingGroup[] =>
+  left.flatMap((a) =>
+    right.map((b) => ({
+      id: `${a.id}&${b.id}`,
+      criteria: [...a.criteria, ...b.criteria],
+      matches: sql`(${a.matches}) AND (${b.matches})`,
+    }))
+  )
+
+export const recordingGroups: readonly RecordingGroup[] = [
+  ...genres,
+  ...moods,
+  ...tempos,
+  ...combinations(genres, moods),
+  ...combinations(genres, tempos),
+  ...combinations(moods, tempos),
 ]
 
 export interface RecordingGroupCounts {
@@ -56,15 +77,21 @@ export interface RecordingGroupCounts {
   readonly counts: readonly number[]
 }
 
+interface RecordingCandidate {
+  readonly id: string
+  readonly criteria: readonly string[]
+  readonly estimatedTrackCount: number
+}
+
 export function summarizeRecordingGroups(summary: RecordingGroupCounts) {
   return {
     eligibleTracks: summary.eligibleTracks,
     analyzedTracks: summary.analyzedTracks,
     candidates: Array.sort(
       recordingGroups
-        .map(({ name, description }, index) => ({
-          name,
-          description,
+        .map(({ id, criteria }, index) => ({
+          id,
+          criteria,
           estimatedTrackCount: summary.counts[index] ?? 0,
         }))
         .filter(
@@ -72,9 +99,9 @@ export function summarizeRecordingGroups(summary: RecordingGroupCounts) {
             group.estimatedTrackCount >=
             Math.max(2, Math.ceil(summary.analyzedTracks * 0.03))
         ),
-      (a: DestinationSuggestion, b: DestinationSuggestion) =>
+      (a: RecordingCandidate, b: RecordingCandidate) =>
         Order.Number(b.estimatedTrackCount, a.estimatedTrackCount) ||
-        Order.String(a.name, b.name)
-    ).slice(0, 12),
+        Order.String(a.id, b.id)
+    ),
   }
 }

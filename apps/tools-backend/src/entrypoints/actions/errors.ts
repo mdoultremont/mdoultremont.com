@@ -6,7 +6,7 @@ import type { ClassificationPersistenceError } from "#backend/actions/music/clas
 import type { DeliveryPersistenceError } from "#backend/actions/music/delivery"
 import type { DestinationsError } from "#backend/actions/music/destinations"
 import type { SuggestionPersistenceError } from "#backend/actions/music/suggestions"
-import type { ClefError } from "#backend/modules/clef"
+import type { WorkersAiError } from "#backend/modules/workers-ai"
 import type { EnrichmentPersistenceError } from "#backend/actions/music/enrichment"
 import type { IngestionPersistenceError } from "#backend/actions/music/ingestion"
 import type {
@@ -39,7 +39,7 @@ export type BusinessError =
   | FlightsError
   | DestinationsError
   | SuggestionPersistenceError
-  | ClefError
+  | WorkersAiError
   | IngestionPersistenceError
   | EnrichmentPersistenceError
   | ClassificationPersistenceError
@@ -143,7 +143,7 @@ export const toActionError = (
       return Effect.logError(error.message, error.cause).pipe(
         Effect.andThen(fail("SERVICE_UNAVAILABLE", error.message))
       )
-    case "ClefError":
+    case "WorkersAiError":
       return Effect.logError(error.message, error.cause).pipe(
         Effect.andThen(
           fail(
@@ -154,7 +154,7 @@ export const toActionError = (
                 : "BAD_GATEWAY",
             error.retryable
               ? "Playlist suggestions could not be generated. Try again later."
-              : "The model could not evaluate this recording data."
+              : "The model could not generate usable playlist suggestions."
           )
         )
       )
