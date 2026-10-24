@@ -89,36 +89,49 @@ _Avoid_: Session (a session is a browser's sign-in)
 ## Music control area
 
 **Owner**:
-The user whose Spotify Liked Songs and playlists the music app is sorting. Any
-user with music access is the owner of their own music data.
+The user whose Spotify sources the music app sorts into destination playlists.
+Any user with music access is the owner of their own music data.
 
 ### Pipeline
 
-Liked tracks move through four independent steps. Each step can be re-run on
+Collected tracks move through four independent steps. Each step can be re-run on
 its own without repeating the earlier ones.
 
+**Source**:
+Liked Songs or an owned Spotify playlist that supplies tracks to the music app.
+Liked Songs is present by default and can be disabled but not removed. Playlist
+sources can be added, disabled, and removed. The app never changes a source.
+A source cannot also be a destination or the review playlist, even when disabled.
+_Avoid_: Input playlist, feed
+
 **Ingestion**:
-Recording the owner's Spotify Liked Songs as liked tracks. A full ingestion
-reads every like; an incremental ingestion reads only likes newer than those
-already known. The first ingestion is a full ingestion, not a separate concept.
+Recording one source's tracks and their presence in that source. A full ingestion
+reads every page. An incremental ingestion stops at the first known like in
+Liked Songs, or skips a playlist whose Spotify snapshot has not changed.
+A changed playlist is read in full. Each enabled source is checked hourly and
+read in full daily. One ingestion runs at a time per source.
 _Avoid_: Initial baseline, discovery, sync
 
-**Liked track**:
-A Spotify track the owner has liked, as last seen by ingestion. Every liked
-track is eligible for the pipeline, however long ago it was liked.
-_Avoid_: Historical like, baseline track
+**Collected track**:
+A Spotify recording stored from a source. It is eligible for enrichment,
+classification, and delivery while present in at least one enabled source,
+however long ago it was added. Its addition date is the most recent date
+reported by any source.
+_Avoid_: Liked track, historical like, baseline track, music track
 
-**Un-liked track**:
-A liked track that a full ingestion or a delivery check no longer finds in
-Liked Songs. It keeps its recording data and decisions but is never delivered.
+**Removed track**:
+A collected track no longer present in any enabled source. It keeps its recording
+data and decisions but is not delivered. Tracks already delivered stay in their
+Spotify playlists.
+_Avoid_: Un-liked track, deleted track
 
 **Enrichment**:
-Attaching recording data to a liked track from MusicBrainz and AcousticBrainz.
+Attaching recording data to a collected track from MusicBrainz and AcousticBrainz.
 Recording data is fetched once per track; re-ingesting does not repeat it.
 _Avoid_: Ingestion (for MusicBrainz lookups)
 
 **Recording data**:
-The CC0 MusicBrainz and AcousticBrainz data stored for a liked track. It is
+The CC0 MusicBrainz and AcousticBrainz data stored for a collected track. It is
 the only classification input; Spotify metadata is never used.
 _Avoid_: Spotify metadata, track metadata
 
@@ -132,9 +145,11 @@ when none fits or the track has no recording data. Reclassification replaces
 it.
 
 **Delivery**:
-Adding tracks to the playlists named in their decisions that are not yet
-there. Delivery only adds, and only to enabled destinations; it never removes
-a track from a Spotify playlist.
+Adding eligible collected tracks to the playlists named in their decisions
+that are not yet there. Delivery only adds to enabled destinations or the review
+playlist. It never removes a track from a Spotify playlist. Right before a write, delivery re-checks
+present memberships in an enabled Liked Songs source. Playlist memberships
+come from ingestion.
 _Avoid_: Sync, write-back
 
 **Automatic delivery**:
