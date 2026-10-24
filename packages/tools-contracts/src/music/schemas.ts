@@ -32,6 +32,7 @@ export const SpotifySavedTracksPageSchema = Schema.Struct({
       artistNames: Schema.Array(Schema.String),
       isrc: Schema.NullOr(Schema.String),
       durationMs: Schema.NullOr(Schema.Number),
+      artworkUrl: Schema.optional(Schema.NullOr(Schema.String)),
       /** ISO 8601, as Spotify reports it. */
       addedAt: Schema.String,
     })
@@ -67,20 +68,31 @@ export const OwnedPlaylistSchema = Schema.Struct({
 export const IngestionKindSchema = Schema.Literals(["full", "incremental"])
 export type IngestionKind = typeof IngestionKindSchema.Type
 
+export const SourceIdSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("liked") }),
+  Schema.Struct({
+    kind: Schema.Literal("playlist"),
+    playlistId: Schema.String,
+  }),
+])
+export type SourceId = typeof SourceIdSchema.Type
+
 export const IngestionSchema = Schema.Struct({
   id: Schema.String,
   ownerId: Schema.String,
+  source: SourceIdSchema,
+  snapshotId: Schema.NullOr(Schema.String),
   kind: IngestionKindSchema,
   status: Schema.Literals(["queued", "running", "completed", "failed"]),
   cursor: Schema.NullOr(Schema.String),
   pages: Schema.Number,
-  /** Likes read from Spotify so far. */
+  /** Tracks read from this source so far. */
   seen: Schema.Number,
-  /** Likes that were new, re-liked, or changed since the last ingestion. */
+  /** Source entries that were new, restored, or changed. */
   added: Schema.Number,
-  /** Liked tracks a full ingestion no longer found. */
-  unliked: Schema.Number,
-  /** Spotify's count of Liked Songs, known after the first page. */
+  /** Entries no longer present after reading the whole source. */
+  removed: Schema.Number,
+  /** Spotify's source size, known after the first page. */
   total: Schema.NullOr(Schema.Number),
   error: Schema.NullOr(Schema.String),
   startedAt: Schema.Number,
@@ -89,15 +101,27 @@ export const IngestionSchema = Schema.Struct({
 })
 export type Ingestion = typeof IngestionSchema.Type
 
-export const IngestionStatusSchema = Schema.Struct({
+export const SourceSchema = Schema.Struct({
+  sourceId: SourceIdSchema,
+  enabled: Schema.Boolean,
+  snapshotId: Schema.NullOr(Schema.String),
+  createdAt: Schema.Number,
+  updatedAt: Schema.Number,
+  present: Schema.Number,
+  removed: Schema.Number,
   latest: Schema.NullOr(IngestionSchema),
-  liked: Schema.Number,
-  unliked: Schema.Number,
+})
+export type Source = typeof SourceSchema.Type
+
+export const IngestionStatusSchema = Schema.Struct({
+  sources: Schema.Array(SourceSchema),
+  present: Schema.Number,
+  removed: Schema.Number,
 })
 export type IngestionStatus = typeof IngestionStatusSchema.Type
 
 export const EnrichmentStatusSchema = Schema.Struct({
-  /** Liked tracks with recording data from MusicBrainz. */
+  /** Collected tracks with recording data from MusicBrainz. */
   enriched: Schema.Number,
   /** Of those, how many also have an AcousticBrainz analysis. */
   withAnalysis: Schema.Number,
@@ -133,7 +157,7 @@ export type DecisionSummary = typeof DecisionSummarySchema.Type
 
 export const ClassificationStatusSchema = Schema.Struct({
   ready: Schema.Boolean,
-  /** Liked tracks with a decision. */
+  /** Collected tracks with a decision. */
   decided: Schema.Number,
   /** Decisions naming at least one destination. */
   toDestinations: Schema.Number,
@@ -141,9 +165,9 @@ export const ClassificationStatusSchema = Schema.Struct({
   toReview: Schema.Number,
   /** Of those sent to review, how many had no recording data. */
   withoutRecordingData: Schema.Number,
-  /** Liked tracks still waiting for enrichment. */
+  /** Collected tracks still waiting for enrichment. */
   waitingForEnrichment: Schema.Number,
-  /** Liked tracks ready to classify. */
+  /** Collected tracks ready to classify. */
   pending: Schema.Number,
   /** Decisions made against destinations that have since changed. */
   outdated: Schema.Number,

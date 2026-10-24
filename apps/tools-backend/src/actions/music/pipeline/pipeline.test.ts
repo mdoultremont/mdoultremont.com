@@ -12,7 +12,7 @@ import {
   MusicEnrichment,
 } from "#backend/actions/music/enrichment"
 import {
-  InvalidLikesPage,
+  InvalidSourcePage,
   MusicIngestion,
 } from "#backend/actions/music/ingestion"
 import { MusicPipeline } from "."
@@ -84,7 +84,7 @@ function setup(
       () => Effect.void
     ),
     processNext: vi.fn<MusicDelivery["Service"]["processNext"]>(() =>
-      Effect.succeed({ delivered: 0, unliked: 0 })
+      Effect.succeed({ delivered: 0, removed: 0 })
     ),
     status: vi.fn<MusicDelivery["Service"]["status"]>(() =>
       Effect.succeed({
@@ -234,7 +234,7 @@ describe("music pipeline", () => {
         const pipeline = yield* MusicPipeline
         yield* pipeline.giveUp(
           ingestionMessage,
-          new InvalidLikesPage({ message: "Bad page" })
+          new InvalidSourcePage({ message: "Bad page" })
         )
         expect(t.ingestion.fail).toHaveBeenCalledWith("ing-1", "Bad page")
       })

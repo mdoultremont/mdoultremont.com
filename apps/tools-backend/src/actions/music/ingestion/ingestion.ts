@@ -5,43 +5,54 @@ import {
   type SpotifyError,
 } from "#backend/modules/spotify"
 import { JobQueue, type JobQueueError } from "#backend/modules/job-queue"
+import { SourceStore, type SourceId } from "#backend/actions/music/collection"
 import {
   type Ingestion,
   type IngestionKind,
   IngestionMessage,
   IngestionPersistenceError,
   type IngestionStatus,
-  InvalidLikesPage,
+  InvalidSourcePage,
 } from "./errors"
 import { IngestionStore } from "./store"
 
-/** A full ingestion is due when the last one started longer ago than this. */
+/** A full ingestion of a source is due when its last one started longer ago than this. */
 const fullIngestionInterval = 24 * 60 * 60 * 1000
 /** An in-progress ingestion untouched for this long lost its queue message. */
 const stalledAfter = 10 * 60 * 1000
 
+const sourceQuery = <A, E>(effect: Effect.Effect<A, E>) =>
+  effect.pipe(
+    Effect.mapError((cause) => new IngestionPersistenceError({ cause }))
+  )
 export type IngestionError =
   | IngestionPersistenceError
   | JobQueueError
   | SpotifyError
-  | InvalidLikesPage
+  | InvalidSourcePage
 
 /**
- * Ingestion: recording the owner's Spotify Liked Songs as liked tracks.
+ * Ingestion: recording each enabled source's tracks as collected tracks.
  * Work runs one Spotify page per queue message.
  */
 export class MusicIngestion extends Context.Service<
   MusicIngestion,
   {
-    /** Starts an ingestion, or returns the one already in progress. */
     readonly start: (
       ownerId: string,
       kind: IngestionKind
-    ) => Effect.Effect<Ingestion, IngestionPersistenceError | JobQueueError>
-    /**
-     * Handles one page; queues the next page or completes the ingestion.
-     * Reports whose likes and how many the page added, so later steps know there is work.
-     */
+    ) => Effect.Effect<
+      readonly Ingestion[],
+      IngestionPersistenceError | JobQueueError
+    >
+    readonly startSource: (
+      ownerId: string,
+      source: SourceId,
+      kind: IngestionKind
+    ) => Effect.Effect<
+      Ingestion | null,
+      IngestionPersistenceError | JobQueueError
+    >
     readonly processNext: (
       ingestionId: string
     ) => Effect.Effect<
@@ -56,8 +67,8 @@ export class MusicIngestion extends Context.Service<
       ownerId: string
     ) => Effect.Effect<IngestionStatus, IngestionPersistenceError>
     /**
-     * Hourly upkeep: resume a stalled ingestion, otherwise start a full
-     * ingestion once a day and an incremental one in between.
+     * Hourly upkeep, per enabled source: resume a stalled ingestion, otherwise
+     * start a full ingestion once a day and an incremental one in between.
      */
     readonly scheduled: (
       ownerId: string
@@ -68,24 +79,27 @@ export class MusicIngestion extends Context.Service<
     MusicIngestion,
     Effect.gen(function* () {
       const store = yield* IngestionStore
+      const sources = yield* SourceStore
       const spotify = yield* Spotify
       const connections = yield* SpotifyConnections
       const queue = yield* JobQueue
-
       const enqueue = (ingestionId: string) =>
         queue.send(
           IngestionMessage.make({ kind: "music.ingestion", ingestionId })
         )
 
-      const start = Effect.fn("MusicIngestion.start")(function* (
+      const startSource = Effect.fn("MusicIngestion.startSource")(function* (
         ownerId: string,
+        source: SourceId,
         kind: IngestionKind
       ) {
+        const row = yield* sourceQuery(sources.get(ownerId, source))
+        if (!row?.enabled) return null
         const now = yield* Clock.currentTimeMillis
-        const id = crypto.randomUUID()
         const { ingestion, created } = yield* store.start({
-          id,
+          id: crypto.randomUUID(),
           ownerId,
+          source,
           kind,
           now,
         })
@@ -97,26 +111,78 @@ export class MusicIngestion extends Context.Service<
           )
         return ingestion
       })
-
+      const start = Effect.fn("MusicIngestion.start")(function* (
+        ownerId: string,
+        kind: IngestionKind
+      ) {
+        const configured = yield* sourceQuery(sources.read(ownerId))
+        const ingestions: Ingestion[] = []
+        for (const source of configured.filter((entry) => entry.enabled)) {
+          const ingestion = yield* startSource(ownerId, source.sourceId, kind)
+          if (ingestion) ingestions.push(ingestion)
+        }
+        return ingestions
+      })
       const processNext = Effect.fn("MusicIngestion.processNext")(function* (
         ingestionId: string
       ) {
-        const ingestion = yield* store.get(ingestionId)
-        // Redelivered messages for finished work are ignored.
+        const stored = yield* store.get(ingestionId)
         if (
-          !ingestion ||
-          ingestion.status === "completed" ||
-          ingestion.status === "failed"
+          !stored ||
+          stored.status === "completed" ||
+          stored.status === "failed"
         )
           return { ownerId: null, added: 0 }
-        const page = yield* spotify.savedTracksPage(
-          ingestion.ownerId,
-          ingestion.cursor ?? undefined
+        const source = yield* sourceQuery(
+          sources.get(stored.ownerId, stored.source)
         )
+        if (!source?.enabled) return { ownerId: null, added: 0 }
+        let ingestion = stored
+        if (
+          ingestion.source.kind === "playlist" &&
+          ingestion.snapshotId === null
+        ) {
+          const snapshotId = yield* spotify.playlistSnapshot(
+            ingestion.ownerId,
+            ingestion.source.playlistId
+          )
+          const current = yield* store.get(ingestion.id)
+          if (current?.status !== "queued" && current?.status !== "running")
+            return { ownerId: null, added: 0 }
+          yield* store.setSnapshot(
+            ingestion.id,
+            snapshotId,
+            yield* Clock.currentTimeMillis
+          )
+          ingestion = { ...ingestion, snapshotId }
+          if (
+            ingestion.kind === "incremental" &&
+            source.snapshotId === snapshotId
+          ) {
+            yield* store.complete(
+              ingestion,
+              yield* Clock.currentTimeMillis,
+              false
+            )
+            return { ownerId: ingestion.ownerId, added: 0 }
+          }
+        }
+        const page = yield* ingestion.source.kind === "liked"
+          ? spotify.savedTracksPage(
+              ingestion.ownerId,
+              ingestion.cursor ?? undefined
+            )
+          : spotify.playlistTracksPage(
+              ingestion.ownerId,
+              ingestion.source.playlistId,
+              ingestion.cursor ?? undefined
+            )
+        const current = yield* store.get(ingestion.id)
+        if (current?.status !== "queued" && current?.status !== "running")
+          return { ownerId: null, added: 0 }
         if (page.next !== null && page.next === ingestion.cursor)
-          return yield* new InvalidLikesPage({
-            message:
-              "Spotify returned a Liked Songs page that does not advance",
+          return yield* new InvalidSourcePage({
+            message: "Spotify returned a source page that does not advance",
           })
         const now = yield* Clock.currentTimeMillis
         const result = yield* store.recordPage({
@@ -126,65 +192,69 @@ export class MusicIngestion extends Context.Service<
           total: page.total,
           now,
         })
-        // Likes come newest first: an incremental ingestion can stop at the
-        // first like it already has. A full one reads everything to find un-likes.
-        const morePages =
-          page.next !== null &&
-          (ingestion.kind === "full" || !result.reachedKnownLike)
-        if (morePages) yield* enqueue(ingestion.id)
-        else yield* store.complete(ingestion, now)
+        const stopAtKnownLike =
+          ingestion.source.kind === "liked" &&
+          ingestion.kind === "incremental" &&
+          result.reachedKnownLike
+        if (page.next !== null && !stopAtKnownLike) yield* enqueue(ingestion.id)
+        else yield* store.complete(ingestion, now, page.next === null)
         return { ownerId: ingestion.ownerId, added: result.added }
       })
-
       const fail = Effect.fn("MusicIngestion.fail")(function* (
         ingestionId: string,
         error: string
       ) {
         yield* store.fail(ingestionId, error, yield* Clock.currentTimeMillis)
       })
-
       const status = Effect.fn("MusicIngestion.status")(function* (
         ownerId: string
       ) {
-        const latest = yield* store.latest(ownerId)
-        const counts = yield* store.counts(ownerId)
-        return { latest, ...counts } satisfies IngestionStatus
+        return {
+          sources: yield* sourceQuery(sources.read(ownerId)),
+          ...(yield* store.counts(ownerId)),
+        } satisfies IngestionStatus
       })
-
       const scheduled = Effect.fn("MusicIngestion.scheduled")(function* (
         ownerId: string
       ) {
-        const connection = yield* connections
-          .get(ownerId)
-          .pipe(
-            Effect.mapError((cause) => new IngestionPersistenceError({ cause }))
-          )
+        const connection = yield* sourceQuery(connections.get(ownerId))
         if (Option.isNone(connection) || connection.value.needsReconnect) return
-
         const now = yield* Clock.currentTimeMillis
-        const latest = yield* store.latest(ownerId)
-        if (latest?.status === "queued" || latest?.status === "running") {
-          if (now - latest.updatedAt > stalledAfter) {
-            yield* store.touch(latest.id, now)
-            yield* enqueue(latest.id)
+        const configured = yield* sourceQuery(sources.read(ownerId))
+        for (const source of configured.filter((entry) => entry.enabled)) {
+          const latest = source.latest
+          if (latest?.status === "queued" || latest?.status === "running") {
+            if (now - latest.updatedAt > stalledAfter) {
+              yield* store.touch(latest.id, now)
+              yield* enqueue(latest.id)
+            }
+            continue
           }
-          return
+          const lastFull = yield* store.latest(ownerId, source.sourceId, "full")
+          yield* startSource(
+            ownerId,
+            source.sourceId,
+            !lastFull || now - lastFull.startedAt >= fullIngestionInterval
+              ? "full"
+              : "incremental"
+          )
         }
-        const lastFull = yield* store.latest(ownerId, "full")
-        const fullDue =
-          !lastFull || now - lastFull.startedAt >= fullIngestionInterval
-        yield* start(ownerId, fullDue ? "full" : "incremental")
       })
-
-      return MusicIngestion.of({ start, processNext, fail, status, scheduled })
+      return MusicIngestion.of({
+        start,
+        startSource,
+        processNext,
+        fail,
+        status,
+        scheduled,
+      })
     })
   )
-
-  /** Production layer. Needs the platform (`Database`, `JobQueue`, config). */
   static readonly layer = MusicIngestion.layerNoDeps.pipe(
     Layer.provide(
       Layer.mergeAll(
         IngestionStore.layer,
+        SourceStore.layer,
         Spotify.layer,
         SpotifyConnections.layer
       )

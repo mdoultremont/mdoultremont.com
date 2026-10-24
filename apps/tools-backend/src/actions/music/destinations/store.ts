@@ -17,9 +17,9 @@ const changedOrConflict = (changes: number) =>
   changes === 0 ? Effect.fail(new DestinationConflict()) : Effect.void
 
 /**
- * Destination rows and the review playlist setting. The conflict rule (review
- * playlist ≠ enabled destination) is enforced in SQL too, so concurrent saves
- * cannot both win.
+ * Destination rows and the review playlist setting. The conflict rules (no
+ * source as a destination or review playlist; review playlist ≠ enabled
+ * destination) are enforced in SQL too, so concurrent saves cannot both win.
  */
 export class DestinationStore extends Context.Service<
   DestinationStore,
@@ -104,19 +104,23 @@ export class DestinationStore extends Context.Service<
                 (owner_id, playlist_id, description, enabled, created_at, updated_at)
               SELECT ${ownerId}, ${destination.playlistId}, ${destination.description},
                 ${enabled}, ${destination.createdAt}, ${destination.updatedAt}
-              WHERE ${enabled} = 0 OR NOT EXISTS (
+              WHERE NOT EXISTS (
+                SELECT 1 FROM music_sources WHERE owner_id = ${ownerId} AND source_id = ${destination.playlistId}
+              ) AND (${enabled} = 0 OR NOT EXISTS (
                 SELECT 1 FROM music_settings
                 WHERE owner_id = ${ownerId} AND review_playlist_id = ${destination.playlistId}
-              )
+              ))
               ON CONFLICT(owner_id, playlist_id) DO UPDATE SET
                 description = excluded.description,
                 enabled = excluded.enabled,
                 updated_at = excluded.updated_at
-              WHERE excluded.enabled = 0 OR NOT EXISTS (
+              WHERE NOT EXISTS (
+                SELECT 1 FROM music_sources WHERE owner_id = excluded.owner_id AND source_id = excluded.playlist_id
+              ) AND (excluded.enabled = 0 OR NOT EXISTS (
                 SELECT 1 FROM music_settings
                 WHERE owner_id = excluded.owner_id
                   AND review_playlist_id = excluded.playlist_id
-              )
+              ))
             `)
           ).pipe(
             Effect.flatMap((result) => changedOrConflict(result.meta.changes))
@@ -151,18 +155,22 @@ export class DestinationStore extends Context.Service<
             db.run(sql`
               INSERT INTO music_settings (owner_id, review_playlist_id, updated_at)
               SELECT ${ownerId}, ${playlistId}, ${now}
-              WHERE ${playlistId} IS NULL OR NOT EXISTS (
+              WHERE ${playlistId} IS NULL OR (NOT EXISTS (
+                SELECT 1 FROM music_sources WHERE owner_id = ${ownerId} AND source_id = ${playlistId}
+              ) AND NOT EXISTS (
                 SELECT 1 FROM music_destinations
                 WHERE owner_id = ${ownerId} AND playlist_id = ${playlistId} AND enabled = 1
-              )
+              ))
               ON CONFLICT(owner_id) DO UPDATE SET
                 review_playlist_id = excluded.review_playlist_id,
                 updated_at = excluded.updated_at
-              WHERE excluded.review_playlist_id IS NULL OR NOT EXISTS (
+              WHERE excluded.review_playlist_id IS NULL OR (NOT EXISTS (
+                SELECT 1 FROM music_sources WHERE owner_id = excluded.owner_id AND source_id = excluded.review_playlist_id
+              ) AND NOT EXISTS (
                 SELECT 1 FROM music_destinations
                 WHERE owner_id = excluded.owner_id
                   AND playlist_id = excluded.review_playlist_id AND enabled = 1
-              )
+              ))
             `)
           ).pipe(
             Effect.flatMap((result) => changedOrConflict(result.meta.changes))

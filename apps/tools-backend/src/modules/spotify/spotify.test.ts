@@ -861,3 +861,610 @@ it.effect(
     )
   }
 )
+
+for (const reader of ["saved", "item", "track"] as const) {
+  it.effect(
+    `${reader} pages keep valid tracks with malformed optional artwork`,
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(
+            json({ access_token: "fresh", expires_in: 3600 })
+          )
+          const artworkUrl = "https://i.scdn.co/image/album"
+          const albums = [
+            [undefined, undefined],
+            [null, undefined],
+            ["invalid", undefined],
+            [{}, undefined],
+            [{ images: null }, undefined],
+            [{ images: "invalid" }, undefined],
+            [{ images: [null] }, undefined],
+            [{ images: [{}] }, undefined],
+            [{ images: [{ url: null }] }, undefined],
+            [{ images: [{ url: 42 }] }, undefined],
+            [{ images: [{ url: "invalid" }] }, undefined],
+            [{ images: [{ url: "https://" }] }, undefined],
+            [{ images: [{ url: "http://example.com/artwork" }] }, undefined],
+            [{ images: [{ url: artworkUrl }] }, artworkUrl],
+            [
+              { images: [null, {}, { url: 42 }, { url: artworkUrl }] },
+              artworkUrl,
+            ],
+          ] as const
+          const addedAt = "2026-10-03T00:00:00Z"
+          setup.fetcher.mockResolvedValueOnce(
+            json({
+              items: albums.map(([album], index) => ({
+                added_at: addedAt,
+                [reader === "saved" ? "track" : reader]: {
+                  id: "song" + index,
+                  type: "track",
+                  name: "Song",
+                  artists: [{ name: "Artist" }],
+                  external_ids: { isrc: "BEABC2600001" },
+                  duration_ms: 234567,
+                  album,
+                },
+              })),
+              next: null,
+              total: albums.length,
+            })
+          )
+          const page = yield* reader === "saved"
+            ? spotify.savedTracksPage("github-42")
+            : spotify.playlistTracksPage("github-42", "shazam")
+          expect(page).toEqual({
+            items: albums.map(([, expectedArtworkUrl], index) => ({
+              id: "song" + index,
+              name: "Song",
+              artistNames: ["Artist"],
+              isrc: "BEABC2600001",
+              durationMs: 234567,
+              addedAt,
+              ...(expectedArtworkUrl ? { artworkUrl: expectedArtworkUrl } : {}),
+            })),
+            next: null,
+            total: albums.length,
+          })
+        })
+      )
+    }
+  )
+}
+
+describe("Spotify source playlists", () => {
+  it.effect(
+    "reads saved-track metadata from both playlist item shapes and skips unavailable items",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(
+            json({ access_token: "fresh", expires_in: 3600 })
+          )
+          const track = {
+            id: "replacement",
+            type: "track",
+            name: "Song",
+            artists: [{ name: "Artist" }],
+            external_ids: { isrc: "BEABC2600001" },
+            duration_ms: 234567,
+            linked_from: { id: "original" },
+            is_local: false,
+            is_playable: true,
+          }
+          setup.fetcher.mockResolvedValueOnce(
+            json({
+              items: [
+                {
+                  added_at: "2026-10-03T00:00:00Z",
+                  item: track,
+                  is_local: false,
+                },
+                {
+                  added_at: null,
+                  item: null,
+                  track: { ...track, id: "old", linked_from: null },
+                },
+                { added_at: null, item: { ...track, type: "episode" } },
+                { added_at: null, item: { ...track, is_local: true } },
+                { added_at: null, item: { ...track, is_playable: false } },
+                { added_at: null, item: track, is_local: true },
+                { added_at: null, item: null },
+              ],
+              next: "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50",
+              total: 51,
+            })
+          )
+          expect(
+            yield* spotify.playlistTracksPage("github-42", "shazam")
+          ).toEqual({
+            items: [
+              {
+                id: "original",
+                name: "Song",
+                artistNames: ["Artist"],
+                isrc: "BEABC2600001",
+                durationMs: 234567,
+                addedAt: "2026-10-03T00:00:00Z",
+              },
+              {
+                id: "old",
+                name: "Song",
+                artistNames: ["Artist"],
+                isrc: "BEABC2600001",
+                durationMs: 234567,
+                addedAt: "1970-01-01T00:00:00Z",
+              },
+            ],
+            next: "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50",
+            total: 51,
+          })
+          expect(requestUrl(setup, 3)).toBe(
+            "https://api.spotify.com/v1/playlists/shazam/items?limit=50"
+          )
+          setup.fetcher.mockResolvedValueOnce(
+            json({ items: [], next: null, total: 51 })
+          )
+          yield* spotify.playlistTracksPage(
+            "github-42",
+            "shazam",
+            "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50"
+          )
+          expect(requestUrl(setup, 4)).toContain("offset=50")
+          setup.fetcher.mockResolvedValueOnce(json({ snapshot_id: "version1" }))
+          expect(yield* spotify.playlistSnapshot("github-42", "shazam")).toBe(
+            "version1"
+          )
+          expect(requestUrl(setup, 5)).toBe(
+            "https://api.spotify.com/v1/playlists/shazam?fields=snapshot_id"
+          )
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "rejects foreign, cross-playlist, and cross-endpoint cursors",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          for (const cursor of [
+            "https://evil.example/v1/playlists/shazam/items?offset=50",
+            "https://api.spotify.com/v1/playlists/other/items?offset=50",
+            "https://api.spotify.com/v1/me/tracks?offset=50",
+          ])
+            expect(
+              (yield* failureReason(
+                spotify.playlistTracksPage("github-42", "shazam", cursor)
+              ))._tag
+            ).toBe("InvalidInput")
+          expect(setup.fetcher).not.toHaveBeenCalled()
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+          setup.fetcher.mockResolvedValueOnce(
+            json({ items: [], next: "https://evil.example/steal", total: 0 })
+          )
+          expect(
+            (yield* failureReason(
+              spotify.playlistTracksPage("github-42", "shazam")
+            ))._tag
+          ).toBe("InvalidResponse")
+        })
+      )
+    }
+  )
+})
+
+const playbackDevice = {
+  id: "speaker/?=opaque",
+  name: "Kitchen",
+  type: "Speaker",
+  is_active: true,
+  is_restricted: false,
+}
+const currentPlayback = {
+  is_playing: false,
+  device: playbackDevice,
+  currently_playing_type: "track",
+  item: {
+    id: "trackA",
+    name: "Song",
+    artists: [{ name: "Artist" }],
+    album: { images: [{ url: "https://image.example/album.jpg" }] },
+  },
+  actions: {},
+}
+const playbackScopes = "user-read-playback-state user-modify-playback-state"
+
+function grantPlayback(setup: Setup) {
+  const connection = setup.getConnection()!
+  setup.setConnection({
+    ...connection,
+    scopes: `${connection.scopes} ${playbackScopes}`,
+  })
+}
+
+function servePlayback(
+  setup: Setup,
+  playback: unknown = currentPlayback,
+  devices: readonly unknown[] = [playbackDevice],
+  write: () => Response = () => new Response(null, { status: 204 })
+) {
+  setup.fetcher.mockImplementation(async (url, init) => {
+    const path = new URL(String(url)).pathname
+    if (path === "/api/token")
+      return json({ access_token: "player-token", expires_in: 3600 })
+    if (init?.method === "PUT") return write()
+    if (path.endsWith("/devices")) return json({ devices })
+    if (path.endsWith("/player"))
+      return playback instanceof Response ? playback.clone() : json(playback)
+    return json({ items: [], next: null, total: 0 })
+  })
+}
+
+const playerWrites = (setup: Setup) =>
+  setup.fetcher.mock.calls.filter(([, init]) => init?.method === "PUT")
+
+describe("Spotify Connect player", () => {
+  it.effect(
+    "requests playback scopes while accepting old grants and keeping ingestion usable",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          const scopes = new URL(spotify.authorizationUrl("state")).searchParams
+            .get("scope")!
+            .split(" ")
+          expect(scopes).toEqual([
+            ...spotifyScopes,
+            ...playbackScopes.split(" "),
+          ])
+          yield* connect(setup)
+          servePlayback(setup)
+          expect(yield* spotify.playerStatus("github-42")).toEqual({
+            status: "needs_permission",
+          })
+          for (const effect of [
+            spotify.play("github-42", "speaker", "trackA"),
+            spotify.pause("github-42", "speaker"),
+            spotify.resume("github-42", "speaker"),
+          ]) {
+            expect((yield* failureReason(effect))._tag).toBe(
+              "PlaybackPermissionMissing"
+            )
+          }
+          expect(
+            setup.fetcher.mock.calls.some(([url]) =>
+              String(url).includes("/me/player")
+            )
+          ).toBe(false)
+          expect(setup.getConnection()?.needsReconnect).toBe(false)
+          expect((yield* spotify.savedTracksPage("github-42")).items).toEqual(
+            []
+          )
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "reads playback and devices with one refresh; only 204 means idle",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          grantPlayback(setup)
+          servePlayback(setup, new Response(null, { status: 204 }), [
+            { ...playbackDevice, id: null },
+            { ...playbackDevice, id: null, is_restricted: true },
+            playbackDevice,
+          ])
+          const spotify = yield* Spotify
+          expect(yield* spotify.playerStatus("github-42")).toEqual({
+            status: "ready",
+            playback: null,
+            devices: [
+              {
+                controllable: false,
+                why: "unidentified",
+                name: "Kitchen",
+                type: "Speaker",
+                active: true,
+              },
+              {
+                controllable: false,
+                why: "restricted",
+                name: "Kitchen",
+                type: "Speaker",
+                active: true,
+              },
+              {
+                controllable: true,
+                id: playbackDevice.id,
+                name: "Kitchen",
+                type: "Speaker",
+                active: true,
+              },
+            ],
+          })
+          expect(tokenCalls(setup)).toHaveLength(2)
+          for (const invalid of [
+            new Response("", { status: 200 }),
+            json({}),
+            json(null),
+          ]) {
+            servePlayback(setup, invalid)
+            expect(
+              (yield* failureReason(spotify.playerStatus("github-42")))._tag
+            ).toBe("InvalidResponse")
+          }
+          expect(tokenCalls(setup)).toHaveLength(2)
+        })
+      )
+    }
+  )
+
+  for (const [label, item, type, expected] of [
+    [
+      "local track",
+      { ...currentPlayback.item, id: null },
+      "track",
+      {
+        kind: "track",
+        id: null,
+        name: "Song",
+        artistNames: ["Artist"],
+        imageUrl: "https://image.example/album.jpg",
+      },
+    ],
+    [
+      "relinked track",
+      { ...currentPlayback.item, linked_from: { id: "original" } },
+      "track",
+      {
+        kind: "track",
+        id: "original",
+        name: "Song",
+        artistNames: ["Artist"],
+        imageUrl: "https://image.example/album.jpg",
+      },
+    ],
+    [
+      "malformed relink",
+      { ...currentPlayback.item, linked_from: "bad" },
+      "track",
+      {
+        kind: "track",
+        id: null,
+        name: "Song",
+        artistNames: ["Artist"],
+        imageUrl: "https://image.example/album.jpg",
+      },
+    ],
+    [
+      "missing relink ID",
+      { ...currentPlayback.item, linked_from: {} },
+      "track",
+      {
+        kind: "track",
+        id: null,
+        name: "Song",
+        artistNames: ["Artist"],
+        imageUrl: "https://image.example/album.jpg",
+      },
+    ],
+    ["episode", null, "episode", { kind: "other" }],
+  ] as const) {
+    it.effect(`reads ${label} without inventing an identity`, () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          grantPlayback(setup)
+          servePlayback(setup, {
+            ...currentPlayback,
+            item,
+            currently_playing_type: type,
+            actions: { pausing: true, disallows: { resuming: true } },
+          })
+          const spotify = yield* Spotify
+          const status = yield* spotify.playerStatus("github-42")
+          expect(status.status).toBe("ready")
+          if (status.status !== "ready") return
+          expect(status.playback?.item).toEqual(expected)
+          expect(status.playback?.allows).toEqual({
+            pause: false,
+            resume: false,
+          })
+        })
+      )
+    })
+  }
+
+  it.effect(
+    "sends one exact track URI and encodes opaque device IDs, rejecting invalid tracks before requests",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          grantPlayback(setup)
+          servePlayback(setup)
+          const spotify = yield* Spotify
+          const count = setup.fetcher.mock.calls.length
+          expect(
+            (yield* failureReason(
+              spotify.play("github-42", playbackDevice.id, "bad/id")
+            ))._tag
+          ).toBe("InvalidInput")
+          expect(setup.fetcher.mock.calls).toHaveLength(count)
+          yield* spotify.play("github-42", playbackDevice.id, "trackA")
+          expect(playerWrites(setup)).toHaveLength(1)
+          expect(
+            new URL(requestUrl(setup, -1)).searchParams.get("device_id")
+          ).toBe(playbackDevice.id)
+          expect(JSON.parse(requestBody(setup, -1))).toEqual({
+            uris: ["spotify:track:trackA"],
+          })
+          expect(
+            setup.fetcher.mock.calls.some(
+              ([url, init]) =>
+                String(url).includes("/me/player") && init?.method === "GET"
+            )
+          ).toBe(false)
+        })
+      )
+    }
+  )
+
+  for (const [status, body, reason] of [
+    [403, { error: { reason: "PREMIUM_REQUIRED" } }, "PremiumRequired"],
+    [403, { error: { reason: "UNKNOWN" } }, "PlaybackRefused"],
+    [403, "malformed", "PlaybackRefused"],
+    [404, {}, "DeviceUnavailable"],
+    [429, {}, "RateLimited"],
+    [401, {}, "ReconnectNeeded"],
+  ] as const) {
+    it.effect(`classifies player ${status} as ${reason}`, () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          grantPlayback(setup)
+          servePlayback(setup, currentPlayback, [], () =>
+            body === "malformed"
+              ? new Response("not json", { status })
+              : json(body, status, { "Retry-After": "9" })
+          )
+          const spotify = yield* Spotify
+          const error = yield* Effect.flip(
+            spotify.play("github-42", "speaker", "trackA")
+          )
+          expect(error.reason._tag).toBe(reason)
+          expect(error.retryAfterSeconds).toBe(status === 429 ? 9 : undefined)
+          expect(error.retryable).toBe(status === 429)
+          expect(setup.getConnection()?.needsReconnect).toBe(status === 401)
+          expect(playerWrites(setup)).toHaveLength(1)
+        })
+      )
+    })
+  }
+
+  for (const kind of ["pause", "resume"] as const) {
+    for (const nested of [false, true]) {
+      it.effect(
+        `${kind} accepts an already satisfied request with ${nested ? "nested" : "flat"} action restrictions without writing`,
+        () => {
+          const setup = testSetup()
+          return setup.run(
+            Effect.gen(function* () {
+              yield* connect(setup)
+              grantPlayback(setup)
+              const restriction = {
+                [kind === "pause" ? "pausing" : "resuming"]: true,
+              }
+              servePlayback(setup, {
+                ...currentPlayback,
+                is_playing: kind === "resume",
+                actions: nested ? { disallows: restriction } : restriction,
+              })
+              const spotify = yield* Spotify
+              yield* spotify[kind]("github-42", playbackDevice.id)
+              expect(playerWrites(setup)).toHaveLength(0)
+            })
+          )
+        }
+      )
+    }
+
+    it.effect(
+      `${kind} only addresses the current device, respects restrictions, and skips an already satisfied request`,
+      () => {
+        const setup = testSetup()
+        return setup.run(
+          Effect.gen(function* () {
+            yield* connect(setup)
+            grantPlayback(setup)
+            servePlayback(setup)
+            const spotify = yield* Spotify
+            expect(
+              (yield* failureReason(spotify[kind]("github-42", "different")))
+                ._tag
+            ).toBe("DeviceUnavailable")
+            servePlayback(setup, new Response(null, { status: 204 }))
+            expect(
+              (yield* failureReason(
+                spotify[kind]("github-42", playbackDevice.id)
+              ))._tag
+            ).toBe("DeviceUnavailable")
+            const desired = kind === "resume"
+            servePlayback(setup, { ...currentPlayback, is_playing: desired })
+            yield* spotify[kind]("github-42", playbackDevice.id)
+            expect(playerWrites(setup)).toHaveLength(0)
+            for (const restriction of [
+              { device: { ...playbackDevice, is_restricted: true } },
+              { actions: { [desired ? "resuming" : "pausing"]: true } },
+              {
+                actions: {
+                  disallows: { [desired ? "resuming" : "pausing"]: true },
+                },
+              },
+            ]) {
+              servePlayback(setup, {
+                ...currentPlayback,
+                is_playing: !desired,
+                ...restriction,
+              })
+              expect(
+                (yield* failureReason(
+                  spotify[kind]("github-42", playbackDevice.id)
+                ))._tag
+              ).toBe("PlaybackRefused")
+            }
+            expect(playerWrites(setup)).toHaveLength(0)
+            servePlayback(setup, { ...currentPlayback, is_playing: !desired })
+            yield* spotify[kind]("github-42", playbackDevice.id)
+            expect(playerWrites(setup)).toHaveLength(1)
+            const request = playerWrites(setup)[0]!
+            expect(
+              new URL(String(request[0])).searchParams.get("device_id")
+            ).toBe(playbackDevice.id)
+            expect(new URL(String(request[0])).pathname).toBe(
+              `/v1/me/player/${desired ? "play" : "pause"}`
+            )
+            expect(request[1]?.body == null || request[1]?.body === "").toBe(
+              true
+            )
+          })
+        )
+      }
+    )
+  }
+
+  it.effect("leaves non-player 404 behavior unchanged", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        yield* connect(setup)
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(json({}, 404))
+        const spotify = yield* Spotify
+        expect(
+          (yield* failureReason(spotify.playlists("github-42")))._tag
+        ).toBe("Rejected")
+        expect(setup.getConnection()?.needsReconnect).toBe(false)
+      })
+    )
+  })
+})

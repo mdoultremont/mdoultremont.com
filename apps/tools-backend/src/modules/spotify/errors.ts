@@ -56,7 +56,39 @@ export class Rejected extends Data.TaggedError("Rejected")<{
   }
 }
 
+export class PlaybackPermissionMissing extends Data.TaggedError(
+  "PlaybackPermissionMissing"
+)<{}> {
+  override get message() {
+    return "Connect Spotify again to allow playback control"
+  }
+}
+
+export class PremiumRequired extends Data.TaggedError("PremiumRequired")<{}> {
+  override get message() {
+    return "Spotify requires Premium for playback control"
+  }
+}
+
+export class PlaybackRefused extends Data.TaggedError("PlaybackRefused")<{}> {
+  override get message() {
+    return "Spotify refused playback. Check Spotify Premium, this app's access, and the device."
+  }
+}
+
+export class DeviceUnavailable extends Data.TaggedError(
+  "DeviceUnavailable"
+)<{}> {
+  override get message() {
+    return "This device is unavailable or is not the device currently playing. Open Spotify on the device and refresh."
+  }
+}
+
 export type SpotifyErrorReason =
+  | PlaybackPermissionMissing
+  | PremiumRequired
+  | PlaybackRefused
+  | DeviceUnavailable
   | NotConnected
   | ReconnectNeeded
   | AccessDenied

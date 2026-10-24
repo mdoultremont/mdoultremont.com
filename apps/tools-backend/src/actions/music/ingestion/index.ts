@@ -6,5 +6,5 @@ export {
   IngestionMessage,
   IngestionPersistenceError,
   type IngestionStatus,
-  InvalidLikesPage,
+  InvalidSourcePage,
 } from "./errors"

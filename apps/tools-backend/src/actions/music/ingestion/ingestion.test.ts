@@ -11,6 +11,7 @@ import {
 import { Database } from "#backend/modules/database"
 import { makeTestD1 } from "#backend/modules/database/testing"
 import { JobQueue } from "#backend/modules/job-queue"
+import { SourceStore } from "#backend/actions/music/collection"
 import { IngestionStore, MusicIngestion } from "."
 
 const hour = 60 * 60 * 1000
@@ -49,14 +50,28 @@ function setup() {
       return page ? Effect.succeed(page) : Effect.die(`no page ${cursor}`)
     }
   )
+  let playlist = pages([], 50)
+  let snapshot = "snapshot1"
+  const playlistTracksPage = vi.fn<Spotify["Service"]["playlistTracksPage"]>(
+    (_ownerId, _playlistId, cursor) => {
+      const page = playlist.get(cursor)
+      return page ? Effect.succeed(page) : Effect.die(`no page ${cursor}`)
+    }
+  )
+  const playlistSnapshot = vi.fn<Spotify["Service"]["playlistSnapshot"]>(() =>
+    Effect.succeed(snapshot)
+  )
   const sent: unknown[] = []
   const layer = MusicIngestion.layerNoDeps.pipe(
     Layer.provide(
       Layer.mergeAll(
         IngestionStore.layer,
+        SourceStore.layer,
         SpotifyConnections.layer,
         Layer.succeed(Spotify, {
           savedTracksPage,
+          playlistTracksPage,
+          playlistSnapshot,
         } as unknown as Spotify["Service"]),
         Layer.succeed(
           JobQueue,
@@ -84,14 +99,30 @@ function setup() {
   const liked = (trackId: string) =>
     d1.sqlite
       .prepare(
-        "SELECT liked FROM music_liked_tracks WHERE owner_id = 'owner' AND track_id = ?"
+        "SELECT present FROM music_source_tracks WHERE owner_id = 'owner' AND source_id = 'liked' AND track_id = ?"
       )
-      .get(trackId)?.liked
+      .get(trackId)?.present
 
   return {
     d1,
     sent,
     savedTracksPage,
+    playlistTracksPage,
+    playlistSnapshot,
+    addPlaylist: (id = "shazam") =>
+      d1.sqlite
+        .prepare(
+          "INSERT INTO music_sources (owner_id, source_id, created_at, updated_at) VALUES ('owner', ?, 1, 1)"
+        )
+        .run(id),
+    setPlaylist: (
+      tracks: readonly SpotifySavedTrack[],
+      version = "snapshot1",
+      size = 50
+    ) => {
+      playlist = pages(tracks, size)
+      snapshot = version
+    },
     drain,
     liked,
     setLibrary: (likes: readonly SpotifySavedTrack[], size = 50) => {
@@ -116,7 +147,7 @@ describe("music ingestion", () => {
         yield* ingestion.start("owner", "full")
         yield* t.drain
         const status = yield* ingestion.status("owner")
-        expect(status.latest).toMatchObject({
+        expect(status.sources[0]?.latest).toMatchObject({
           kind: "full",
           status: "completed",
           pages: 3,
@@ -124,7 +155,7 @@ describe("music ingestion", () => {
           added: 25,
           total: 25,
         })
-        assert.strictEqual(status.liked, 25)
+        assert.strictEqual(status.present, 25)
         expect(t.savedTracksPage).toHaveBeenCalledTimes(3)
       })
     )
@@ -156,12 +187,12 @@ describe("music ingestion", () => {
           yield* ingestion.start("owner", "incremental")
           yield* t.drain
           const status = yield* ingestion.status("owner")
-          expect(status.latest).toMatchObject({
+          expect(status.sources[0]?.latest).toMatchObject({
             kind: "incremental",
             status: "completed",
             added: 2,
           })
-          assert.strictEqual(status.liked, 22)
+          assert.strictEqual(status.present, 22)
           expect(t.savedTracksPage).toHaveBeenCalledTimes(1)
         })
       )
@@ -183,8 +214,10 @@ describe("music ingestion", () => {
           t.setLibrary([track("a"), track("c")])
           yield* ingestion.start("owner", "full")
           yield* t.drain
-          expect((yield* ingestion.status("owner")).latest).toMatchObject({
-            unliked: 1,
+          expect(
+            (yield* ingestion.status("owner")).sources[0]?.latest
+          ).toMatchObject({
+            removed: 1,
           })
           assert.strictEqual(t.liked("b"), 0)
 
@@ -197,8 +230,8 @@ describe("music ingestion", () => {
           yield* t.drain
           assert.strictEqual(t.liked("b"), 1)
           expect(yield* ingestion.status("owner")).toMatchObject({
-            liked: 3,
-            unliked: 0,
+            present: 3,
+            removed: 0,
           })
         })
       )
@@ -212,9 +245,9 @@ describe("music ingestion", () => {
       return t.run(
         Effect.gen(function* () {
           const ingestion = yield* MusicIngestion
-          const first = yield* ingestion.start("owner", "full")
-          const second = yield* ingestion.start("owner", "incremental")
-          assert.strictEqual(second.id, first.id)
+          const [first] = yield* ingestion.start("owner", "full")
+          const [second] = yield* ingestion.start("owner", "incremental")
+          assert.strictEqual(second!.id, first!.id)
           assert.strictEqual(t.sent.length, 1)
         })
       )
@@ -235,10 +268,10 @@ describe("music ingestion", () => {
               total: 2,
             })
           )
-          const started = yield* ingestion.start("owner", "full")
-          yield* ingestion.processNext(started.id)
-          const error = yield* Effect.flip(ingestion.processNext(started.id))
-          assert.strictEqual(error._tag, "InvalidLikesPage")
+          const [started] = yield* ingestion.start("owner", "full")
+          yield* ingestion.processNext(started!.id)
+          const error = yield* Effect.flip(ingestion.processNext(started!.id))
+          assert.strictEqual(error._tag, "InvalidSourcePage")
         })
       )
     }
@@ -256,20 +289,26 @@ describe("scheduled ingestion", () => {
           t.setLibrary([track("a")])
           yield* ingestion.scheduled("owner")
           yield* t.drain
-          expect((yield* ingestion.status("owner")).latest).toMatchObject({
+          expect(
+            (yield* ingestion.status("owner")).sources[0]?.latest
+          ).toMatchObject({
             kind: "full",
           })
 
           yield* TestClock.adjust(hour)
           yield* ingestion.scheduled("owner")
           yield* t.drain
-          expect((yield* ingestion.status("owner")).latest).toMatchObject({
+          expect(
+            (yield* ingestion.status("owner")).sources[0]?.latest
+          ).toMatchObject({
             kind: "incremental",
           })
 
           yield* TestClock.adjust(24 * hour)
           yield* ingestion.scheduled("owner")
-          expect((yield* ingestion.status("owner")).latest).toMatchObject({
+          expect(
+            (yield* ingestion.status("owner")).sources[0]?.latest
+          ).toMatchObject({
             kind: "full",
           })
         })
@@ -284,7 +323,7 @@ describe("scheduled ingestion", () => {
       return t.run(
         Effect.gen(function* () {
           const ingestion = yield* MusicIngestion
-          const started = yield* ingestion.start("owner", "full")
+          const [started] = yield* ingestion.start("owner", "full")
           t.sent.length = 0 // the message was lost
 
           yield* TestClock.adjust(5 * 60 * 1000)
@@ -294,7 +333,7 @@ describe("scheduled ingestion", () => {
           yield* TestClock.adjust(10 * 60 * 1000)
           yield* ingestion.scheduled("owner")
           assert.deepStrictEqual(t.sent, [
-            { kind: "music.ingestion", ingestionId: started.id },
+            { kind: "music.ingestion", ingestionId: started!.id },
           ])
         })
       )
@@ -309,8 +348,182 @@ describe("scheduled ingestion", () => {
         t.d1.sqlite.exec("DELETE FROM spotify_connections")
         yield* ingestion.scheduled("owner")
         assert.strictEqual(t.sent.length, 0)
-        assert.isNull((yield* ingestion.status("owner")).latest)
+        assert.deepStrictEqual((yield* ingestion.status("owner")).sources, [])
       })
     )
   })
+})
+
+describe("playlist ingestion", () => {
+  it.effect(
+    "skips an unchanged snapshot, but a full read always visits every page",
+    () => {
+      const t = setup()
+      t.addPlaylist()
+      return t.run(
+        Effect.gen(function* () {
+          const ingestion = yield* MusicIngestion
+          t.setPlaylist([track("a"), track("b"), track("c")], "version1", 1)
+          yield* ingestion.start("owner", "full")
+          yield* t.drain
+          expect(t.playlistTracksPage).toHaveBeenCalledTimes(3)
+          const source = () =>
+            t.d1.sqlite
+              .prepare(
+                "SELECT snapshot_id FROM music_sources WHERE source_id = 'shazam'"
+              )
+              .get()?.snapshot_id
+          expect(source()).toBe("version1")
+          t.playlistTracksPage.mockClear()
+          yield* ingestion.start("owner", "incremental")
+          yield* t.drain
+          expect(t.playlistTracksPage).not.toHaveBeenCalled()
+          expect(
+            (yield* ingestion.status("owner")).sources[1]?.latest
+          ).toMatchObject({
+            status: "completed",
+            pages: 0,
+            seen: 0,
+            snapshotId: "version1",
+          })
+          yield* ingestion.start("owner", "full")
+          yield* t.drain
+          expect(t.playlistTracksPage).toHaveBeenCalledTimes(3)
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "reads a changed playlist past known entries and removes memberships only from that source",
+    () => {
+      const t = setup()
+      t.addPlaylist()
+      return t.run(
+        Effect.gen(function* () {
+          const ingestion = yield* MusicIngestion
+          t.setLibrary([track("shared", "2026-05-01T00:00:00Z")])
+          t.setPlaylist([track("shared"), track("gone")], "version1", 1)
+          yield* ingestion.start("owner", "full")
+          yield* t.drain
+          yield* TestClock.adjust(hour)
+          t.setPlaylist([track("shared"), track("new")], "version2", 1)
+          t.playlistTracksPage.mockClear()
+          const started = yield* ingestion.startSource(
+            "owner",
+            { kind: "playlist", playlistId: "shazam" },
+            "incremental"
+          )
+          yield* ingestion.processNext(started!.id)
+          expect(
+            t.d1.sqlite
+              .prepare(
+                "SELECT snapshot_id FROM music_sources WHERE source_id = 'shazam'"
+              )
+              .get()?.snapshot_id
+          ).toBe("version1")
+          yield* t.drain
+          expect(t.playlistTracksPage).toHaveBeenCalledTimes(2)
+          const status = yield* ingestion.status("owner")
+          expect(status.sources[1]).toMatchObject({
+            present: 2,
+            removed: 1,
+            snapshotId: "version2",
+            latest: { removed: 1 },
+          })
+          expect(status.sources[0]).toMatchObject({ present: 1, removed: 0 })
+          expect(
+            t.d1.sqlite
+              .prepare(
+                "SELECT added_at FROM music_tracks WHERE track_id = 'shared'"
+              )
+              .get()?.added_at
+          ).toBe("2026-05-01T00:00:00Z")
+          expect(
+            t.d1.sqlite
+              .prepare(
+                "SELECT track_id, present FROM music_source_tracks WHERE source_id = 'shazam' ORDER BY track_id"
+              )
+              .all()
+          ).toEqual([
+            { track_id: "gone", present: 0 },
+            { track_id: "new", present: 1 },
+            { track_id: "shared", present: 1 },
+          ])
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "a full playlist read removes absent entries without removing the same track from Liked Songs",
+    () => {
+      const t = setup()
+      t.addPlaylist()
+      return t.run(
+        Effect.gen(function* () {
+          const ingestion = yield* MusicIngestion
+          t.setLibrary([track("shared")])
+          t.setPlaylist([track("shared")])
+          yield* ingestion.start("owner", "full")
+          yield* t.drain
+          yield* TestClock.adjust(hour)
+          t.setPlaylist([], "version2")
+          yield* ingestion.startSource(
+            "owner",
+            { kind: "playlist", playlistId: "shazam" },
+            "full"
+          )
+          yield* t.drain
+          expect(yield* ingestion.status("owner")).toMatchObject({
+            present: 1,
+            removed: 0,
+            sources: [
+              { present: 1, removed: 0 },
+              { present: 0, removed: 1, latest: { removed: 1 } },
+            ],
+          })
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "runs and resumes each enabled source independently, with a daily full read",
+    () => {
+      const t = setup()
+      t.addPlaylist()
+      t.addPlaylist("disabled")
+      t.d1.sqlite.exec(
+        "UPDATE music_sources SET enabled = 0 WHERE source_id = 'disabled'"
+      )
+      return t.run(
+        Effect.gen(function* () {
+          const ingestion = yield* MusicIngestion
+          yield* ingestion.scheduled("owner")
+          expect(t.sent).toHaveLength(2)
+          t.sent.length = 0
+          yield* TestClock.adjust(hour)
+          yield* ingestion.scheduled("owner")
+          expect(t.sent).toHaveLength(2)
+          yield* t.drain
+          yield* TestClock.adjust(hour)
+          yield* ingestion.scheduled("owner")
+          yield* t.drain
+          expect(
+            (yield* ingestion.status("owner")).sources
+              .filter((source) => source.enabled)
+              .map((source) => source.latest?.kind)
+          ).toEqual(["incremental", "incremental"])
+          yield* TestClock.adjust(24 * hour)
+          yield* ingestion.scheduled("owner")
+          expect(
+            (yield* ingestion.status("owner")).sources
+              .filter((source) => source.enabled)
+              .map((source) => source.latest?.kind)
+          ).toEqual(["full", "full"])
+        })
+      )
+    }
+  )
 })

@@ -1,8 +1,9 @@
+import { eligibleTrack } from "#backend/actions/music/collection"
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm"
 import { Context, Effect, Layer } from "effect"
 import {
   Database,
-  musicLikedTracks,
+  musicTracks,
   musicRecordings,
 } from "#backend/modules/database"
 import { EnrichmentPersistenceError, type EnrichmentStatus } from "./errors"
@@ -13,7 +14,7 @@ export type RecordingRow = typeof musicRecordings.$inferInsert
 export class EnrichmentStore extends Context.Service<
   EnrichmentStore,
   {
-    /** ISRCs of liked tracks that have no recording data yet. */
+    /** ISRCs of collected tracks that have no recording data yet. */
     readonly pendingIsrcs: (
       limit: number
     ) => Effect.Effect<readonly string[], EnrichmentPersistenceError>
@@ -47,16 +48,16 @@ export class EnrichmentStore extends Context.Service<
         pendingIsrcs: (limit) =>
           query((db) =>
             db
-              .selectDistinct({ isrc: musicLikedTracks.isrc })
-              .from(musicLikedTracks)
+              .selectDistinct({ isrc: musicTracks.isrc })
+              .from(musicTracks)
               .leftJoin(
                 musicRecordings,
-                eq(musicRecordings.isrc, musicLikedTracks.isrc)
+                eq(musicRecordings.isrc, musicTracks.isrc)
               )
               .where(
                 and(
-                  eq(musicLikedTracks.liked, true),
-                  isNotNull(musicLikedTracks.isrc),
+                  eligibleTrack(musicTracks.ownerId, musicTracks.trackId),
+                  isNotNull(musicTracks.isrc),
                   sql`${musicRecordings.isrc} IS NULL`
                 )
               )
@@ -80,24 +81,24 @@ export class EnrichmentStore extends Context.Service<
             db
               .select({
                 status: musicRecordings.status,
-                hasIsrc: sql<number>`${musicLikedTracks.isrc} IS NOT NULL`,
+                hasIsrc: sql<number>`${musicTracks.isrc} IS NOT NULL`,
                 hasAnalysis: sql<number>`${musicRecordings.acoustic} IS NOT NULL`,
                 count: sql<number>`count(*)`,
               })
-              .from(musicLikedTracks)
+              .from(musicTracks)
               .leftJoin(
                 musicRecordings,
-                eq(musicRecordings.isrc, musicLikedTracks.isrc)
+                eq(musicRecordings.isrc, musicTracks.isrc)
               )
               .where(
                 and(
-                  eq(musicLikedTracks.ownerId, ownerId),
-                  eq(musicLikedTracks.liked, true)
+                  eq(musicTracks.ownerId, ownerId),
+                  eligibleTrack(musicTracks.ownerId, musicTracks.trackId)
                 )
               )
               .groupBy(
                 musicRecordings.status,
-                sql`${musicLikedTracks.isrc} IS NOT NULL`,
+                sql`${musicTracks.isrc} IS NOT NULL`,
                 sql`${musicRecordings.acoustic} IS NOT NULL`
               )
           ).pipe(

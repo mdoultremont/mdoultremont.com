@@ -1,33 +1,10 @@
 import { Data, Schema } from "effect"
 
-export type IngestionKind = "full" | "incremental"
-
-export interface Ingestion {
-  readonly id: string
-  readonly ownerId: string
-  readonly kind: IngestionKind
-  readonly status: "queued" | "running" | "completed" | "failed"
-  readonly cursor: string | null
-  readonly pages: number
-  /** Likes read from Spotify so far. */
-  readonly seen: number
-  /** Likes that were new, re-liked, or had changed since the last ingestion. */
-  readonly added: number
-  /** Liked tracks a full ingestion no longer found. */
-  readonly unliked: number
-  /** Spotify's count of Liked Songs, known after the first page. */
-  readonly total: number | null
-  readonly error: string | null
-  readonly startedAt: number
-  readonly updatedAt: number
-  readonly finishedAt: number | null
-}
-
-export interface IngestionStatus {
-  readonly latest: Ingestion | null
-  readonly liked: number
-  readonly unliked: number
-}
+export type {
+  Ingestion,
+  IngestionKind,
+  IngestionStatus,
+} from "@mdoultremont/tools-contracts/music"
 
 /** Queue message asking for the next page of an ingestion. */
 export const IngestionMessage = Schema.Struct({
@@ -44,6 +21,6 @@ export class IngestionPersistenceError extends Data.TaggedError(
 }
 
 /** Spotify returned a page that cannot be trusted, such as a cursor that does not advance. */
-export class InvalidLikesPage extends Data.TaggedError("InvalidLikesPage")<{
+export class InvalidSourcePage extends Data.TaggedError("InvalidSourcePage")<{
   readonly message: string
 }> {}

@@ -23,7 +23,7 @@ export type DeliveryError =
   | SpotifyError
 
 interface Plan {
-  /** Pairs to write, newest likes first. */
+  /** Pairs to write, most recently added first. */
   readonly todo: readonly TrackPlaylist[]
   readonly delivered: number
   readonly refused: number
@@ -33,7 +33,7 @@ interface Plan {
 /**
  * Delivery: adding tracks to the playlists named in their decisions. Only
  * adds, only to enabled destinations (or the review playlist), and only
- * tracks that are still liked.
+ * tracks present in an enabled source.
  */
 export class MusicDelivery extends Context.Service<
   MusicDelivery,
@@ -50,7 +50,7 @@ export class MusicDelivery extends Context.Service<
     readonly processNext: (
       ownerId: string
     ) => Effect.Effect<
-      { readonly delivered: number; readonly unliked: number },
+      { readonly delivered: number; readonly removed: number },
       DeliveryError
     >
     readonly status: (
@@ -163,23 +163,28 @@ export class MusicDelivery extends Context.Service<
       ) {
         const { todo } = yield* plan(ownerId)
         const batch = todo.slice(0, batchSize)
-        if (batch.length === 0) return { delivered: 0, unliked: 0 }
+        if (batch.length === 0) return { delivered: 0, removed: 0 }
 
-        // Re-check right before writing: the stored liked state can be a day old.
+        // Liked Songs can change between ingestion and delivery. Playlist memberships use the latest completed read.
         const trackIds = [...new Set(batch.map((pair) => pair.trackId))]
-        const liked = yield* spotify.likedTracks(ownerId, trackIds)
-        const unliked = trackIds.filter((id) => !liked.has(id))
-        yield* store.markUnliked(ownerId, unliked)
+        const toCheck = yield* store.likedMemberships(ownerId, trackIds)
+        const liked =
+          toCheck.length > 0
+            ? yield* spotify.likedTracks(ownerId, toCheck)
+            : new Set<string>()
+        const removed = toCheck.filter((id) => !liked.has(id))
+        yield* store.markRemoved(ownerId, removed)
 
+        const eligible = yield* store.eligible(ownerId, trackIds)
         let delivered = 0
         const byPlaylist = Array.groupBy(
-          batch.filter((pair) => liked.has(pair.trackId)),
+          batch.filter((pair) => eligible.has(pair.trackId)),
           (pair) => pair.playlistId
         )
         for (const [playlistId, pairs] of Object.entries(byPlaylist))
           delivered += yield* writePlaylist(ownerId, playlistId, pairs)
         if (todo.length > batch.length) yield* send(ownerId)
-        return { delivered, unliked: unliked.length }
+        return { delivered, removed: removed.length }
       })
 
       const status = Effect.fn("MusicDelivery.status")(function* (

@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/features/ui/sidebar"
 import { AppSwitcher } from "./app-switcher"
 import { NavUser } from "./nav-user"
@@ -27,6 +28,7 @@ export function AppSidebar({
   current: CatalogApp | undefined
   pathname: string
 }) {
+  const { setOpenMobile } = useSidebar()
   const active = current ? pageAt(current, pathname) : undefined
   return (
     <Sidebar variant="inset">
@@ -42,6 +44,8 @@ export function AppSidebar({
                 <SidebarMenuItem key={page.to}>
                   <SidebarMenuButton
                     isActive={page === active}
+                    aria-current={page === active ? "page" : undefined}
+                    onClick={() => setOpenMobile(false)}
                     tooltip={page.label}
                     render={<Link to={page.to} />}
                   >

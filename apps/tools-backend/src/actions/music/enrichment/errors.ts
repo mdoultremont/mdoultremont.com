@@ -1,8 +1,8 @@
 import { Data, Schema } from "effect"
 
-/** Enrichment progress across the owner's liked tracks. */
+/** Enrichment progress across the owner's collected tracks. */
 export interface EnrichmentStatus {
-  /** Liked tracks with recording data from MusicBrainz. */
+  /** Collected tracks with recording data from MusicBrainz. */
   readonly enriched: number
   /** Of those, how many also have an AcousticBrainz analysis. */
   readonly withAnalysis: number

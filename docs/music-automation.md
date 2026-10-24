@@ -1,6 +1,6 @@
 # Music automation operation
 
-The private music area (`/music` on `tools.mdoultremont.com`) sorts the owner's Spotify Liked Songs into playlists.
+The private music area (`/music` on `tools.mdoultremont.com`) sorts tracks from the owner's enabled Spotify sources into destination playlists.
 Vocabulary is defined in `CONTEXT.md` (Music control area); code structure and
 Effect patterns are in `apps/tools-backend/README.md`.
 
@@ -8,17 +8,23 @@ Effect patterns are in `apps/tools-backend/README.md`.
 
 Four steps, each re-runnable on its own:
 
-| Step           | Reads                                    | Writes            | Runs when                                                 |
-| -------------- | ---------------------------------------- | ----------------- | --------------------------------------------------------- |
-| Ingestion      | Spotify Liked Songs                      | liked tracks      | Spotify connects; hourly; "Check for new likes"           |
-| Enrichment     | MusicBrainz, AcousticBrainz (by ISRC)    | recording data    | an ingestion page adds likes; hourly while pending        |
-| Classification | recording data + destination description | decisions         | the owner sets **Ready**; after enrichment; "Reclassify"  |
-| Delivery       | decisions                                | Spotify playlists | **Write now**; after classification if automatic delivery |
+| Step           | Reads                                    | Writes                                  | Runs when                                                          |
+| -------------- | ---------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
+| Ingestion      | enabled Spotify sources                  | collected tracks and source memberships | Spotify connects; source added or enabled; hourly; "Check for new" |
+| Enrichment     | MusicBrainz, AcousticBrainz (by ISRC)    | recording data                          | an ingestion page adds source entries; hourly while pending        |
+| Classification | recording data + destination description | decisions                               | the owner sets **Ready**; after enrichment; "Reclassify"           |
+| Delivery       | decisions                                | Spotify playlists                       | **Write now**; after classification if automatic delivery          |
 
-- **Ingestion.** A full ingestion reads every page and marks likes it no longer
-  finds as un-liked; it runs on connect and then once a day. An incremental
-  ingestion stops at the first like already stored; it runs every other hour.
-  One ingestion runs at a time per owner.
+- **Ingestion.** Reads one source per ingestion. Liked Songs is built in and
+  can be disabled. Owners can add their own playlists, such as My Shazam Tracks,
+  then disable or remove them. Sources are never changed and cannot also be
+  destinations or the review playlist. A full ingestion reads every page.
+  Liked Songs incremental reads stop at the first known like. Playlist
+  incremental reads first compare Spotify's snapshot with the last completed
+  read, skipping unchanged playlists and reading every page of changed ones.
+  The snapshot is saved on completion. A read of every page marks missing
+  memberships as removed from that source. Each enabled source runs hourly,
+  with a full read daily. One ingestion runs at a time per source.
 - **Enrichment.** Recording data is stored per ISRC, so re-ingesting never
   repeats a lookup. An ISRC with several MusicBrainz recordings is stored as
   ambiguous rather than guessed. AcousticBrainz only knows recordings analysed
@@ -32,11 +38,15 @@ Four steps, each re-runnable on its own:
   [the input policy](spotify-classifier-input-policy.md). Each decision
   records a fingerprint of the model name and destinations it used, so
   changing either marks decisions as outdated until the owner reclassifies.
-- **Delivery.** Adds each decided track to its enabled destinations, or to the
-  review playlist. It only adds, never removes; it re-checks that each track is
-  still liked right before writing. Writes are recorded as pending first; a
-  pending write is checked against the playlist before being retried, so a lost
-  response does not duplicate a track.
+- **Delivery.** Adds each eligible decided track to its enabled destinations,
+  or to the review playlist. It never removes tracks. Right before a write,
+  delivery re-checks present memberships in an enabled Liked Songs source.
+  A missing like clears that membership. A track remains eligible while it is
+  present in any enabled source. Playlist-only tracks use the latest ingestion
+  without a playlist re-read. Removed tracks keep recording data and decisions,
+  and earlier deliveries stay in Spotify. Writes are recorded as pending first.
+  A pending write is checked against the destination playlist before a retry,
+  so a lost response does not duplicate a track.
 
 ## Queue and cron
 
@@ -51,8 +61,8 @@ exponential backoff, honouring `Retry-After`, for up to ten attempts. Other
 failures stop: an ingestion is marked failed with its reason, and other steps
 leave their work pending.
 
-The hourly cron (`0 * * * *`) runs the upkeep: it starts the due ingestion,
-re-sends a stalled ingestion's message after ten minutes, and resumes every
+The hourly cron (`0 * * * *`) starts each enabled source's due ingestion,
+re-sends stalled ingestions' messages after ten minutes, and resumes every
 step with pending work.
 
 ## Configuration and deployment
@@ -72,7 +82,8 @@ pnpm --filter @mdoultremont/tools db:migrate:local
 ```
 
 Disconnecting Spotify deletes the connection and, through foreign keys, every
-liked track, decision, delivery record, destination, and setting of the owner.
+source, source membership, collected track, decision, delivery record,
+destination, and setting of the owner.
 Recording data is kept, since it is shared CC0 data keyed by ISRC.
 
 ## Validation

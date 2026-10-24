@@ -13,6 +13,10 @@ import { actionRegistry, bind, createRegistry, handlers } from "."
  * the action that serves it now. Removing an action breaks this list.
  */
 const legacy = {
+  "GET /api/music/sources": "music.sources.get",
+  "POST /api/music/sources": "music.sources.add",
+  "PUT /api/music/sources/enabled": "music.sources.setEnabled",
+  "DELETE /api/music/sources/:playlistId": "music.sources.remove",
   "oRPC flights/list": "flights.list",
   "POST /api/flights/:flightId/prepare": "flights.prepare",
   "oRPC flights/get": "flights.get",
@@ -30,6 +34,8 @@ const legacy = {
   "POST /api/music/spotify/disconnect": "music.spotify.disconnect",
   "GET /api/music/spotify/playlists": "music.spotify.playlists",
   "GET /api/music/spotify/liked-tracks": "music.spotify.likedTracks",
+  "GET /api/music/spotify/playlists/:playlistId/tracks":
+    "music.spotify.playlistTracks",
   "GET /api/music/destinations": "music.destinations.get",
   "PUT /api/music/destinations": "music.destinations.save",
   "POST /api/music/destinations/create": "music.destinations.create",
@@ -53,12 +59,21 @@ const legacy = {
   "DELETE /api/back-office/invitations": "backOffice.invitations.revoke",
 } satisfies Record<string, ActionName>
 
+const introduced = [
+  "music.player.status",
+  "music.player.play",
+  "music.player.pause",
+  "music.player.resume",
+] satisfies ActionName[]
+
 const run = () => Effect.succeed({})
 
 describe("action registry", () => {
   test("serves every former capability, and nothing outside the inventory", () => {
     const names = actionRegistry.actions.map((entry) => entry.name)
-    expect(new Set(names)).toEqual(new Set(Object.values(legacy)))
+    expect(new Set(names)).toEqual(
+      new Set([...Object.values(legacy), ...introduced])
+    )
     expect(names).toHaveLength(new Set(names).size)
   })
 

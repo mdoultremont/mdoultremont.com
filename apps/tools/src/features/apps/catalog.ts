@@ -1,4 +1,6 @@
 import {
+  ArrowDownToLineIcon,
+  ArrowUpFromLineIcon,
   BackpackIcon,
   BookOpenIcon,
   LayoutDashboardIcon,
@@ -15,9 +17,23 @@ import { ParagliderIcon } from "@/features/flights/icon"
 /** The public portfolio, which lives on its own domain. */
 export const portfolioUrl = "https://mdoultremont.com"
 
+export const musicPages = [
+  {
+    to: "/music/input",
+    label: "Input playlists",
+    icon: ArrowDownToLineIcon,
+  },
+  {
+    to: "/music/output",
+    label: "Output playlists",
+    icon: ArrowUpFromLineIcon,
+  },
+  { to: "/music/settings", label: "Settings", icon: SlidersHorizontalIcon },
+] as const
+
 /**
  * How each private app appears in the browser, in display order. `pages` are
- * the app's sidebar links; the first one is the app's home at `to`.
+ * the app's sidebar links.
  */
 export const appCatalog = [
   {
@@ -26,7 +42,7 @@ export const appCatalog = [
     name: "Music",
     description: "Sort Spotify Liked Songs into playlists.",
     icon: Music2Icon,
-    pages: [{ to: "/music", label: "Control", icon: SlidersHorizontalIcon }],
+    pages: musicPages,
   },
   {
     id: "flights",

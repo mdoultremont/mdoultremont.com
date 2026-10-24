@@ -8,6 +8,11 @@ export const spotifyScopes = [
   "playlist-modify-public",
 ] as const
 
+export const spotifyPlaybackScopes = [
+  "user-read-playback-state",
+  "user-modify-playback-state",
+] as const
+
 // Public types returned by the module.
 
 export interface SpotifyPlaylist {
@@ -24,6 +29,7 @@ export interface SpotifySavedTrack {
   readonly artistNames: readonly string[]
   readonly isrc: string | null
   readonly durationMs: number | null
+  readonly artworkUrl?: string | null
   readonly addedAt: string
 }
 
@@ -80,6 +86,8 @@ export const Playlist = Schema.Struct({
 export const Track = Schema.Struct({
   id: Schema.optional(Schema.NullOr(Schema.String)),
   type: Schema.optional(Schema.String),
+  is_local: Schema.optional(Schema.Boolean),
+  is_playable: Schema.optional(Schema.Boolean),
   name: Schema.optional(Schema.String),
   artists: Schema.optional(
     Schema.Array(Schema.Struct({ name: Schema.optional(Schema.String) }))
@@ -88,8 +96,21 @@ export const Track = Schema.Struct({
     Schema.Struct({ isrc: Schema.optional(Schema.String) })
   ),
   duration_ms: Schema.optional(Schema.Unknown),
+  album: Schema.optional(Schema.Unknown),
   linked_from: Schema.optional(
     Schema.NullOr(Schema.Struct({ id: Schema.optional(Schema.Unknown) }))
+  ),
+})
+
+export const AlbumArtwork = Schema.Struct({
+  images: Schema.Array(Schema.Unknown),
+})
+
+export const ArtworkImage = Schema.Struct({
+  url: Schema.String.check(
+    Schema.makeFilter(
+      (url) => URL.canParse(url) && new URL(url).protocol === "https:"
+    )
   ),
 })
 
@@ -100,6 +121,8 @@ export const SavedTrackItem = Schema.Struct({
 
 /** Playlist items moved from `track` to `item` in 2026; both are accepted. */
 export const PlaylistItem = Schema.Struct({
+  added_at: Schema.optional(Schema.NullOr(Schema.String)),
+  is_local: Schema.optional(Schema.Boolean),
   item: Schema.optional(Schema.NullOr(Track)),
   track: Schema.optional(Schema.NullOr(Track)),
 })
