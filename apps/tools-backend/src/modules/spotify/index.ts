@@ -2,6 +2,10 @@ export { Spotify } from "./spotify"
 export { SpotifyConnections, type SpotifyConnection } from "./connections"
 export {
   AccessDenied,
+  PlaybackPermissionMissing,
+  PremiumRequired,
+  PlaybackRefused,
+  DeviceUnavailable,
   InvalidInput,
   InvalidResponse,
   NotConnected,
@@ -21,3 +25,10 @@ export {
   type SpotifyPlaylist,
   type SpotifySavedTrack,
 } from "./schemas"
+
+export type {
+  PlayerStatus,
+  PlayerDevice,
+  Playback,
+  NowPlaying,
+} from "@mdoultremont/tools-contracts/music"

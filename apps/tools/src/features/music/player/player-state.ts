@@ -1,0 +1,270 @@
+import type {
+  Playback,
+  PlayerDevice,
+  PlayerStatus,
+} from "@mdoultremont/tools-contracts/music"
+
+export type PlayerCommand =
+  | {
+      readonly kind: "play"
+      readonly deviceId: string
+      readonly trackId: string
+    }
+  | { readonly kind: "pause"; readonly deviceId: string }
+  | { readonly kind: "resume"; readonly deviceId: string }
+
+export interface PlayerFailure {
+  readonly reason?: string
+  readonly message: string
+  readonly retryAfterSeconds?: number
+}
+
+export interface PlayerState {
+  readonly server:
+    | { readonly status: "loading" }
+    | { readonly status: "loaded"; readonly data: PlayerStatus }
+    | { readonly status: "failed" }
+  readonly stale: boolean
+  readonly chosenDeviceId: string | null
+  readonly pending: {
+    readonly command: PlayerCommand
+    readonly stage: "sending" | "confirming"
+    readonly acceptedAt: number
+    readonly checks: number
+  } | null
+  readonly unconfirmed: boolean
+  readonly notice: string | null
+  readonly connectionLost: boolean
+  readonly epoch: number
+  readonly appliedSeq: number
+  readonly pausedUntil: number
+}
+
+export const initialPlayerState: PlayerState = {
+  server: { status: "loading" },
+  stale: false,
+  chosenDeviceId: null,
+  pending: null,
+  unconfirmed: false,
+  notice: null,
+  connectionLost: false,
+  epoch: 0,
+  appliedSeq: 0,
+  pausedUntil: 0,
+}
+
+export type PlayerEvent =
+  | { readonly type: "choose"; readonly deviceId: string | null }
+  | {
+      readonly type: "start"
+      readonly command: PlayerCommand
+      readonly now: number
+    }
+  | { readonly type: "accepted"; readonly epoch: number; readonly now: number }
+  | {
+      readonly type: "rejected"
+      readonly epoch: number
+      readonly failure: PlayerFailure
+      readonly now: number
+    }
+  | {
+      readonly type: "loaded"
+      readonly epoch: number
+      readonly seq: number
+      readonly data: PlayerStatus
+      readonly now: number
+    }
+  | {
+      readonly type: "failed"
+      readonly epoch: number
+      readonly seq: number
+      readonly failure: PlayerFailure
+      readonly now: number
+    }
+
+export function confirms(command: PlayerCommand, status: PlayerStatus) {
+  if (
+    status.status !== "ready" ||
+    status.playback?.device.id !== command.deviceId
+  )
+    return false
+  const playback = status.playback
+  if (command.kind === "pause") return !playback.playing
+  if (command.kind === "resume") return playback.playing
+  return (
+    playback.playing &&
+    playback.item?.kind === "track" &&
+    playback.item.id !== null &&
+    playback.item.id === command.trackId
+  )
+}
+
+function failed(
+  state: PlayerState,
+  failure: PlayerFailure,
+  now: number
+): PlayerState {
+  const lost =
+    failure.reason === "NotConnected" || failure.reason === "ReconnectNeeded"
+  const retryAfter = failure.retryAfterSeconds
+  return {
+    ...state,
+    connectionLost: lost,
+    notice: failure.message,
+    pausedUntil:
+      failure.reason === "RateLimited"
+        ? now +
+          (retryAfter !== undefined &&
+          Number.isFinite(retryAfter) &&
+          retryAfter >= 0
+            ? retryAfter
+            : 30) *
+            1000
+        : state.pausedUntil,
+  }
+}
+
+function reconcile(state: PlayerState, data?: PlayerStatus): PlayerState {
+  const pending = state.pending
+  if (data?.status === "needs_permission") return { ...state, pending: null }
+  if (pending?.stage !== "confirming") return state
+  if (data && confirms(pending.command, data))
+    return { ...state, pending: null, unconfirmed: false }
+  if (pending.checks >= 1) return { ...state, pending: null, unconfirmed: true }
+  return { ...state, pending: { ...pending, checks: pending.checks + 1 } }
+}
+
+export function playerReducer(
+  state: PlayerState,
+  event: PlayerEvent
+): PlayerState {
+  if (event.type === "choose")
+    return { ...state, chosenDeviceId: event.deviceId }
+  if (event.type === "start") {
+    const view = deriveView(state, event.now)
+    const command = event.command
+    const enabled =
+      command.kind === "play"
+        ? view.canPlay && view.target?.id === command.deviceId
+        : view.currentDeviceId === command.deviceId &&
+          (command.kind === "pause" ? view.canPause : view.canResume)
+    if (!enabled) return state
+    return {
+      ...state,
+      epoch: state.epoch + 1,
+      pending: { command, stage: "sending", acceptedAt: 0, checks: 0 },
+      notice: null,
+      unconfirmed: false,
+    }
+  }
+  if (event.epoch !== state.epoch) return state
+  if (event.type === "accepted")
+    return state.pending?.stage === "sending"
+      ? {
+          ...state,
+          pending: {
+            ...state.pending,
+            stage: "confirming",
+            acceptedAt: event.now,
+          },
+        }
+      : state
+  if (event.type === "rejected")
+    return state.pending?.stage === "sending"
+      ? failed({ ...state, pending: null }, event.failure, event.now)
+      : state
+  if (event.seq <= state.appliedSeq) return state
+  if (event.type === "loaded")
+    return reconcile(
+      {
+        ...state,
+        server: { status: "loaded", data: event.data },
+        stale: false,
+        notice: null,
+        connectionLost: false,
+        appliedSeq: event.seq,
+      },
+      event.data
+    )
+  const next = reconcile(
+    failed(
+      {
+        ...state,
+        server:
+          state.server.status === "loaded"
+            ? state.server
+            : { status: "failed" },
+        stale: true,
+        appliedSeq: event.seq,
+      },
+      event.failure,
+      event.now
+    )
+  )
+  return next.connectionLost ? { ...next, pending: null } : next
+}
+
+export function deriveView(state: PlayerState, now: number) {
+  const data = state.server.status === "loaded" ? state.server.data : null
+  const ready = data?.status === "ready" ? data : null
+  const devices = ready?.devices ?? []
+  const target =
+    devices.find(
+      (device): device is Extract<PlayerDevice, { controllable: true }> =>
+        device.controllable &&
+        (state.chosenDeviceId === null
+          ? device.active
+          : device.id === state.chosenDeviceId)
+    ) ?? null
+  const playback: Playback | null = ready?.playback ?? null
+  const currentDeviceId = playback?.device.id ?? null
+  const blocked =
+    !ready ||
+    state.stale ||
+    state.connectionLost ||
+    state.pending !== null ||
+    state.pausedUntil > now
+  const currentControllable =
+    currentDeviceId !== null && !playback?.device.restricted
+  return {
+    status: state.connectionLost
+      ? ("connection_lost" as const)
+      : (data?.status ?? state.server.status),
+    devices,
+    target,
+    playback,
+    currentDeviceId,
+    missingChoice: state.chosenDeviceId !== null && target === null,
+    canPlay: !blocked && target !== null,
+    canPause:
+      !blocked &&
+      currentControllable &&
+      playback?.playing === true &&
+      playback.allows.pause,
+    canResume:
+      !blocked &&
+      currentControllable &&
+      playback?.playing === false &&
+      playback.allows.resume,
+    rateLimited: state.pausedUntil > now,
+  }
+}
+
+export function nextPollDelay(state: PlayerState, now: number): number | null {
+  if (
+    state.connectionLost ||
+    (state.server.status === "loaded" &&
+      state.server.data.status === "needs_permission") ||
+    state.pending?.stage === "sending"
+  )
+    return null
+  if (state.pausedUntil > now) return state.pausedUntil - now
+  if (state.pending?.stage === "confirming")
+    return Math.max(
+      0,
+      state.pending.acceptedAt +
+        (state.pending.checks === 0 ? 1000 : 3000) -
+        now
+    )
+  return 20_000
+}

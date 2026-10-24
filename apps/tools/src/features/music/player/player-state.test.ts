@@ -1,0 +1,307 @@
+import { describe, expect, test } from "vitest"
+import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
+import {
+  confirms,
+  deriveView,
+  initialPlayerState,
+  nextPollDelay,
+  playerReducer,
+  type PlayerCommand,
+  type PlayerState,
+} from "./player-state"
+
+const device = {
+  controllable: true,
+  id: "current",
+  name: "Kitchen",
+  type: "Speaker",
+  active: true,
+} as const
+const ready: PlayerStatus = {
+  status: "ready",
+  devices: [
+    device,
+    { ...device, id: "selected", name: "Office", active: false },
+  ],
+  playback: {
+    playing: false,
+    device: { id: "current", name: "Kitchen", restricted: false },
+    item: {
+      kind: "track",
+      id: "trackA",
+      name: "Song",
+      artistNames: ["Artist"],
+      imageUrl: null,
+    },
+    allows: { pause: true, resume: true },
+  },
+}
+const play: PlayerCommand = {
+  kind: "play",
+  deviceId: "current",
+  trackId: "trackA",
+}
+const loaded = (data: PlayerStatus = ready) =>
+  playerReducer(initialPlayerState, {
+    type: "loaded",
+    data,
+    epoch: 0,
+    seq: 1,
+    now: 0,
+  })
+const start = (state: PlayerState, command: PlayerCommand = play) =>
+  playerReducer(state, { type: "start", command, now: 0 })
+const accepted = (state: PlayerState) =>
+  playerReducer(state, { type: "accepted", epoch: state.epoch, now: 100 })
+const observe = (
+  state: PlayerState,
+  data = ready,
+  seq = state.appliedSeq + 1,
+  now = 1100
+) =>
+  playerReducer(state, { type: "loaded", data, seq, epoch: state.epoch, now })
+const playing: PlayerStatus = {
+  ...ready,
+  playback: { ...ready.playback!, playing: true },
+}
+
+describe("player state", () => {
+  test("drops reads from before a command and applies only the newest observation", () => {
+    let state = start(loaded())
+    const before = state
+    state = playerReducer(state, {
+      type: "loaded",
+      epoch: 0,
+      seq: 100,
+      data: playing,
+      now: 0,
+    })
+    expect(state).toBe(before)
+    state = observe(state, playing, 4)
+    expect(deriveView(state, 0).playback?.playing).toBe(true)
+    expect(observe(state, ready, 3)).toBe(state)
+    expect(
+      playerReducer(state, {
+        type: "failed",
+        epoch: state.epoch,
+        seq: 2,
+        failure: { message: "late failure" },
+        now: 0,
+      })
+    ).toBe(state)
+  })
+
+  test("an accepted command does not invent playback and requires the requested device and track", () => {
+    let state = accepted(start(loaded()))
+    expect(deriveView(state, 100).playback?.playing).toBe(false)
+    expect(state.pending?.stage).toBe("confirming")
+    expect(nextPollDelay(state, 100)).toBe(1000)
+    expect(
+      confirms(play, {
+        ...playing,
+        playback: {
+          ...playing.playback!,
+          device: { id: "selected", name: "Office", restricted: false },
+        },
+      })
+    ).toBe(false)
+    expect(
+      confirms(play, {
+        ...playing,
+        playback: {
+          ...playing.playback!,
+          item: {
+            kind: "track",
+            id: null,
+            name: "Local",
+            artistNames: [],
+            imageUrl: null,
+          },
+        },
+      })
+    ).toBe(false)
+    state = observe(state)
+    expect(state.pending).not.toBeNull()
+    expect(nextPollDelay(state, 1100)).toBe(2000)
+    state = observe(state, playing)
+    expect(state.pending).toBeNull()
+    expect(state.unconfirmed).toBe(false)
+    expect(deriveView(state, 1100).playback?.playing).toBe(true)
+  })
+
+  test("two unconfirmed reads end reconciliation without retrying the command", () => {
+    let state = accepted(start(loaded()))
+    state = observe(state)
+    state = observe(state)
+    expect(state.pending).toBeNull()
+    expect(state.unconfirmed).toBe(true)
+    expect(deriveView(state, 3000).playback?.playing).toBe(false)
+    expect(nextPollDelay(state, 3000)).toBe(20_000)
+  })
+
+  test("blocks a second command synchronously, including while confirming", () => {
+    let state = start(loaded())
+    expect(start(state, { kind: "resume", deviceId: "current" })).toBe(state)
+    state = accepted(state)
+    expect(start(state)).toBe(state)
+    expect(nextPollDelay(start(loaded()), 0)).toBeNull()
+  })
+
+  test("never falls back to another active device after an explicit selection vanishes", () => {
+    let state = playerReducer(loaded(), {
+      type: "choose",
+      deviceId: "selected",
+    })
+    expect(deriveView(state, 0).target?.id).toBe("selected")
+    state = observe(state, { ...ready, devices: [device] })
+    expect(deriveView(state, 0)).toMatchObject({
+      target: null,
+      missingChoice: true,
+      canPlay: false,
+      canResume: true,
+    })
+    state = playerReducer(state, { type: "choose", deviceId: null })
+    expect(deriveView(state, 0).target?.id).toBe("current")
+  })
+
+  test("restricted and unidentified devices cannot become track targets", () => {
+    const state = loaded({
+      status: "ready",
+      playback: null,
+      devices: [
+        {
+          controllable: false,
+          why: "restricted",
+          active: true,
+          name: "TV",
+          type: "TV",
+        },
+        {
+          controllable: false,
+          why: "unidentified",
+          active: false,
+          name: "Other",
+          type: "Unknown",
+        },
+      ],
+    })
+    expect(deriveView(state, 0)).toMatchObject({
+      target: null,
+      canPlay: false,
+      canPause: false,
+      canResume: false,
+    })
+    expect(start(state)).toBe(state)
+  })
+
+  test("pause and resume use the observed device regardless of the future track target", () => {
+    const state = playerReducer(loaded(playing), {
+      type: "choose",
+      deviceId: "selected",
+    })
+    expect(deriveView(state, 0)).toMatchObject({
+      currentDeviceId: "current",
+      canPause: true,
+      target: { id: "selected" },
+    })
+    expect(start(state, { kind: "pause", deviceId: "selected" })).toBe(state)
+    const pending = start(state, { kind: "pause", deviceId: "current" })
+    expect(pending.pending?.command).toEqual({
+      kind: "pause",
+      deviceId: "current",
+    })
+    expect(confirms({ kind: "pause", deviceId: "current" }, ready)).toBe(true)
+    expect(confirms({ kind: "resume", deviceId: "current" }, playing)).toBe(
+      true
+    )
+  })
+
+  test("current restrictions and nullable IDs disable current-device commands", () => {
+    for (const playback of [
+      { ...ready.playback!, device: { ...ready.playback!.device, id: null } },
+      {
+        ...ready.playback!,
+        device: { ...ready.playback!.device, restricted: true },
+      },
+      { ...ready.playback!, allows: { pause: false, resume: false } },
+    ]) {
+      expect(deriveView(loaded({ ...ready, playback }), 0).canResume).toBe(
+        false
+      )
+      expect(
+        deriveView(
+          loaded({ ...ready, playback: { ...playback, playing: true } }),
+          0
+        ).canPause
+      ).toBe(false)
+    }
+  })
+
+  test("a failed read keeps the observation stale and disables commands until a fresh read", () => {
+    let state = playerReducer(loaded(), {
+      type: "failed",
+      epoch: 0,
+      seq: 2,
+      now: 0,
+      failure: { message: "Unavailable" },
+    })
+    expect(deriveView(state, 0)).toMatchObject({
+      canPlay: false,
+      canResume: false,
+      playback: ready.playback,
+    })
+    expect(start(state)).toBe(state)
+    state = observe(state)
+    expect(state.stale).toBe(false)
+    expect(deriveView(state, 0).canPlay).toBe(true)
+  })
+
+  for (const retryAfterSeconds of [undefined, 9]) {
+    test(`rate limits reads and commands for ${retryAfterSeconds ?? 30} seconds`, () => {
+      const failure = {
+        reason: "RateLimited",
+        message: "Wait",
+        retryAfterSeconds,
+      }
+      const state = playerReducer(loaded(), {
+        type: "failed",
+        epoch: 0,
+        seq: 2,
+        now: 1000,
+        failure,
+      })
+      const wait = (retryAfterSeconds ?? 30) * 1000
+      expect(nextPollDelay(state, 1000)).toBe(wait)
+      const fresh = observe(state)
+      expect(deriveView(fresh, 1000).canPlay).toBe(false)
+      expect(start(fresh)).toBe(fresh)
+      expect(deriveView(fresh, 1000 + wait).canPlay).toBe(true)
+      const pending = start(loaded())
+      const rejected = playerReducer(pending, {
+        type: "rejected",
+        epoch: pending.epoch,
+        now: 1000,
+        failure,
+      })
+      expect(rejected.pending).toBeNull()
+      expect(nextPollDelay(rejected, 1000)).toBe(wait)
+      expect(deriveView(rejected, 1000).canResume).toBe(false)
+    })
+  }
+
+  test("stops polling on missing scopes and lost connections", () => {
+    expect(nextPollDelay(loaded({ status: "needs_permission" }), 0)).toBeNull()
+    for (const reason of ["NotConnected", "ReconnectNeeded"]) {
+      const state = playerReducer(loaded(), {
+        type: "failed",
+        epoch: 0,
+        seq: 2,
+        now: 0,
+        failure: { reason, message: "Reconnect" },
+      })
+      expect(deriveView(state, 0).status).toBe("connection_lost")
+      expect(nextPollDelay(state, 0)).toBeNull()
+      expect(deriveView(state, 0).canPlay).toBe(false)
+    }
+  })
+})

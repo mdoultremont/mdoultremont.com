@@ -30,6 +30,8 @@ import {
   spotifyError,
   Unavailable,
 } from "./errors"
+import { makePlayer } from "./player"
+import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
 import * as Api from "./schemas"
 import {
   type SpotifyConnectionStatus,
@@ -54,6 +56,22 @@ const playlistAddLimit = 100
 export class Spotify extends Context.Service<
   Spotify,
   {
+    readonly playerStatus: (
+      ownerId: string
+    ) => Effect.Effect<PlayerStatus, SpotifyError>
+    readonly play: (
+      ownerId: string,
+      deviceId: string,
+      trackId: string
+    ) => Effect.Effect<void, SpotifyError>
+    readonly pause: (
+      ownerId: string,
+      deviceId: string
+    ) => Effect.Effect<void, SpotifyError>
+    readonly resume: (
+      ownerId: string,
+      deviceId: string
+    ) => Effect.Effect<void, SpotifyError>
     readonly authorizationUrl: (state: string) => string
     readonly connect: (
       ownerId: string,
@@ -362,7 +380,10 @@ const make = Effect.gen(function* () {
     url.searchParams.set("client_id", clientId)
     url.searchParams.set("response_type", "code")
     url.searchParams.set("redirect_uri", redirectUri)
-    url.searchParams.set("scope", spotifyScopes.join(" "))
+    url.searchParams.set(
+      "scope",
+      [...spotifyScopes, ...Api.spotifyPlaybackScopes].join(" ")
+    )
     url.searchParams.set("state", state)
     return url.toString()
   }
@@ -757,6 +778,18 @@ const make = Effect.gen(function* () {
   })
 
   return {
+    ...makePlayer({
+      authorized,
+      execute: (request) =>
+        http
+          .execute(request)
+          .pipe(
+            Effect.mapError((cause) => spotifyError(new Unavailable({ cause })))
+          ),
+      checkStatus,
+      requireId,
+      originalTrackId,
+    }),
     authorizationUrl,
     connect,
     status,

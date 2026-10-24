@@ -17,6 +17,12 @@ import {
   SpotifySavedTracksPageSchema,
 } from "./schemas"
 
+import {
+  CommandAcceptedSchema,
+  DeviceIdSchema,
+  PlayerStatusSchema,
+} from "./player"
+
 const action = actionsFor("music")
 
 const isSpotifyPageCursor = (cursor: string, pathname: string) => {
@@ -75,6 +81,45 @@ const PlaylistTracksInput = Schema.Struct({
  * status action reports progress.
  */
 export const musicActions = {
+  player: {
+    status: action({
+      description:
+        "Reads Spotify Connect devices and observed playback. Playback control requires Spotify Premium and playback permission. An accepted command is not proof of playing; read status to confirm.",
+      effect: "read",
+      http: { method: "GET", path: "/music/player" },
+      input: NoInput,
+      output: PlayerStatusSchema,
+    }),
+    play: action({
+      description:
+        "Requests exactly one track on the specified Spotify Connect device. Requires Spotify Premium. Accepted does not mean playing; read status to confirm. Does not retry playback.",
+      effect: "write",
+      http: { method: "PUT", path: "/music/player/play" },
+      input: Schema.Struct({
+        deviceId: DeviceIdSchema,
+        trackId: Schema.NonEmptyString.check(
+          Schema.isPattern(/^[A-Za-z0-9]+$/u)
+        ),
+      }),
+      output: CommandAcceptedSchema,
+    }),
+    pause: action({
+      description:
+        "Pauses only the currently observed Spotify Connect device. Requires Spotify Premium. Accepted does not mean paused; read status to confirm. Never transfers playback.",
+      effect: "write",
+      http: { method: "PUT", path: "/music/player/pause" },
+      input: Schema.Struct({ deviceId: DeviceIdSchema }),
+      output: CommandAcceptedSchema,
+    }),
+    resume: action({
+      description:
+        "Resumes only the currently observed Spotify Connect device. Requires Spotify Premium. Accepted does not mean playing; read status to confirm. Never transfers playback.",
+      effect: "write",
+      http: { method: "PUT", path: "/music/player/resume" },
+      input: Schema.Struct({ deviceId: DeviceIdSchema }),
+      output: CommandAcceptedSchema,
+    }),
+  },
   spotify: {
     status: action({
       description:

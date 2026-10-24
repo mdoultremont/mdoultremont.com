@@ -8,6 +8,11 @@ export const spotifyScopes = [
   "playlist-modify-public",
 ] as const
 
+export const spotifyPlaybackScopes = [
+  "user-read-playback-state",
+  "user-modify-playback-state",
+] as const
+
 // Public types returned by the module.
 
 export interface SpotifyPlaylist {

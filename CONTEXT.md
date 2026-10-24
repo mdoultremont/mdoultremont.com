@@ -92,6 +92,16 @@ _Avoid_: Session (a session is a browser's sign-in)
 The user whose Spotify sources the music app sorts into destination playlists.
 Any user with music access is the owner of their own music data.
 
+**Player**:
+The Spotify Connect controller. It requests playback on an existing Spotify
+playback device and reports what Spotify has confirmed. Accepting a request
+does not confirm that playback changed.
+
+**Playback device**:
+A device Spotify reports for the owner's current playback or as available to
+play tracks. Choosing a device only sets the target for the next track request.
+Pause and resume act only on the current playback device.
+
 ### Pipeline
 
 Collected tracks move through four independent steps. Each step can be re-run on

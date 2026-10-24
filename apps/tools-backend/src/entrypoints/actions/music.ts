@@ -13,6 +13,26 @@ import { bind } from "./bind"
 const actions = catalog.music
 
 export const musicHandlers = {
+  player: {
+    status: bind(actions.player.status, Spotify.layer, (_, caller) =>
+      Spotify.use((spotify) => spotify.playerStatus(caller.userId))
+    ),
+    play: bind(actions.player.play, Spotify.layer, (input, caller) =>
+      Spotify.use((spotify) =>
+        spotify.play(caller.userId, input.deviceId, input.trackId)
+      ).pipe(Effect.as({ status: "accepted" } as const))
+    ),
+    pause: bind(actions.player.pause, Spotify.layer, (input, caller) =>
+      Spotify.use((spotify) =>
+        spotify.pause(caller.userId, input.deviceId)
+      ).pipe(Effect.as({ status: "accepted" } as const))
+    ),
+    resume: bind(actions.player.resume, Spotify.layer, (input, caller) =>
+      Spotify.use((spotify) =>
+        spotify.resume(caller.userId, input.deviceId)
+      ).pipe(Effect.as({ status: "accepted" } as const))
+    ),
+  },
   spotify: {
     playlistTracks: bind(
       actions.spotify.playlistTracks,

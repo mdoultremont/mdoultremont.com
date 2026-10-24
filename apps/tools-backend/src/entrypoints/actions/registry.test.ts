@@ -59,12 +59,21 @@ const legacy = {
   "DELETE /api/back-office/invitations": "backOffice.invitations.revoke",
 } satisfies Record<string, ActionName>
 
+const introduced = [
+  "music.player.status",
+  "music.player.play",
+  "music.player.pause",
+  "music.player.resume",
+] satisfies ActionName[]
+
 const run = () => Effect.succeed({})
 
 describe("action registry", () => {
   test("serves every former capability, and nothing outside the inventory", () => {
     const names = actionRegistry.actions.map((entry) => entry.name)
-    expect(new Set(names)).toEqual(new Set(Object.values(legacy)))
+    expect(new Set(names)).toEqual(
+      new Set([...Object.values(legacy), ...introduced])
+    )
     expect(names).toHaveLength(new Set(names).size)
   })
 

@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import { Effect, Redacted } from "effect"
+import { TokenCipher } from "#backend/modules/token-cipher"
+import { spotifyScopes } from "#backend/modules/spotify"
 import { errorReason } from "@mdoultremont/tools-contracts"
 import { Effect, Redacted } from "effect"
 import { TokenCipher } from "#backend/modules/token-cipher"
@@ -335,5 +338,138 @@ describe("music actions", () => {
       .catch((error: unknown) => error)
     expect(errorReason(notConnected)).toBe("NotConnected")
     expect(network).not.toHaveBeenCalled()
+  })
+})
+
+describe("player actions", () => {
+  test("preserve connection failures and validate playback input over HTTP", async () => {
+    const status = await api.request("/api/v1/music/player")
+    expect(status.status).toBe(409)
+    expect(await status.json()).toMatchObject({
+      error: { code: "CONFLICT", data: { reason: "ReconnectNeeded" } },
+    })
+    for (const action of ["pause", "resume"]) {
+      const response = await api.request(`/api/v1/music/player/${action}`, {
+        method: "PUT",
+        headers: { Origin: origin, "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId: "opaque/?=" }),
+      })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({
+        error: { data: { reason: "ReconnectNeeded" } },
+      })
+    }
+    const invalid = await api.request("/api/v1/music/player/play", {
+      method: "PUT",
+      headers: { Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        deviceId: "opaque/?=",
+        trackId: "spotify:track:bad",
+      }),
+    })
+    expect(invalid.status).toBe(400)
+    expect(await invalid.json()).toMatchObject({
+      error: { code: "BAD_REQUEST" },
+    })
+    const emptyDevice = await api.client.music.player
+      .pause({ deviceId: "" })
+      .catch((cause: unknown) => cause)
+    expect(emptyDevice).toMatchObject({ code: "BAD_REQUEST" })
+  })
+})
+
+async function preparePlayer(
+  scopes = [
+    ...spotifyScopes,
+    "user-read-playback-state",
+    "user-modify-playback-state",
+  ].join(" ")
+) {
+  const key = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)))
+  const encrypted = await Effect.runPromise(
+    TokenCipher.use((cipher) => cipher.encrypt("refresh")).pipe(
+      Effect.provide(TokenCipher.layer(Redacted.make(key)))
+    )
+  )
+  api.d1.sqlite
+    .prepare(
+      "UPDATE spotify_connections SET encrypted_refresh_token = ?, scopes = ? WHERE owner_id = ?"
+    )
+    .run(encrypted, scopes, "owner")
+}
+
+describe("player HTTP results", () => {
+  for (const [providerStatus, reason, errorCode] of [
+    [403, "PremiumRequired", "FORBIDDEN"],
+    [403, "PlaybackRefused", "FORBIDDEN"],
+    [404, "DeviceUnavailable", "NOT_FOUND"],
+    [429, "RateLimited", "TOO_MANY_REQUESTS"],
+  ] as const) {
+    test(`reports ${reason} through the public error data`, async () => {
+      await preparePlayer()
+      network.mockImplementation(async (url) =>
+        String(url).includes("/api/token")
+          ? Response.json({ access_token: "access", expires_in: 3600 })
+          : Response.json(
+              {
+                error: {
+                  reason:
+                    reason === "PremiumRequired" ? "PREMIUM_REQUIRED" : "OTHER",
+                },
+              },
+              { status: providerStatus, headers: { "Retry-After": "9" } }
+            )
+      )
+      const response = await api.request("/api/v1/music/player/play", {
+        method: "PUT",
+        headers: { Origin: origin, "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId: "opaque/?=", trackId: "trackA" }),
+      })
+      expect(response.status).toBe(providerStatus)
+      expect(await response.json()).toMatchObject({
+        error: {
+          code: errorCode,
+          data: {
+            reason,
+            ...(providerStatus === 429 ? { retryAfterSeconds: 9 } : {}),
+          },
+        },
+      })
+    })
+  }
+
+  test("older grants expose the permission upgrade without disconnecting", async () => {
+    await preparePlayer(spotifyScopes.join(" "))
+    network.mockImplementation(async () =>
+      Response.json({ access_token: "access", expires_in: 3600 })
+    )
+    expect(await api.client.music.player.status()).toEqual({
+      status: "needs_permission",
+    })
+    const failure = await api.client.music.player
+      .play({ deviceId: "opaque", trackId: "trackA" })
+      .catch((cause: unknown) => cause)
+    expect(failure).toMatchObject({
+      code: "CONFLICT",
+      data: { reason: "PlaybackPermissionMissing" },
+    })
+    expect(await api.client.music.spotify.status()).toMatchObject({
+      status: "connected",
+    })
+  })
+
+  test("a successful write only acknowledges acceptance", async () => {
+    await preparePlayer()
+    network.mockImplementation(async (url) =>
+      String(url).includes("/api/token")
+        ? Response.json({ access_token: "access", expires_in: 3600 })
+        : new Response(null, { status: 204 })
+    )
+    expect(
+      await api.client.music.player.play({
+        deviceId: "opaque/?=",
+        trackId: "trackA",
+      })
+    ).toEqual({ status: "accepted" })
   })
 })
