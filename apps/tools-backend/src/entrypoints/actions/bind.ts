@@ -98,6 +98,11 @@ export const invokeAction = (
           code: "FORBIDDEN",
           message: "You do not have access to this app",
         })
+      if (action.spec.sessionOnly && caller.sessionAuthenticated !== true)
+        return yield* new ActionError({
+          code: "FORBIDDEN",
+          message: "This action requires a browser session",
+        })
       return yield* action.execute(input, caller)
     }).pipe(
       Effect.provide(platform),

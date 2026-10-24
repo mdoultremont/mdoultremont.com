@@ -19,7 +19,14 @@ export interface PlayerFailure {
   readonly retryAfterSeconds?: number
 }
 
+export type BrowserDevice =
+  | { readonly status: "connecting" }
+  | { readonly status: "ready"; readonly deviceId: string }
+  | { readonly status: "unavailable"; readonly message: string }
+
 export interface PlayerState {
+  readonly browser: BrowserDevice
+  readonly unavailableBrowserIds: readonly string[]
   readonly server:
     | { readonly status: "loading" }
     | { readonly status: "loaded"; readonly data: PlayerStatus }
@@ -41,6 +48,8 @@ export interface PlayerState {
 }
 
 export const initialPlayerState: PlayerState = {
+  browser: { status: "connecting" },
+  unavailableBrowserIds: [],
   server: { status: "loading" },
   stale: false,
   chosenDeviceId: null,
@@ -54,6 +63,7 @@ export const initialPlayerState: PlayerState = {
 }
 
 export type PlayerEvent =
+  | { readonly type: "browser"; readonly device: BrowserDevice }
   | { readonly type: "choose"; readonly deviceId: string | null }
   | { readonly type: "hidden" }
   | {
@@ -139,6 +149,24 @@ export function playerReducer(
   state: PlayerState,
   event: PlayerEvent
 ): PlayerState {
+  if (event.type === "browser") {
+    const device = event.device
+    const previousId =
+      state.browser.status === "ready" ? state.browser.deviceId : null
+    const unavailable =
+      previousId &&
+      (device.status !== "ready" || device.deviceId !== previousId)
+        ? [...state.unavailableBrowserIds, previousId]
+        : state.unavailableBrowserIds
+    return {
+      ...state,
+      browser: device,
+      unavailableBrowserIds:
+        device.status === "ready"
+          ? unavailable.filter((id) => id !== device.deviceId)
+          : unavailable,
+    }
+  }
   if (event.type === "choose")
     return { ...state, chosenDeviceId: event.deviceId }
   if (event.type === "hidden") return { ...state, stale: true }
@@ -209,15 +237,25 @@ export function playerReducer(
 export function deriveView(state: PlayerState, now: number) {
   const data = state.server.status === "loaded" ? state.server.data : null
   const ready = data?.status === "ready" ? data : null
-  const devices = ready?.devices ?? []
+  const browserId =
+    state.browser.status === "ready" ? state.browser.deviceId : null
+  const devices: readonly PlayerDevice[] = (ready?.devices ?? [])
+    .filter(
+      (device) =>
+        !device.controllable || !state.unavailableBrowserIds.includes(device.id)
+    )
+    .map((device) =>
+      device.controllable && device.id === browserId
+        ? { ...device, name: "This browser" }
+        : device
+    )
+  const controllable = devices.filter((device) => device.controllable)
   const target =
-    devices.find(
-      (device): device is Extract<PlayerDevice, { controllable: true }> =>
-        device.controllable &&
-        (state.chosenDeviceId === null
-          ? device.active
-          : device.id === state.chosenDeviceId)
-    ) ?? null
+    (state.chosenDeviceId === null
+      ? (controllable.find((device) => device.active) ??
+        controllable.find((device) => device.id === browserId))
+      : controllable.find((device) => device.id === state.chosenDeviceId)) ??
+    null
   const playback: Playback | null = ready?.playback ?? null
   const currentDeviceId = playback?.device.id ?? null
   const blocked =
@@ -227,7 +265,9 @@ export function deriveView(state: PlayerState, now: number) {
     state.pending !== null ||
     state.pausedUntil > now
   const currentControllable =
-    currentDeviceId !== null && !playback?.device.restricted
+    currentDeviceId !== null &&
+    !state.unavailableBrowserIds.includes(currentDeviceId) &&
+    !playback?.device.restricted
   return {
     status: state.connectionLost
       ? ("connection_lost" as const)

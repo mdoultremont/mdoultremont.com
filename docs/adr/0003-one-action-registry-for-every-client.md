@@ -46,3 +46,13 @@ do everything a user can, without a second implementation of any operation.
   clients continue with their refresh token.
 - Unattended scripts have no credential of their own. API keys are deferred
   until a use needs them.
+
+## Browser playback credentials
+
+The Web Playback SDK needs the owner's Spotify access token in the browser.
+`music.player.token` stays in the action catalog but requires a browser
+session. Bearer-authenticated clients cannot call it, even with a session cookie.
+The token also carries playlist and library permissions, so handing it to a
+delegated client would bypass tools' app access and grant revocation checks.
+The HTTP response uses `Cache-Control: no-store` and contains no refresh token.
+Play, pause, resume, and status remain available to every authorized client.

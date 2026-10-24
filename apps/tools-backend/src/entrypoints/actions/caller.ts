@@ -6,6 +6,7 @@ import type { App } from "@mdoultremont/tools-contracts/apps"
  * request input.
  */
 export interface Caller {
+  readonly sessionAuthenticated?: boolean
   readonly userId: string
   /** The user's app access, read for this request so a change applies at once. */
   readonly apps: ReadonlyArray<App>

@@ -1083,7 +1083,8 @@ const currentPlayback = {
   },
   actions: {},
 }
-const playbackScopes = "user-read-playback-state user-modify-playback-state"
+const playbackScopes =
+  "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state"
 
 function grantPlayback(setup: Setup) {
   const connection = setup.getConnection()!
@@ -1115,6 +1116,46 @@ const playerWrites = (setup: Setup) =>
   setup.fetcher.mock.calls.filter(([, init]) => init?.method === "PUT")
 
 describe("Spotify Connect player", () => {
+  it.effect(
+    "requires the SDK scopes on old playback grants and renews access tokens without returning refresh credentials",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          const connection = setup.getConnection()!
+          setup.setConnection({
+            ...connection,
+            scopes: `${connection.scopes} user-read-playback-state user-modify-playback-state`,
+          })
+          servePlayback(setup)
+          const spotify = yield* Spotify
+          expect(yield* spotify.playerStatus("github-42")).toEqual({
+            status: "needs_permission",
+          })
+          expect(
+            (yield* failureReason(spotify.playbackToken("github-42")))._tag
+          ).toBe("PlaybackPermissionMissing")
+          grantPlayback(setup)
+          expect(yield* spotify.playbackToken("github-42")).toEqual({
+            accessToken: "player-token",
+          })
+          yield* TestClock.adjust(3_600_000)
+          setup.fetcher.mockResolvedValueOnce(
+            json({
+              access_token: "renewed-player-token",
+              refresh_token: "renewed-refresh",
+              expires_in: 3600,
+            })
+          )
+          expect(yield* spotify.playbackToken("github-42")).toEqual({
+            accessToken: "renewed-player-token",
+          })
+        })
+      )
+    }
+  )
+
   it.effect(
     "requests playback scopes while accepting old grants and keeping ingestion usable",
     () => {
