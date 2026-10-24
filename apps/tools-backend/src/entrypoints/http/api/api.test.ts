@@ -14,6 +14,7 @@ import {
   UnauthorizedError,
 } from "@modelcontextprotocol/client"
 import { Effect } from "effect"
+import { actionRegistry } from "#backend/entrypoints/actions"
 import {
   afterAll,
   afterEach,
@@ -328,7 +329,7 @@ describe("one OAuth sign-in serves REST, MCP and the CLI", () => {
       )
       try {
         const { tools } = await client.listTools()
-        expect(tools).toHaveLength(42)
+        expect(tools).toHaveLength(actionRegistry.actions.length)
         const created = await client.callTool({
           name: "flights.equipment.create",
           arguments: wing,
@@ -361,7 +362,9 @@ describe("one OAuth sign-in serves REST, MCP and the CLI", () => {
     expect({ code: listed.code, stderr: listed.stderr }).toMatchObject({
       code: 0,
     })
-    expect(JSON.parse(listed.stdout).actions).toHaveLength(42)
+    expect(JSON.parse(listed.stdout).actions).toHaveLength(
+      actionRegistry.actions.length
+    )
 
     const created = await runCli([
       "call",

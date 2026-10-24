@@ -32,6 +32,7 @@ export const SpotifySavedTracksPageSchema = Schema.Struct({
       artistNames: Schema.Array(Schema.String),
       isrc: Schema.NullOr(Schema.String),
       durationMs: Schema.NullOr(Schema.Number),
+      artworkUrl: Schema.optional(Schema.NullOr(Schema.String)),
       /** ISO 8601, as Spotify reports it. */
       addedAt: Schema.String,
     })

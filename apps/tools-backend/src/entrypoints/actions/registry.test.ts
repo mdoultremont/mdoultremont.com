@@ -34,6 +34,8 @@ const legacy = {
   "POST /api/music/spotify/disconnect": "music.spotify.disconnect",
   "GET /api/music/spotify/playlists": "music.spotify.playlists",
   "GET /api/music/spotify/liked-tracks": "music.spotify.likedTracks",
+  "GET /api/music/spotify/playlists/:playlistId/tracks":
+    "music.spotify.playlistTracks",
   "GET /api/music/destinations": "music.destinations.get",
   "PUT /api/music/destinations": "music.destinations.save",
   "POST /api/music/destinations/create": "music.destinations.create",

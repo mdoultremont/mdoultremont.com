@@ -24,6 +24,7 @@ export interface SpotifySavedTrack {
   readonly artistNames: readonly string[]
   readonly isrc: string | null
   readonly durationMs: number | null
+  readonly artworkUrl?: string | null
   readonly addedAt: string
 }
 
@@ -90,6 +91,15 @@ export const Track = Schema.Struct({
     Schema.Struct({ isrc: Schema.optional(Schema.String) })
   ),
   duration_ms: Schema.optional(Schema.Unknown),
+  album: Schema.optional(
+    Schema.NullOr(
+      Schema.Struct({
+        images: Schema.optional(
+          Schema.Array(Schema.Struct({ url: Schema.String }))
+        ),
+      })
+    )
+  ),
   linked_from: Schema.optional(
     Schema.NullOr(Schema.Struct({ id: Schema.optional(Schema.Unknown) }))
   ),

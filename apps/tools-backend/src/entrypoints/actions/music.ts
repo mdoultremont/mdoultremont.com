@@ -14,6 +14,23 @@ const actions = catalog.music
 
 export const musicHandlers = {
   spotify: {
+    playlistTracks: bind(
+      actions.spotify.playlistTracks,
+      Spotify.layer,
+      (input, caller) =>
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          const ownedPlaylist = yield* spotify.playlist(
+            caller.userId,
+            input.playlistId
+          )
+          return yield* spotify.playlistTracksPage(
+            caller.userId,
+            ownedPlaylist.id,
+            input.cursor
+          )
+        })
+    ),
     status: bind(actions.spotify.status, Spotify.layer, (_, caller) =>
       Spotify.use((spotify) => spotify.status(caller.userId))
     ),

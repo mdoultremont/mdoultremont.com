@@ -19,17 +19,23 @@ import {
 
 const action = actionsFor("music")
 
-/** Only Spotify's own next-page links for Liked Songs are accepted as a cursor. */
-const isSavedTracksCursor = (value: string) => {
+const isSpotifyPageCursor = (cursor: string, pathname: string) => {
   try {
-    const url = new URL(value, "https://api.spotify.com")
+    const url = new URL(cursor, "https://api.spotify.com")
     return (
       url.origin === "https://api.spotify.com" &&
-      url.pathname === "/v1/me/tracks" &&
-      url.searchParams.has("offset") &&
-      url.searchParams.size <= 2 &&
-      [...url.searchParams.keys()].every(
-        (key) => key === "offset" || key === "limit"
+      !url.username &&
+      !url.password &&
+      !url.hash &&
+      url.pathname === pathname &&
+      url.searchParams.getAll("offset").length === 1 &&
+      url.searchParams.getAll("limit").length <= 1 &&
+      [...url.searchParams].every(
+        ([key, value]) =>
+          (key === "offset" || key === "limit") &&
+          /^(0|[1-9]\d*)$/u.test(value) &&
+          Number.isSafeInteger(Number(value)) &&
+          (key !== "limit" || (Number(value) >= 1 && Number(value) <= 50))
       )
     )
   } catch {
@@ -38,8 +44,28 @@ const isSavedTracksCursor = (value: string) => {
 }
 
 const SavedTracksCursor = Schema.String.check(
-  Schema.makeFilter((value: string) =>
-    isSavedTracksCursor(value) ? true : "Invalid cursor"
+  Schema.makeFilter(
+    (value: string) =>
+      isSpotifyPageCursor(value, "/v1/me/tracks") || "Invalid cursor"
+  )
+)
+
+const PlaylistTracksInput = Schema.Struct({
+  playlistId: Schema.String.check(
+    Schema.makeFilter(
+      (id: string) => /^[A-Za-z0-9]+$/u.test(id) || "Invalid playlist ID"
+    )
+  ),
+  cursor: Schema.optional(Schema.String),
+}).check(
+  Schema.makeFilter(
+    (input) =>
+      input.cursor === undefined ||
+      isSpotifyPageCursor(
+        input.cursor,
+        "/v1/playlists/" + input.playlistId + "/items"
+      ) ||
+      "Invalid playlist tracks cursor"
   )
 )
 
@@ -87,6 +113,17 @@ export const musicActions = {
       effect: "read",
       http: { method: "GET", path: "/music/spotify/liked-tracks" },
       input: Schema.Struct({ cursor: Schema.optional(SavedTracksCursor) }),
+      output: SpotifySavedTracksPageSchema,
+    }),
+    playlistTracks: action({
+      description:
+        "One page of tracks in a playlist owned by the connected Spotify account, in playlist order. Pass the previous page's next as cursor. Spotify's total includes unavailable items omitted from the page.",
+      effect: "read",
+      http: {
+        method: "GET",
+        path: "/music/spotify/playlists/:playlistId/tracks",
+      },
+      input: PlaylistTracksInput,
       output: SpotifySavedTracksPageSchema,
     }),
   },

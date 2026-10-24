@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import { errorReason } from "@mdoultremont/tools-contracts"
+import { Effect, Redacted } from "effect"
+import { TokenCipher } from "#backend/modules/token-cipher"
 
 vi.mock("cloudflare:workers", () => ({ env: {} }))
 import { code, makeHarness, origin } from "./testing"
@@ -10,6 +12,7 @@ const network = vi.fn<typeof fetch>(async () => {
 
 let api: ReturnType<typeof makeHarness>
 beforeEach(() => {
+  network.mockClear()
   vi.stubGlobal("fetch", network)
   api = makeHarness()
   api.d1.seedOwner()
@@ -23,6 +26,97 @@ afterEach(() => {
 const messages = () => api.jobs.mock.calls.map(([message]) => message)
 
 describe("music actions", () => {
+  test("browse owned playlist tracks and recheck ownership on every page", async () => {
+    const encrypted = await Effect.runPromise(
+      TokenCipher.use((cipher) => cipher.encrypt("refresh-token")).pipe(
+        Effect.provide(
+          TokenCipher.layer(
+            Redacted.make(
+              btoa(String.fromCharCode(...new Uint8Array(32).fill(7)))
+            )
+          )
+        )
+      )
+    )
+    api.d1.sqlite
+      .prepare(
+        "UPDATE spotify_connections SET encrypted_refresh_token = ? WHERE owner_id = 'owner'"
+      )
+      .run(encrypted)
+    let owned = true
+    network.mockImplementation(async (input) => {
+      const url = new URL(String(input))
+      if (url.hostname === "accounts.spotify.com")
+        return Response.json({ access_token: "access", expires_in: 3600 })
+      if (url.pathname === "/v1/playlists/jazz")
+        return Response.json({
+          id: "jazz",
+          name: "Jazz",
+          owner: { id: owned ? "spotify-user" : "another-account" },
+        })
+      if (url.pathname === "/v1/playlists/jazz/items")
+        return Response.json({
+          items: [
+            {
+              added_at: "2026-10-01T10:00:00Z",
+              item: {
+                type: "track",
+                id: "track1",
+                name: "Actual track",
+                artists: [{ name: "Actual artist" }],
+                duration_ms: 123000,
+                album: { images: [{ url: "https://i.scdn.co/image/artwork" }] },
+              },
+            },
+          ],
+          next: "https://api.spotify.com/v1/playlists/jazz/items?offset=50&limit=50",
+          total: 51,
+        })
+      throw new Error("Unexpected Spotify URL " + url.pathname)
+    })
+    const first = await api.client.music.spotify.playlistTracks({
+      playlistId: "jazz",
+    })
+    expect(first.items).toMatchObject([
+      {
+        id: "track1",
+        name: "Actual track",
+        artistNames: ["Actual artist"],
+        durationMs: 123000,
+      },
+    ])
+    expect(first.total).toBe(51)
+    expect(first.items[0]?.artworkUrl).toBe("https://i.scdn.co/image/artwork")
+    expect(first.next).not.toBeNull()
+    owned = false
+    network.mockClear()
+    const error = await api.client.music.spotify
+      .playlistTracks({ playlistId: "jazz", cursor: first.next! })
+      .catch((cause: unknown) => cause)
+    expect(errorReason(error)).toBe("AccessDenied")
+    expect(
+      network.mock.calls.some(([input]) =>
+        new URL(String(input)).pathname.endsWith("/items")
+      )
+    ).toBe(false)
+    network.mockClear()
+    api.signIn(["music"], "another-owner")
+    expect(
+      errorReason(
+        await api.client.music.spotify
+          .playlistTracks({ playlistId: "jazz" })
+          .catch((cause: unknown) => cause)
+      )
+    ).toBe("NotConnected")
+    expect(network).not.toHaveBeenCalled()
+    api.signIn(["flights"])
+    expect(
+      await code(
+        api.client.music.spotify.playlistTracks({ playlistId: "jazz" })
+      )
+    ).toBe("FORBIDDEN")
+    expect(network).not.toHaveBeenCalled()
+  })
   test("read the owner's setup and pipeline status", async () => {
     expect(await api.client.music.destinations.get()).toEqual({
       destinations: [],

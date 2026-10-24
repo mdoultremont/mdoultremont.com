@@ -777,6 +777,9 @@ function savedTrack(track: typeof Api.Track.Type, addedAt: string) {
   return Effect.gen(function* () {
     const id = yield* originalTrackId(track)
     if (!id || !track.name) return null
+    const artworkUrl = track.album?.images?.find((image) =>
+      image.url.startsWith("https://")
+    )?.url
     return {
       id,
       name: track.name,
@@ -791,6 +794,7 @@ function savedTrack(track: typeof Api.Track.Type, addedAt: string) {
           ? track.duration_ms
           : null,
       addedAt,
+      ...(artworkUrl ? { artworkUrl } : {}),
     } satisfies SpotifySavedTrack
   })
 }
