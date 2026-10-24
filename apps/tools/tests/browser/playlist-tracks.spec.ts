@@ -102,6 +102,77 @@ test("selection changes discard a delayed response", async ({ page }) => {
   await expect(page.getByText("Old response", { exact: true })).toHaveCount(0)
 })
 
+for (const reason of ["NotConnected", "ReconnectNeeded", "RateLimited"]) {
+  test(`a later-page ${reason} failure preserves loaded tracks and offers recovery`, async ({
+    page,
+  }) => {
+    let continuationCalls = 0
+    await page.route("**/api/rpc/music/spotify/playlistTracks", (route) => {
+      const input = route.request().postDataJSON().json
+      if (!input.cursor)
+        return route.fulfill({
+          json: { json: { items: [track], next: cursor, total: 2 } },
+        })
+      expect(input.cursor).toBe(cursor)
+      continuationCalls++
+      if (continuationCalls === 1)
+        return route.fulfill({
+          status: 409,
+          json: {
+            json: {
+              defined: false,
+              code: "CONFLICT",
+              status: 409,
+              message: "Spotify needs attention",
+              data: { reason },
+            },
+          },
+        })
+      return route.fulfill({
+        json: {
+          json: {
+            items: [{ ...track, id: "two", name: "So What" }],
+            next: null,
+            total: 2,
+          },
+        },
+      })
+    })
+    await page.goto("/music/settings")
+    await page.waitForLoadState("networkidle")
+    await page.evaluate(async (modulePath) => {
+      const m = await import(modulePath)
+      m.mountPlaylistTracks()
+    }, "/tests/browser/support/mount-playlist-tracks.tsx")
+    await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Load more", exact: true }).click()
+    await expect(page.getByRole("alert")).toHaveText("Spotify needs attention")
+    await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
+    await expect(
+      page.getByText("1 track loaded · 2 Spotify items")
+    ).toBeVisible()
+    const reconnect = page.getByRole("link", {
+      name: "Check Spotify connection",
+    })
+    const retry = page.getByRole("button", { name: "Try loading more again" })
+    if (reason === "RateLimited") {
+      await expect(reconnect).toHaveCount(0)
+      await retry.click()
+      await expect(
+        page.getByText("Blue in Green", { exact: true })
+      ).toBeVisible()
+      await expect(page.getByText("So What", { exact: true })).toBeVisible()
+      await expect(
+        page.getByText("2 tracks loaded · 2 Spotify items")
+      ).toBeVisible()
+      await expect(page.getByRole("alert")).toHaveCount(0)
+    } else {
+      await expect(reconnect).toHaveAttribute("href", "/music/settings")
+      await expect(retry).toHaveCount(0)
+    }
+  })
+}
+
 test("a reconnect failure links to connection settings", async ({ page }) => {
   await page.route("**/api/rpc/music/spotify/playlistTracks", (route) =>
     route.fulfill({

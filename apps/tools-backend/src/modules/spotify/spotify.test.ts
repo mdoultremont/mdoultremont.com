@@ -862,6 +862,80 @@ it.effect(
   }
 )
 
+for (const reader of ["saved", "item", "track"] as const) {
+  it.effect(
+    `${reader} pages keep valid tracks with malformed optional artwork`,
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(
+            json({ access_token: "fresh", expires_in: 3600 })
+          )
+          const artworkUrl = "https://i.scdn.co/image/album"
+          const albums = [
+            [undefined, undefined],
+            [null, undefined],
+            ["invalid", undefined],
+            [{}, undefined],
+            [{ images: null }, undefined],
+            [{ images: "invalid" }, undefined],
+            [{ images: [null] }, undefined],
+            [{ images: [{}] }, undefined],
+            [{ images: [{ url: null }] }, undefined],
+            [{ images: [{ url: 42 }] }, undefined],
+            [{ images: [{ url: "invalid" }] }, undefined],
+            [{ images: [{ url: "https://" }] }, undefined],
+            [{ images: [{ url: "http://example.com/artwork" }] }, undefined],
+            [{ images: [{ url: artworkUrl }] }, artworkUrl],
+            [
+              { images: [null, {}, { url: 42 }, { url: artworkUrl }] },
+              artworkUrl,
+            ],
+          ] as const
+          const addedAt = "2026-10-03T00:00:00Z"
+          setup.fetcher.mockResolvedValueOnce(
+            json({
+              items: albums.map(([album], index) => ({
+                added_at: addedAt,
+                [reader === "saved" ? "track" : reader]: {
+                  id: "song" + index,
+                  type: "track",
+                  name: "Song",
+                  artists: [{ name: "Artist" }],
+                  external_ids: { isrc: "BEABC2600001" },
+                  duration_ms: 234567,
+                  album,
+                },
+              })),
+              next: null,
+              total: albums.length,
+            })
+          )
+          const page = yield* reader === "saved"
+            ? spotify.savedTracksPage("github-42")
+            : spotify.playlistTracksPage("github-42", "shazam")
+          expect(page).toEqual({
+            items: albums.map(([, expectedArtworkUrl], index) => ({
+              id: "song" + index,
+              name: "Song",
+              artistNames: ["Artist"],
+              isrc: "BEABC2600001",
+              durationMs: 234567,
+              addedAt,
+              ...(expectedArtworkUrl ? { artworkUrl: expectedArtworkUrl } : {}),
+            })),
+            next: null,
+            total: albums.length,
+          })
+        })
+      )
+    }
+  )
+}
+
 describe("Spotify source playlists", () => {
   it.effect(
     "reads saved-track metadata from both playlist item shapes and skips unavailable items",
