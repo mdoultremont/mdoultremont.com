@@ -509,7 +509,11 @@ const make = Effect.gen(function* () {
   ) {
     yield* requireId(playlistId, "playlist")
     return yield* authorized(ownerId, (accessToken, connection) =>
-      apiGet(`/v1/playlists/${playlistId}`, accessToken).pipe(
+      // Without a field filter Spotify also returns the first page of tracks.
+      apiGet(
+        `/v1/playlists/${playlistId}?fields=id,name,owner(id),public,collaborative`,
+        accessToken
+      ).pipe(
         Effect.flatMap(
           decode(Api.Playlist, "Spotify returned an invalid playlist")
         ),

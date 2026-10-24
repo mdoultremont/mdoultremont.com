@@ -112,7 +112,8 @@ Liked Songs or an owned Spotify playlist that supplies tracks to the music app.
 Liked Songs is present by default and can be disabled but not removed. Playlist
 sources can be added, disabled, and removed. The app never changes a source.
 A source cannot also be a destination or the review playlist, even when disabled.
-_Avoid_: Input playlist, feed
+The music app lists sources under **Input playlists**.
+_Avoid_: Feed
 
 **Ingestion**:
 Recording one source's tracks and their presence in that source. A full ingestion
@@ -171,7 +172,8 @@ _Avoid_: Auto-write
 **Destination**:
 A Spotify playlist paired with an app-owned classification description and an
 enabled state. A disabled destination is left out of new classifications and
-receives no deliveries; existing decisions naming it are kept.
+receives no deliveries; existing decisions naming it are kept. The music app
+lists destinations and the review playlist under **Output playlists**.
 _Avoid_: Spotify playlist description as classification rule
 
 **Review playlist**:

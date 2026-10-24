@@ -66,6 +66,25 @@ function playerFailure(cause: unknown): PlayerFailure {
   }
 }
 
+/** A hung request would otherwise keep every control disabled until reload. */
+const commandTimeoutMilliseconds = 15_000
+
+function withTimeout<A>(request: Promise<A>, milliseconds: number) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            "Spotify did not answer in time. Refresh to check playback."
+          )
+        ),
+      milliseconds
+    )
+  })
+  return Promise.race([request, timeout]).finally(() => clearTimeout(timer))
+}
+
 function usePlayerController(client: PlayerClient, initialState: PlayerState) {
   const [state, dispatch] = useReducer(playerReducer, initialState)
   const [now, setNow] = useState(() => Date.now())
@@ -174,12 +193,15 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     const generation = lifecycle.current
     scheduleRef.current()
     try {
-      if (request.kind === "play")
-        await client.play({
-          deviceId: request.deviceId,
-          trackId: request.trackId,
-        })
-      else await client[request.kind]({ deviceId: request.deviceId })
+      await withTimeout(
+        request.kind === "play"
+          ? client.play({
+              deviceId: request.deviceId,
+              trackId: request.trackId,
+            })
+          : client[request.kind]({ deviceId: request.deviceId }),
+        commandTimeoutMilliseconds
+      )
       if (generation === lifecycle.current)
         sendEvent({ type: "accepted", epoch, now: Date.now() })
     } catch (cause) {
