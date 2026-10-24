@@ -143,6 +143,20 @@ describe("Spotify player rendering", () => {
       loaded({ ...ready, playback: { ...ready.playback!, playing: true } })
     )
     expect(html).toContain('data-playing="true"')
+    expect(html).toContain("lucide-audio-lines")
     expect(html).toContain('aria-label="Pause playback"')
+  })
+
+  test.each([
+    { stale: true, connectionLost: false },
+    { stale: false, connectionLost: true },
+  ])("unavailable observations do not mark a row as playing (%j)", (flags) => {
+    const html = render({
+      ...loaded({ ...ready, playback: { ...ready.playback!, playing: true } }),
+      ...flags,
+    })
+    expect(html).toMatch(disabledRow)
+    expect(html).not.toContain('data-playing="true"')
+    expect(html).not.toContain("lucide-audio-lines")
   })
 })

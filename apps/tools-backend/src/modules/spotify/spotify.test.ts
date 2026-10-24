@@ -1362,6 +1362,32 @@ describe("Spotify Connect player", () => {
   }
 
   for (const kind of ["pause", "resume"] as const) {
+    for (const nested of [false, true]) {
+      it.effect(
+        `${kind} accepts an already satisfied request with ${nested ? "nested" : "flat"} action restrictions without writing`,
+        () => {
+          const setup = testSetup()
+          return setup.run(
+            Effect.gen(function* () {
+              yield* connect(setup)
+              grantPlayback(setup)
+              const restriction = {
+                [kind === "pause" ? "pausing" : "resuming"]: true,
+              }
+              servePlayback(setup, {
+                ...currentPlayback,
+                is_playing: kind === "resume",
+                actions: nested ? { disallows: restriction } : restriction,
+              })
+              const spotify = yield* Spotify
+              yield* spotify[kind]("github-42", playbackDevice.id)
+              expect(playerWrites(setup)).toHaveLength(0)
+            })
+          )
+        }
+      )
+    }
+
     it.effect(
       `${kind} only addresses the current device, respects restrictions, and skips an already satisfied request`,
       () => {

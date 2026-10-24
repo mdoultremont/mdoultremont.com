@@ -256,6 +256,49 @@ describe("player state", () => {
     expect(deriveView(state, 0).canPlay).toBe(true)
   })
 
+  test.each([ready, playing])(
+    "hiding invalidates playback freshness until a new observation",
+    (data) => {
+      const state = playerReducer(loaded(data), { type: "hidden" })
+      expect(state.stale).toBe(true)
+      expect(deriveView(state, 0)).toMatchObject({
+        playback: data.playback,
+        canPlay: false,
+        canPause: false,
+        canResume: false,
+      })
+      expect(start(state)).toBe(state)
+      expect(start(state, { kind: "pause", deviceId: "current" })).toBe(state)
+      expect(start(state, { kind: "resume", deviceId: "current" })).toBe(state)
+      expect(observe(state, data, state.appliedSeq)).toBe(state)
+      const fresh = observe(state, data)
+      expect(fresh.stale).toBe(false)
+      expect(deriveView(fresh, 0)).toMatchObject({
+        canPlay: true,
+        canPause: data.playback!.playing,
+        canResume: !data.playback!.playing,
+      })
+    }
+  )
+
+  test("hiding preserves the chosen device and pending command without confirming playback", () => {
+    const pending = start(loaded())
+    const chosen = playerReducer(pending, {
+      type: "choose",
+      deviceId: "selected",
+    })
+    const hidden = playerReducer(chosen, { type: "hidden" })
+    expect(hidden).toEqual({ ...chosen, stale: true })
+    const confirming = accepted(hidden)
+    expect(confirming.stale).toBe(true)
+    expect(confirming.pending?.stage).toBe("confirming")
+    expect(deriveView(confirming, 100).canPlay).toBe(false)
+    const fresh = observe(confirming, playing)
+    expect(fresh.pending).toBeNull()
+    expect(fresh.stale).toBe(false)
+    expect(fresh.chosenDeviceId).toBe("selected")
+  })
+
   for (const retryAfterSeconds of [undefined, 9]) {
     test(`rate limits reads and commands for ${retryAfterSeconds ?? 30} seconds`, () => {
       const failure = {

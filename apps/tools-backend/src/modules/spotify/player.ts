@@ -261,12 +261,11 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
         const current = yield* readPlayback(token)
         if (!current || current.device.id !== device)
           return yield* Effect.fail(spotifyError(new DeviceUnavailable()))
-        if (
-          current.device.restricted ||
-          !(playing ? current.allows.resume : current.allows.pause)
-        )
+        if (current.device.restricted)
           return yield* Effect.fail(spotifyError(new PlaybackRefused()))
         if (current.playing === playing) return
+        if (!(playing ? current.allows.resume : current.allows.pause))
+          return yield* Effect.fail(spotifyError(new PlaybackRefused()))
         yield* put(token, device, playing ? "play" : "pause")
       })
     )

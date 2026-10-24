@@ -143,6 +143,7 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     }
     function visibilityChanged() {
       if (!visible()) {
+        sendEvent({ type: "hidden" })
         ++visibilityVersion
         inFlight = null
         readOnVisible = false
@@ -442,9 +443,11 @@ export function TrackPlayButton({
   readonly trackId: string
   readonly name: string
 }) {
-  const { view, playTrack } = usePlayer()
+  const { state, view, playTrack } = usePlayer()
   const item = view.playback?.item
   const playing =
+    !state.stale &&
+    !state.connectionLost &&
     view.playback?.playing &&
     item?.kind === "track" &&
     item.id !== null &&

@@ -55,6 +55,7 @@ export const initialPlayerState: PlayerState = {
 
 export type PlayerEvent =
   | { readonly type: "choose"; readonly deviceId: string | null }
+  | { readonly type: "hidden" }
   | {
       readonly type: "start"
       readonly command: PlayerCommand
@@ -140,6 +141,7 @@ export function playerReducer(
 ): PlayerState {
   if (event.type === "choose")
     return { ...state, chosenDeviceId: event.deviceId }
+  if (event.type === "hidden") return { ...state, stale: true }
   if (event.type === "start") {
     const view = deriveView(state, event.now)
     const command = event.command
