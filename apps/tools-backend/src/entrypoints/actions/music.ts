@@ -4,6 +4,7 @@ import { MusicDelivery } from "#backend/actions/music/delivery"
 import { Destinations } from "#backend/actions/music/destinations"
 import { MusicEnrichment } from "#backend/actions/music/enrichment"
 import { MusicIngestion } from "#backend/actions/music/ingestion"
+import { Sources } from "#backend/actions/music/sources"
 import { MusicPipeline } from "#backend/actions/music/pipeline"
 import { Spotify } from "#backend/modules/spotify"
 import { catalog } from "@mdoultremont/tools-contracts"
@@ -76,6 +77,31 @@ export const musicHandlers = {
         ).pipe(Effect.map((reviewPlaylistId) => ({ reviewPlaylistId })))
     ),
   },
+  sources: {
+    get: bind(actions.sources.get, Sources.layer, (_, caller) =>
+      Sources.use((sources) => sources.read(caller.userId)).pipe(
+        Effect.map((sources) => ({ sources }))
+      )
+    ),
+    add: bind(actions.sources.add, Sources.layer, (input, caller) =>
+      Sources.use((sources) =>
+        sources.add(caller.userId, input.playlistId)
+      ).pipe(Effect.as({ status: "added" } as const))
+    ),
+    setEnabled: bind(
+      actions.sources.setEnabled,
+      Sources.layer,
+      (input, caller) =>
+        Sources.use((sources) =>
+          sources.setEnabled(caller.userId, input.sourceId, input.enabled)
+        ).pipe(Effect.as({ enabled: input.enabled }))
+    ),
+    remove: bind(actions.sources.remove, Sources.layer, (input, caller) =>
+      Sources.use((sources) =>
+        sources.remove(caller.userId, input.playlistId)
+      ).pipe(Effect.as({ status: "removed" } as const))
+    ),
+  },
   ingestion: {
     status: bind(actions.ingestion.status, MusicIngestion.layer, (_, caller) =>
       MusicIngestion.use((ingestion) => ingestion.status(caller.userId))
@@ -86,7 +112,7 @@ export const musicHandlers = {
       (input, caller) =>
         MusicIngestion.use((ingestion) =>
           ingestion.start(caller.userId, input.kind)
-        )
+        ).pipe(Effect.map((ingestions) => ({ ingestions })))
     ),
   },
   enrichment: {

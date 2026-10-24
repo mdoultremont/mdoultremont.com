@@ -27,7 +27,7 @@ export type EnrichmentError =
   | AcousticBrainzError
 
 /**
- * Enrichment: attaching recording data to liked tracks from MusicBrainz and
+ * Enrichment: attaching recording data to collected tracks from MusicBrainz and
  * AcousticBrainz, once per ISRC.
  */
 export class MusicEnrichment extends Context.Service<

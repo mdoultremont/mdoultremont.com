@@ -14,7 +14,7 @@ export interface DecisionSummary {
 
 export interface ClassificationStatus {
   readonly ready: boolean
-  /** Liked tracks with a decision. */
+  /** Collected tracks with a decision. */
   readonly decided: number
   /** Decisions naming at least one destination. */
   readonly toDestinations: number
@@ -22,9 +22,9 @@ export interface ClassificationStatus {
   readonly toReview: number
   /** Of those sent to review, how many had no recording data. */
   readonly withoutRecordingData: number
-  /** Liked tracks still waiting for enrichment. */
+  /** Collected tracks still waiting for enrichment. */
   readonly waitingForEnrichment: number
-  /** Liked tracks ready to classify. */
+  /** Collected tracks ready to classify. */
   readonly pending: number
   /** Decisions made against destinations that have since changed. */
   readonly outdated: number

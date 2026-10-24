@@ -90,7 +90,12 @@ function setup() {
     liked.add(trackId)
     d1.sqlite
       .prepare(
-        "INSERT OR IGNORE INTO music_liked_tracks (owner_id, track_id, name, artist_names, isrc, liked_at, liked, first_seen_at, last_seen_at) VALUES ('owner', ?, 'Song', '[]', NULL, '2026-01-01T00:00:00Z', 1, 1, 1)"
+        "INSERT OR IGNORE INTO music_tracks (owner_id, track_id, name, artist_names, isrc, added_at, first_seen_at, last_seen_at) VALUES ('owner', ?, 'Song', '[]', NULL, '2026-01-01T00:00:00Z', 1, 1)"
+      )
+      .run(trackId)
+    d1.sqlite
+      .prepare(
+        "INSERT OR IGNORE INTO music_source_tracks (owner_id, source_id, track_id, added_at, present, last_seen_at) VALUES ('owner', 'liked', ?, '2026-01-01T00:00:00Z', 1, 1)"
       )
       .run(trackId)
     d1.sqlite
@@ -117,8 +122,10 @@ function setup() {
     configuration: () => configuration,
     likedInDb: (trackId: string) =>
       d1.sqlite
-        .prepare("SELECT liked FROM music_liked_tracks WHERE track_id = ?")
-        .get(trackId)?.liked,
+        .prepare(
+          "SELECT present FROM music_source_tracks WHERE source_id = 'liked' AND track_id = ?"
+        )
+        .get(trackId)?.present,
     run: <A, E>(body: Effect.Effect<A, E, MusicDelivery>) =>
       body.pipe(Effect.provide(layer), Effect.ensuring(Effect.sync(d1.close))),
   }
@@ -141,7 +148,7 @@ describe("music delivery", () => {
           })
           assert.deepStrictEqual(yield* delivery.processNext("owner"), {
             delivered: 4,
-            unliked: 0,
+            removed: 0,
           })
           expect(new Set(t.playlists.get("jazz"))).toEqual(new Set(["a", "b"]))
           assert.deepStrictEqual(t.playlists.get("focus"), ["a"])
@@ -150,7 +157,7 @@ describe("music delivery", () => {
 
           assert.deepStrictEqual(yield* delivery.processNext("owner"), {
             delivered: 0,
-            unliked: 0,
+            removed: 0,
           })
           expect(t.spotify.addTracksToPlaylist).toHaveBeenCalledTimes(3)
           expect(yield* delivery.status("owner")).toMatchObject({
@@ -195,7 +202,7 @@ describe("music delivery", () => {
           const delivery = yield* MusicDelivery
           assert.deepStrictEqual(yield* delivery.processNext("owner"), {
             delivered: 0,
-            unliked: 1,
+            removed: 1,
           })
           assert.isUndefined(t.playlists.get("jazz"))
           assert.strictEqual(t.likedInDb("a"), 0)
@@ -358,3 +365,51 @@ describe("music delivery", () => {
     }
   )
 })
+
+it.effect(
+  "rechecks only present enabled likes and still delivers through playlist memberships",
+  () => {
+    const t = setup()
+    for (const id of ["shared", "playlistOnly", "likedOnly", "disabledLike"])
+      t.decided(id, { destinationIds: ["jazz"] })
+    t.liked.clear()
+    t.d1.sqlite.exec(`
+    INSERT INTO music_sources (owner_id,source_id,created_at,updated_at) VALUES ('owner','shazam',1,1);
+    INSERT INTO music_source_tracks (owner_id,source_id,track_id,added_at,present,last_seen_at)
+    VALUES ('owner','shazam','shared','2026-01-01T00:00:00Z',1,1), ('owner','shazam','playlistOnly','2026-01-01T00:00:00Z',1,1);
+    UPDATE music_source_tracks SET present = 0 WHERE source_id = 'liked' AND track_id = 'playlistOnly';
+  `)
+    return t.run(
+      Effect.gen(function* () {
+        const delivery = yield* MusicDelivery
+        expect(yield* delivery.processNext("owner")).toEqual({
+          delivered: 2,
+          removed: 3,
+        })
+        expect(new Set(t.playlists.get("jazz"))).toEqual(
+          new Set(["shared", "playlistOnly"])
+        )
+        expect(t.spotify.likedTracks.mock.calls[0]?.[1]).toEqual(
+          expect.arrayContaining(["shared", "likedOnly", "disabledLike"])
+        )
+        expect(t.spotify.likedTracks.mock.calls[0]?.[1]).not.toContain(
+          "playlistOnly"
+        )
+        expect(t.likedInDb("shared")).toBe(0)
+        t.decided("newPlaylistOnly", { destinationIds: ["jazz"] })
+        t.d1.sqlite.exec(`
+      INSERT INTO music_source_tracks (owner_id,source_id,track_id,added_at,present,last_seen_at)
+      VALUES ('owner','shazam','newPlaylistOnly','2026-01-01T00:00:00Z',1,1);
+      UPDATE music_sources SET enabled = 0 WHERE source_id = 'liked';
+    `)
+        t.spotify.likedTracks.mockClear()
+        expect(yield* delivery.processNext("owner")).toEqual({
+          delivered: 1,
+          removed: 0,
+        })
+        expect(t.spotify.likedTracks).not.toHaveBeenCalled()
+        expect(t.playlists.get("jazz")).toContain("newPlaylistOnly")
+      })
+    )
+  }
+)

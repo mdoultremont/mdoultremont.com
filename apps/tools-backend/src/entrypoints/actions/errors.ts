@@ -1,5 +1,6 @@
 import { Data, Effect } from "effect"
 import type { Config } from "effect"
+import type { SourcesError } from "#backend/actions/music/sources"
 import type { FlightsError } from "#backend/actions/flights/flights"
 import type { ClassificationPersistenceError } from "#backend/actions/music/classification"
 import type { DeliveryPersistenceError } from "#backend/actions/music/delivery"
@@ -32,6 +33,7 @@ export class ActionError extends Data.TaggedError("ActionError")<{
 
 /** Every business error an action handler may fail with. */
 export type BusinessError =
+  | SourcesError
   | FlightsError
   | DestinationsError
   | IngestionPersistenceError
@@ -72,6 +74,7 @@ export const toActionError = (
 ): Effect.Effect<ActionError> => {
   switch (error._tag) {
     case "FlightInputError":
+    case "SourceInputError":
     case "DestinationInputError":
     case "PlaylistNotUsable":
     case "UserInputError":
@@ -81,6 +84,7 @@ export const toActionError = (
     case "InvitationNotFound":
       return fail("NOT_FOUND", error.message)
     case "SetupIncomplete":
+    case "SourceConflict":
     case "DestinationConflict":
     case "AlreadyAUser":
     case "LastBackOfficeUser":
@@ -97,6 +101,7 @@ export const toActionError = (
       return fail("INTERNAL_SERVER_ERROR", error.message, {
         createdPlaylist: error.playlist,
       })
+    case "SourcePersistenceError":
     case "DestinationPersistenceError":
     case "IngestionPersistenceError":
     case "EnrichmentPersistenceError":

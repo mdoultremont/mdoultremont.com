@@ -5,6 +5,8 @@ import {
   Spotify,
   verifySpotifyOAuthState,
 } from "#backend/modules/spotify"
+import { Clock } from "effect"
+import { SourceStore } from "#backend/actions/music/collection"
 import { MusicIngestion } from "#backend/actions/music/ingestion"
 import { platformLayer } from "../../platform"
 import { readCookie } from "../cookies"
@@ -77,11 +79,17 @@ export const completeSpotifyConnection = (request: Request) => {
       if (connection.status !== "connected") return redirect("connected")
       // The connection is saved even if the first ingestion cannot be queued;
       // the music page offers to start it again.
-      const ingestionQueued = yield* MusicIngestion.use((ingestion) =>
-        ingestion.start(owner.id, "full")
-      ).pipe(
+      const ingestionQueued = yield* Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis
+        yield* SourceStore.use((sources) => sources.seedLiked(owner.id, now))
+        yield* MusicIngestion.use((ingestion) =>
+          ingestion.start(owner.id, "full")
+        )
+      }).pipe(
         Effect.provide(
-          MusicIngestion.layer.pipe(Layer.provide(platformLayer(env)))
+          Layer.mergeAll(MusicIngestion.layer, SourceStore.layer).pipe(
+            Layer.provide(platformLayer(env))
+          )
         ),
         Effect.as(true),
         Effect.orElseSucceed(() => false)

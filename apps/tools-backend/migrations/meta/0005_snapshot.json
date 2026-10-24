@@ -32,9 +32,7 @@
       "indexes": {
         "app_access_app_idx": {
           "name": "app_access_app_idx",
-          "columns": [
-            "app"
-          ],
+          "columns": ["app"],
           "isUnique": false
         }
       },
@@ -43,22 +41,15 @@
           "name": "app_access_user_id_auth_users_id_fk",
           "tableFrom": "app_access",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "app_access_user_id_app_pk": {
-          "columns": [
-            "user_id",
-            "app"
-          ],
+          "columns": ["user_id", "app"],
           "name": "app_access_user_id_app_pk"
         }
       },
@@ -164,17 +155,12 @@
       "indexes": {
         "auth_accounts_user_id_idx": {
           "name": "auth_accounts_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "auth_accounts_provider_account_idx": {
           "name": "auth_accounts_provider_account_idx",
-          "columns": [
-            "provider_id",
-            "account_id"
-          ],
+          "columns": ["provider_id", "account_id"],
           "isUnique": true
         }
       },
@@ -183,12 +169,8 @@
           "name": "auth_accounts_user_id_auth_users_id_fk",
           "tableFrom": "auth_accounts",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -261,16 +243,12 @@
       "indexes": {
         "auth_sessions_token_unique": {
           "name": "auth_sessions_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "auth_sessions_user_id_idx": {
           "name": "auth_sessions_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -279,12 +257,8 @@
           "name": "auth_sessions_user_id_auth_users_id_fk",
           "tableFrom": "auth_sessions",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -359,9 +333,7 @@
       "indexes": {
         "auth_users_email_unique": {
           "name": "auth_users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -421,9 +393,7 @@
       "indexes": {
         "auth_verifications_identifier_idx": {
           "name": "auth_verifications_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },
@@ -470,12 +440,8 @@
           "name": "flight_analyses_flight_id_flights_id_fk",
           "tableFrom": "flight_analyses",
           "tableTo": "flights",
-          "columnsFrom": [
-            "flight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flight_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -508,12 +474,8 @@
           "name": "flight_equipment_flight_id_flights_id_fk",
           "tableFrom": "flight_equipment",
           "tableTo": "flights",
-          "columnsFrom": [
-            "flight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flight_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -521,22 +483,15 @@
           "name": "flight_equipment_equipment_id_equipment_id_fk",
           "tableFrom": "flight_equipment",
           "tableTo": "equipment",
-          "columnsFrom": [
-            "equipment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["equipment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "flight_equipment_flight_id_equipment_id_pk": {
-          "columns": [
-            "flight_id",
-            "equipment_id"
-          ],
+          "columns": ["flight_id", "equipment_id"],
           "name": "flight_equipment_flight_id_equipment_id_pk"
         }
       },
@@ -607,9 +562,7 @@
       "indexes": {
         "equipment_user_idx": {
           "name": "equipment_user_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -618,12 +571,8 @@
           "name": "equipment_user_id_auth_users_id_fk",
           "tableFrom": "equipment",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -702,17 +651,12 @@
       "indexes": {
         "flight_files_user_sha256_idx": {
           "name": "flight_files_user_sha256_idx",
-          "columns": [
-            "user_id",
-            "sha256"
-          ],
+          "columns": ["user_id", "sha256"],
           "isUnique": true
         },
         "flight_files_flight_idx": {
           "name": "flight_files_flight_idx",
-          "columns": [
-            "flight_id"
-          ],
+          "columns": ["flight_id"],
           "isUnique": false
         }
       },
@@ -721,12 +665,8 @@
           "name": "flight_files_flight_id_flights_id_fk",
           "tableFrom": "flight_files",
           "tableTo": "flights",
-          "columnsFrom": [
-            "flight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flight_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -734,12 +674,8 @@
           "name": "flight_files_user_id_auth_users_id_fk",
           "tableFrom": "flight_files",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -772,12 +708,8 @@
           "name": "flight_titles_flight_id_flights_id_fk",
           "tableFrom": "flight_titles",
           "tableTo": "flights",
-          "columnsFrom": [
-            "flight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flight_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -831,12 +763,8 @@
           "name": "flight_tracks_flight_id_flights_id_fk",
           "tableFrom": "flight_tracks",
           "tableTo": "flights",
-          "columnsFrom": [
-            "flight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flight_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1020,10 +948,7 @@
       "indexes": {
         "flights_user_takeoff_idx": {
           "name": "flights_user_takeoff_idx",
-          "columns": [
-            "user_id",
-            "takeoff_at"
-          ],
+          "columns": ["user_id", "takeoff_at"],
           "isUnique": false
         }
       },
@@ -1032,12 +957,8 @@
           "name": "flights_user_id_auth_users_id_fk",
           "tableFrom": "flights",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1116,16 +1037,12 @@
       "indexes": {
         "invitations_token_hash_unique": {
           "name": "invitations_token_hash_unique",
-          "columns": [
-            "token_hash"
-          ],
+          "columns": ["token_hash"],
           "isUnique": true
         },
         "invitations_email_idx": {
           "name": "invitations_email_idx",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         }
       },
@@ -1134,12 +1051,8 @@
           "name": "invitations_invited_by_auth_users_id_fk",
           "tableFrom": "invitations",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "invited_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invited_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1147,12 +1060,8 @@
           "name": "invitations_accepted_by_auth_users_id_fk",
           "tableFrom": "invitations",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "accepted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["accepted_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1234,22 +1143,15 @@
           "name": "music_decisions_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_decisions",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_decisions_owner_id_track_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "track_id"],
           "name": "music_decisions_owner_id_track_id_pk"
         }
       },
@@ -1301,23 +1203,15 @@
           "name": "music_deliveries_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_deliveries",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_deliveries_owner_id_track_id_playlist_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id",
-            "playlist_id"
-          ],
+          "columns": ["owner_id", "track_id", "playlist_id"],
           "name": "music_deliveries_owner_id_track_id_playlist_id_pk"
         }
       },
@@ -1377,22 +1271,15 @@
           "name": "music_destinations_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_destinations",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_destinations_owner_id_playlist_id_pk": {
-          "columns": [
-            "owner_id",
-            "playlist_id"
-          ],
+          "columns": ["owner_id", "playlist_id"],
           "name": "music_destinations_owner_id_playlist_id_pk"
         }
       },
@@ -1523,19 +1410,13 @@
       "indexes": {
         "music_ingestions_active_source_idx": {
           "name": "music_ingestions_active_source_idx",
-          "columns": [
-            "owner_id",
-            "source_id"
-          ],
+          "columns": ["owner_id", "source_id"],
           "isUnique": true,
           "where": "\"music_ingestions\".\"status\" IN ('queued', 'running')"
         },
         "music_ingestions_owner_started_idx": {
           "name": "music_ingestions_owner_started_idx",
-          "columns": [
-            "owner_id",
-            "started_at"
-          ],
+          "columns": ["owner_id", "started_at"],
           "isUnique": false
         }
       },
@@ -1544,12 +1425,8 @@
           "name": "music_ingestions_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_ingestions",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1629,9 +1506,7 @@
       "indexes": {
         "music_liked_tracks_isrc_idx": {
           "name": "music_liked_tracks_isrc_idx",
-          "columns": [
-            "isrc"
-          ],
+          "columns": ["isrc"],
           "isUnique": false
         }
       },
@@ -1640,22 +1515,15 @@
           "name": "music_liked_tracks_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_liked_tracks",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_liked_tracks_owner_id_track_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "track_id"],
           "name": "music_liked_tracks_owner_id_track_id_pk"
         }
       },
@@ -1732,9 +1600,7 @@
       "indexes": {
         "music_recordings_status_idx": {
           "name": "music_recordings_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         }
       },
@@ -1790,12 +1656,8 @@
           "name": "music_settings_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_settings",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1853,10 +1715,7 @@
       "indexes": {
         "music_source_tracks_owner_track_idx": {
           "name": "music_source_tracks_owner_track_idx",
-          "columns": [
-            "owner_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "track_id"],
           "isUnique": false
         }
       },
@@ -1865,23 +1724,15 @@
           "name": "music_source_tracks_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_source_tracks",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_source_tracks_owner_id_source_id_track_id_pk": {
-          "columns": [
-            "owner_id",
-            "source_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "source_id", "track_id"],
           "name": "music_source_tracks_owner_id_source_id_track_id_pk"
         }
       },
@@ -1941,22 +1792,15 @@
           "name": "music_sources_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_sources",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_sources_owner_id_source_id_pk": {
-          "columns": [
-            "owner_id",
-            "source_id"
-          ],
+          "columns": ["owner_id", "source_id"],
           "name": "music_sources_owner_id_source_id_pk"
         }
       },
@@ -2026,9 +1870,7 @@
       "indexes": {
         "music_tracks_isrc_idx": {
           "name": "music_tracks_isrc_idx",
-          "columns": [
-            "isrc"
-          ],
+          "columns": ["isrc"],
           "isUnique": false
         }
       },
@@ -2037,22 +1879,15 @@
           "name": "music_tracks_owner_id_spotify_connections_owner_id_fk",
           "tableFrom": "music_tracks",
           "tableTo": "spotify_connections",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["owner_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "music_tracks_owner_id_track_id_pk": {
-          "columns": [
-            "owner_id",
-            "track_id"
-          ],
+          "columns": ["owner_id", "track_id"],
           "name": "music_tracks_owner_id_track_id_pk"
         }
       },
@@ -2171,44 +2006,32 @@
       "indexes": {
         "oauth_access_tokens_token_unique": {
           "name": "oauth_access_tokens_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "oauth_access_tokens_client_id_idx": {
           "name": "oauth_access_tokens_client_id_idx",
-          "columns": [
-            "client_id"
-          ],
+          "columns": ["client_id"],
           "isUnique": false
         },
         "oauth_access_tokens_session_id_idx": {
           "name": "oauth_access_tokens_session_id_idx",
-          "columns": [
-            "session_id"
-          ],
+          "columns": ["session_id"],
           "isUnique": false
         },
         "oauth_access_tokens_user_id_idx": {
           "name": "oauth_access_tokens_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "oauth_access_tokens_authorization_code_id_idx": {
           "name": "oauth_access_tokens_authorization_code_id_idx",
-          "columns": [
-            "authorization_code_id"
-          ],
+          "columns": ["authorization_code_id"],
           "isUnique": false
         },
         "oauth_access_tokens_refresh_id_idx": {
           "name": "oauth_access_tokens_refresh_id_idx",
-          "columns": [
-            "refresh_id"
-          ],
+          "columns": ["refresh_id"],
           "isUnique": false
         }
       },
@@ -2217,12 +2040,8 @@
           "name": "oauth_access_tokens_client_id_oauth_clients_client_id_fk",
           "tableFrom": "oauth_access_tokens",
           "tableTo": "oauth_clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "client_id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["client_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2230,12 +2049,8 @@
           "name": "oauth_access_tokens_session_id_auth_sessions_id_fk",
           "tableFrom": "oauth_access_tokens",
           "tableTo": "auth_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2243,12 +2058,8 @@
           "name": "oauth_access_tokens_user_id_auth_users_id_fk",
           "tableFrom": "oauth_access_tokens",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2256,12 +2067,8 @@
           "name": "oauth_access_tokens_refresh_id_oauth_refresh_tokens_id_fk",
           "tableFrom": "oauth_access_tokens",
           "tableTo": "oauth_refresh_tokens",
-          "columnsFrom": [
-            "refresh_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["refresh_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2336,24 +2143,17 @@
       "indexes": {
         "oauth_client_resources_client_resource_idx": {
           "name": "oauth_client_resources_client_resource_idx",
-          "columns": [
-            "client_id",
-            "resource_id"
-          ],
+          "columns": ["client_id", "resource_id"],
           "isUnique": true
         },
         "oauth_client_resources_client_id_idx": {
           "name": "oauth_client_resources_client_id_idx",
-          "columns": [
-            "client_id"
-          ],
+          "columns": ["client_id"],
           "isUnique": false
         },
         "oauth_client_resources_resource_id_idx": {
           "name": "oauth_client_resources_resource_id_idx",
-          "columns": [
-            "resource_id"
-          ],
+          "columns": ["resource_id"],
           "isUnique": false
         }
       },
@@ -2362,12 +2162,8 @@
           "name": "oauth_client_resources_client_id_oauth_clients_client_id_fk",
           "tableFrom": "oauth_client_resources",
           "tableTo": "oauth_clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "client_id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["client_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2375,12 +2171,8 @@
           "name": "oauth_client_resources_resource_id_oauth_resources_identifier_fk",
           "tableFrom": "oauth_client_resources",
           "tableTo": "oauth_resources",
-          "columnsFrom": [
-            "resource_id"
-          ],
-          "columnsTo": [
-            "identifier"
-          ],
+          "columnsFrom": ["resource_id"],
+          "columnsTo": ["identifier"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2651,16 +2443,12 @@
       "indexes": {
         "oauth_clients_client_id_unique": {
           "name": "oauth_clients_client_id_unique",
-          "columns": [
-            "client_id"
-          ],
+          "columns": ["client_id"],
           "isUnique": true
         },
         "oauth_clients_user_id_idx": {
           "name": "oauth_clients_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -2669,12 +2457,8 @@
           "name": "oauth_clients_user_id_auth_users_id_fk",
           "tableFrom": "oauth_clients",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2753,16 +2537,12 @@
       "indexes": {
         "oauth_consents_client_id_idx": {
           "name": "oauth_consents_client_id_idx",
-          "columns": [
-            "client_id"
-          ],
+          "columns": ["client_id"],
           "isUnique": false
         },
         "oauth_consents_user_id_idx": {
           "name": "oauth_consents_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -2771,12 +2551,8 @@
           "name": "oauth_consents_client_id_oauth_clients_client_id_fk",
           "tableFrom": "oauth_consents",
           "tableTo": "oauth_clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "client_id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["client_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2784,12 +2560,8 @@
           "name": "oauth_consents_user_id_auth_users_id_fk",
           "tableFrom": "oauth_consents",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2969,37 +2741,27 @@
       "indexes": {
         "oauth_refresh_tokens_token_unique": {
           "name": "oauth_refresh_tokens_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "oauth_refresh_tokens_client_id_idx": {
           "name": "oauth_refresh_tokens_client_id_idx",
-          "columns": [
-            "client_id"
-          ],
+          "columns": ["client_id"],
           "isUnique": false
         },
         "oauth_refresh_tokens_session_id_idx": {
           "name": "oauth_refresh_tokens_session_id_idx",
-          "columns": [
-            "session_id"
-          ],
+          "columns": ["session_id"],
           "isUnique": false
         },
         "oauth_refresh_tokens_user_id_idx": {
           "name": "oauth_refresh_tokens_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "oauth_refresh_tokens_authorization_code_id_idx": {
           "name": "oauth_refresh_tokens_authorization_code_id_idx",
-          "columns": [
-            "authorization_code_id"
-          ],
+          "columns": ["authorization_code_id"],
           "isUnique": false
         }
       },
@@ -3008,12 +2770,8 @@
           "name": "oauth_refresh_tokens_client_id_oauth_clients_client_id_fk",
           "tableFrom": "oauth_refresh_tokens",
           "tableTo": "oauth_clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "client_id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["client_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3021,12 +2779,8 @@
           "name": "oauth_refresh_tokens_session_id_auth_sessions_id_fk",
           "tableFrom": "oauth_refresh_tokens",
           "tableTo": "auth_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3034,12 +2788,8 @@
           "name": "oauth_refresh_tokens_user_id_auth_users_id_fk",
           "tableFrom": "oauth_refresh_tokens",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3163,9 +2913,7 @@
       "indexes": {
         "oauth_resources_identifier_unique": {
           "name": "oauth_resources_identifier_unique",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": true
         }
       },
@@ -3265,12 +3013,8 @@
           "name": "spotify_connections_owner_id_auth_users_id_fk",
           "tableFrom": "spotify_connections",
           "tableTo": "auth_users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

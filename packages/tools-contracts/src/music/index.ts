@@ -9,6 +9,8 @@ export type {
   Ingestion,
   IngestionKind,
   IngestionStatus,
+  SourceId,
+  Source,
   SpotifyConnectionStatus,
   SpotifyPlaylist,
 } from "./schemas"

@@ -9,6 +9,8 @@ import {
   IngestionKindSchema,
   IngestionSchema,
   IngestionStatusSchema,
+  SourceIdSchema,
+  SourceSchema,
   OwnedPlaylistSchema,
   SpotifyConnectionStatusSchema,
   SpotifyPlaylistSchema,
@@ -66,7 +68,7 @@ export const musicActions = {
     }),
     disconnect: action({
       description:
-        "Disconnects Spotify. Liked tracks, decisions and settings are kept.",
+        "Disconnects Spotify and deletes its sources, collected tracks, decisions and settings. Shared recording data is kept.",
       effect: "write",
       http: { method: "POST", path: "/music/spotify/disconnect" },
       input: NoInput,
@@ -99,7 +101,7 @@ export const musicActions = {
     }),
     save: action({
       description:
-        "Adds or updates a destination: an owned Spotify playlist with the description of the tracks that belong in it (up to 2000 characters, required to enable it).",
+        "Adds or updates a destination: an owned Spotify playlist with the description of the tracks that belong in it (up to 2000 characters, required to enable it). A source cannot also be a destination.",
       effect: "write",
       http: { method: "PUT", path: "/music/destinations/:playlistId" },
       input: Schema.Struct({
@@ -130,17 +132,54 @@ export const musicActions = {
     }),
     setReviewPlaylist: action({
       description:
-        "Chooses the playlist that receives tracks with no accepted destination, or none with null. It cannot be an enabled destination.",
+        "Chooses the playlist that receives tracks with no accepted destination, or none with null. It cannot be a source or an enabled destination.",
       effect: "write",
       http: { method: "PUT", path: "/music/review-playlist" },
       input: Schema.Struct({ playlistId: Schema.NullOr(Schema.String) }),
       output: Schema.Struct({ reviewPlaylistId: Schema.NullOr(Schema.String) }),
     }),
   },
+  sources: {
+    get: action({
+      description:
+        "The sources read by the music app, with their enabled state, present and removed track counts, and latest ingestion. Liked Songs is built in and cannot be removed.",
+      effect: "read",
+      http: { method: "GET", path: "/music/sources" },
+      input: NoInput,
+      output: Schema.Struct({ sources: Schema.Array(SourceSchema) }),
+    }),
+    add: action({
+      description:
+        "Adds an owned Spotify playlist as a source and starts reading it in full. A source cannot also be a destination or the review playlist. The app never changes sources.",
+      effect: "write",
+      http: { method: "POST", path: "/music/sources" },
+      input: Schema.Struct({ playlistId: Schema.String }),
+      output: Schema.Struct({ status: Schema.Literal("added") }),
+    }),
+    setEnabled: action({
+      description:
+        "Enables or disables a source. Use { kind: 'liked' } for Liked Songs or { kind: 'playlist', playlistId } for a playlist. Enabling starts a full ingestion. Tracks in no enabled source keep their data and decisions but are not delivered.",
+      effect: "write",
+      http: { method: "PUT", path: "/music/sources/enabled" },
+      input: Schema.Struct({
+        sourceId: SourceIdSchema,
+        enabled: Schema.Boolean,
+      }),
+      output: Schema.Struct({ enabled: Schema.Boolean }),
+    }),
+    remove: action({
+      description:
+        "Removes a playlist source. The Spotify playlist, its tracks, and their recording data and decisions stay. Liked Songs cannot be removed.",
+      effect: "write",
+      http: { method: "DELETE", path: "/music/sources/:playlistId" },
+      input: Schema.Struct({ playlistId: Schema.String }),
+      output: Schema.Struct({ status: Schema.Literal("removed") }),
+    }),
+  },
   ingestion: {
     status: action({
       description:
-        "The latest ingestion of Spotify Liked Songs and how many tracks are liked and un-liked.",
+        "Each source's latest ingestion and the number of collected tracks present in an enabled source or removed from every enabled source.",
       effect: "read",
       http: { method: "GET", path: "/music/ingestion" },
       input: NoInput,
@@ -148,17 +187,17 @@ export const musicActions = {
     }),
     start: action({
       description:
-        "Starts reading Spotify Liked Songs in the background: `full` reads every like, `incremental` only likes newer than those known. Returns the ingestion already in progress if there is one.",
+        "Starts reading every enabled source in the background. `full` reads every page. `incremental` stops at known likes in Liked Songs and skips playlists whose snapshot has not changed. Returns each source's active ingestion.",
       effect: "write",
       http: { method: "POST", path: "/music/ingestion" },
       input: Schema.Struct({ kind: IngestionKindSchema }),
-      output: IngestionSchema,
+      output: Schema.Struct({ ingestions: Schema.Array(IngestionSchema) }),
     }),
   },
   enrichment: {
     status: action({
       description:
-        "How many liked tracks have MusicBrainz and AcousticBrainz recording data, and how many lookups are pending or unresolved.",
+        "How many collected tracks have MusicBrainz and AcousticBrainz recording data, and how many lookups are pending or unresolved.",
       effect: "read",
       http: { method: "GET", path: "/music/enrichment" },
       input: NoInput,

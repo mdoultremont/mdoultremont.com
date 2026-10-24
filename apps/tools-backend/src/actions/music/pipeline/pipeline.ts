@@ -53,7 +53,7 @@ export function isRetryable(error: PipelineError): boolean {
     case "AcousticBrainzError":
     case "ClefError":
       return error.retryable
-    case "InvalidLikesPage":
+    case "InvalidSourcePage":
       return false
     case "IngestionPersistenceError":
     case "EnrichmentPersistenceError":

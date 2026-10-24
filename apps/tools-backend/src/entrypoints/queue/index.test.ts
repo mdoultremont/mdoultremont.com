@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import { vi } from "vitest"
-import { InvalidLikesPage } from "#backend/actions/music/ingestion"
+import { InvalidSourcePage } from "#backend/actions/music/ingestion"
 import { MusicPipeline } from "#backend/actions/music/pipeline"
 import {
   RateLimited,
@@ -94,7 +94,7 @@ describe("queue consumer", () => {
   it.effect("gives up on an unusable Spotify page", () => {
     const { run, giveUp } = withPipeline(() =>
       Effect.fail(
-        new InvalidLikesPage({ message: "Spotify returned a bad page" })
+        new InvalidSourcePage({ message: "Spotify returned a bad page" })
       )
     )
     const invalid = message(ingestionMessage)

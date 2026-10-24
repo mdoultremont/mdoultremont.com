@@ -1,39 +1,43 @@
-import { and, count, desc, eq, inArray, lt, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm"
 import { Context, Effect, Layer } from "effect"
 import type { SpotifySavedTrack } from "#backend/modules/spotify"
 import {
   Database,
   musicIngestions,
-  musicLikedTracks,
+  musicSources,
+  musicSourceTracks,
+  musicTracks,
 } from "#backend/modules/database"
+import {
+  eligibleTrack,
+  sourceIdFromStorage,
+  storedSourceId,
+  type SourceId,
+} from "#backend/actions/music/collection"
 import {
   type Ingestion,
   type IngestionKind,
   IngestionPersistenceError,
 } from "./errors"
 
-/** D1 allows 100 bound parameters per statement; a liked-track row binds 9. */
+// Ten rows keep both upserts below D1's 100-parameter limit.
 const rowsPerInsert = 10
+const toIngestion = (row: typeof musicIngestions.$inferSelect): Ingestion => ({
+  ...row,
+  source: sourceIdFromStorage(row.sourceId),
+})
 
-export interface PageResult {
-  /** Tracks that were new, re-liked, or liked again at a different time. */
-  readonly added: number
-  /** True when the page contained a like already stored unchanged. */
-  readonly reachedKnownLike: boolean
-}
-
-/** Liked tracks and ingestion progress. */
 export class IngestionStore extends Context.Service<
   IngestionStore,
   {
-    /** Creates a queued ingestion, or returns the one already in progress. */
     readonly start: (input: {
-      readonly id: string
-      readonly ownerId: string
-      readonly kind: IngestionKind
-      readonly now: number
+      id: string
+      ownerId: string
+      source: SourceId
+      kind: IngestionKind
+      now: number
     }) => Effect.Effect<
-      { readonly ingestion: Ingestion; readonly created: boolean },
+      { ingestion: Ingestion; created: boolean },
       IngestionPersistenceError
     >
     readonly get: (
@@ -41,27 +45,34 @@ export class IngestionStore extends Context.Service<
     ) => Effect.Effect<Ingestion | null, IngestionPersistenceError>
     readonly latest: (
       ownerId: string,
+      source: SourceId,
       kind?: IngestionKind
     ) => Effect.Effect<Ingestion | null, IngestionPersistenceError>
-    /** Upserts one page of likes and advances the ingestion atomically. */
+    readonly setSnapshot: (
+      id: string,
+      snapshotId: string,
+      now: number
+    ) => Effect.Effect<void, IngestionPersistenceError>
     readonly recordPage: (input: {
-      readonly ingestion: Ingestion
-      readonly tracks: readonly SpotifySavedTrack[]
-      readonly next: string | null
-      readonly total: number
-      readonly now: number
-    }) => Effect.Effect<PageResult, IngestionPersistenceError>
-    /** Finishes the ingestion; a full one marks likes it did not see as un-liked. */
+      ingestion: Ingestion
+      tracks: readonly SpotifySavedTrack[]
+      next: string | null
+      total: number
+      now: number
+    }) => Effect.Effect<
+      { added: number; reachedKnownLike: boolean },
+      IngestionPersistenceError
+    >
     readonly complete: (
       ingestion: Ingestion,
-      now: number
-    ) => Effect.Effect<Ingestion, IngestionPersistenceError>
+      now: number,
+      readAll: boolean
+    ) => Effect.Effect<void, IngestionPersistenceError>
     readonly fail: (
       id: string,
       error: string,
       now: number
     ) => Effect.Effect<void, IngestionPersistenceError>
-    /** Re-marks a stalled ingestion as touched so a re-sent message is not doubled. */
     readonly touch: (
       id: string,
       now: number
@@ -69,7 +80,7 @@ export class IngestionStore extends Context.Service<
     readonly counts: (
       ownerId: string
     ) => Effect.Effect<
-      { readonly liked: number; readonly unliked: number },
+      { present: number; removed: number },
       IngestionPersistenceError
     >
   }
@@ -82,11 +93,8 @@ export class IngestionStore extends Context.Service<
         database
           .use(run)
           .pipe(
-            Effect.mapError(
-              (error) => new IngestionPersistenceError({ cause: error })
-            )
+            Effect.mapError((cause) => new IngestionPersistenceError({ cause }))
           )
-
       const get = (id: string) =>
         query((db) =>
           db
@@ -94,24 +102,9 @@ export class IngestionStore extends Context.Service<
             .from(musicIngestions)
             .where(eq(musicIngestions.id, id))
             .get()
-        ).pipe(Effect.map((row) => row ?? null))
-
-      const active = (ownerId: string) =>
-        query((db) =>
-          db
-            .select()
-            .from(musicIngestions)
-            .where(
-              and(
-                eq(musicIngestions.ownerId, ownerId),
-                inArray(musicIngestions.status, ["queued", "running"])
-              )
-            )
-            .get()
-        ).pipe(Effect.map((row) => row ?? null))
-
+        ).pipe(Effect.map((row) => (row ? toIngestion(row) : null)))
       return IngestionStore.of({
-        start: ({ id, ownerId, kind, now }) =>
+        start: ({ id, ownerId, source, kind, now }) =>
           Effect.gen(function* () {
             const inserted = yield* query((db) =>
               db
@@ -119,27 +112,38 @@ export class IngestionStore extends Context.Service<
                 .values({
                   id,
                   ownerId,
+                  sourceId: storedSourceId(source),
                   kind,
                   status: "queued",
                   startedAt: now,
                   updatedAt: now,
                 })
-                // The partial unique index allows one queued/running ingestion per owner.
                 .onConflictDoNothing()
                 .returning()
             )
-            if (inserted[0]) return { ingestion: inserted[0], created: true }
-            const existing = yield* active(ownerId)
-            if (!existing)
+            if (inserted[0])
+              return { ingestion: toIngestion(inserted[0]), created: true }
+            const active = yield* query((db) =>
+              db
+                .select()
+                .from(musicIngestions)
+                .where(
+                  and(
+                    eq(musicIngestions.ownerId, ownerId),
+                    eq(musicIngestions.sourceId, storedSourceId(source)),
+                    inArray(musicIngestions.status, ["queued", "running"])
+                  )
+                )
+                .get()
+            )
+            if (!active)
               return yield* new IngestionPersistenceError({
                 cause: "Ingestion conflicted but none is active",
               })
-            return { ingestion: existing, created: false }
+            return { ingestion: toIngestion(active), created: false }
           }),
-
         get,
-
-        latest: (ownerId, kind) =>
+        latest: (ownerId, source, kind) =>
           query((db) =>
             db
               .select()
@@ -147,75 +151,104 @@ export class IngestionStore extends Context.Service<
               .where(
                 and(
                   eq(musicIngestions.ownerId, ownerId),
+                  eq(musicIngestions.sourceId, storedSourceId(source)),
                   kind ? eq(musicIngestions.kind, kind) : undefined
                 )
               )
-              .orderBy(desc(musicIngestions.startedAt))
+              .orderBy(desc(musicIngestions.startedAt), desc(sql`rowid`))
               .limit(1)
               .get()
-          ).pipe(Effect.map((row) => row ?? null)),
-
+          ).pipe(Effect.map((row) => (row ? toIngestion(row) : null))),
+        setSnapshot: (id, snapshotId, now) =>
+          query((db) =>
+            db
+              .update(musicIngestions)
+              .set({ snapshotId, updatedAt: now })
+              .where(eq(musicIngestions.id, id))
+          ).pipe(Effect.asVoid),
         recordPage: ({ ingestion, tracks, next, total, now }) =>
           query(async (db) => {
-            const ids = tracks.map((track) => track.id)
+            const sourceId = storedSourceId(ingestion.source)
+            const ids = [...new Set(tracks.map((track) => track.id))]
             const existing =
               ids.length === 0
                 ? []
                 : await db
-                    .select({
-                      trackId: musicLikedTracks.trackId,
-                      likedAt: musicLikedTracks.likedAt,
-                      liked: musicLikedTracks.liked,
-                    })
-                    .from(musicLikedTracks)
+                    .select()
+                    .from(musicSourceTracks)
                     .where(
                       and(
-                        eq(musicLikedTracks.ownerId, ingestion.ownerId),
-                        inArray(musicLikedTracks.trackId, ids)
+                        eq(musicSourceTracks.ownerId, ingestion.ownerId),
+                        eq(musicSourceTracks.sourceId, sourceId),
+                        inArray(musicSourceTracks.trackId, ids)
                       )
                     )
             const known = new Map(existing.map((row) => [row.trackId, row]))
             const unchanged = (track: SpotifySavedTrack) => {
               const row = known.get(track.id)
               return (
-                row !== undefined && row.liked && row.likedAt === track.addedAt
+                row !== undefined &&
+                row.present &&
+                row.addedAt === track.addedAt
               )
             }
             const added = tracks.filter((track) => !unchanged(track)).length
-
             const upserts = []
-            for (let start = 0; start < tracks.length; start += rowsPerInsert)
+            for (let start = 0; start < tracks.length; start += rowsPerInsert) {
+              const chunk = tracks.slice(start, start + rowsPerInsert)
               upserts.push(
                 db
-                  .insert(musicLikedTracks)
+                  .insert(musicTracks)
                   .values(
-                    tracks.slice(start, start + rowsPerInsert).map((track) => ({
+                    chunk.map((track) => ({
                       ownerId: ingestion.ownerId,
                       trackId: track.id,
                       name: track.name,
                       artistNames: track.artistNames,
                       isrc: track.isrc,
-                      likedAt: track.addedAt,
-                      liked: true,
+                      addedAt: track.addedAt,
                       firstSeenAt: now,
                       lastSeenAt: now,
                     }))
                   )
                   .onConflictDoUpdate({
-                    target: [
-                      musicLikedTracks.ownerId,
-                      musicLikedTracks.trackId,
-                    ],
+                    target: [musicTracks.ownerId, musicTracks.trackId],
                     set: {
                       name: sql`excluded.name`,
                       artistNames: sql`excluded.artist_names`,
                       isrc: sql`excluded.isrc`,
-                      likedAt: sql`excluded.liked_at`,
-                      liked: true,
+                      addedAt: sql`max(${musicTracks.addedAt}, excluded.added_at)`,
                       lastSeenAt: now,
                     },
                   })
               )
+              upserts.push(
+                db
+                  .insert(musicSourceTracks)
+                  .values(
+                    chunk.map((track) => ({
+                      ownerId: ingestion.ownerId,
+                      sourceId,
+                      trackId: track.id,
+                      addedAt: track.addedAt,
+                      present: true,
+                      lastSeenAt: now,
+                    }))
+                  )
+                  .onConflictDoUpdate({
+                    target: [
+                      musicSourceTracks.ownerId,
+                      musicSourceTracks.sourceId,
+                      musicSourceTracks.trackId,
+                    ],
+                    set: {
+                      addedAt: sql`max(${musicSourceTracks.addedAt}, excluded.added_at)`,
+                      present: true,
+                      lastSeenAt: now,
+                    },
+                  })
+              )
+            }
             const progress = db
               .update(musicIngestions)
               .set({
@@ -229,42 +262,53 @@ export class IngestionStore extends Context.Service<
               })
               .where(eq(musicIngestions.id, ingestion.id))
             await db.batch([progress, ...upserts])
-            return {
-              added,
-              reachedKnownLike: tracks.some(unchanged),
-            } satisfies PageResult
+            return { added, reachedKnownLike: tracks.some(unchanged) }
           }),
-
-        complete: (ingestion, now) =>
+        complete: (ingestion, now, readAll) =>
           query(async (db) => {
-            const unliked =
-              ingestion.kind === "full"
-                ? await db
-                    .update(musicLikedTracks)
-                    .set({ liked: false })
-                    .where(
-                      and(
-                        eq(musicLikedTracks.ownerId, ingestion.ownerId),
-                        eq(musicLikedTracks.liked, true),
-                        lt(musicLikedTracks.lastSeenAt, ingestion.startedAt)
-                      )
-                    )
-                    .returning({ trackId: musicLikedTracks.trackId })
-                : []
-            const [finished] = await db
+            const sourceId = storedSourceId(ingestion.source)
+            const absent = and(
+              eq(musicSourceTracks.ownerId, ingestion.ownerId),
+              eq(musicSourceTracks.sourceId, sourceId),
+              eq(musicSourceTracks.present, true),
+              lt(musicSourceTracks.lastSeenAt, ingestion.startedAt)
+            )
+            const finish = db
               .update(musicIngestions)
               .set({
                 status: "completed",
                 cursor: null,
-                unliked: unliked.length,
+                removed: readAll
+                  ? sql`(SELECT count(*) FROM ${musicSourceTracks} WHERE ${absent})`
+                  : 0,
                 updatedAt: now,
                 finishedAt: now,
               })
               .where(eq(musicIngestions.id, ingestion.id))
-              .returning()
-            return finished ?? ingestion
+            const memberships = readAll
+              ? [
+                  db
+                    .update(musicSourceTracks)
+                    .set({ present: false })
+                    .where(absent),
+                ]
+              : []
+            const snapshots =
+              ingestion.source.kind === "playlist" && readAll
+                ? [
+                    db
+                      .update(musicSources)
+                      .set({ snapshotId: ingestion.snapshotId, updatedAt: now })
+                      .where(
+                        and(
+                          eq(musicSources.ownerId, ingestion.ownerId),
+                          eq(musicSources.sourceId, sourceId)
+                        )
+                      ),
+                  ]
+                : []
+            await db.batch([finish, ...memberships, ...snapshots])
           }),
-
         fail: (id, error, now) =>
           query((db) =>
             db
@@ -272,7 +316,6 @@ export class IngestionStore extends Context.Service<
               .set({ status: "failed", error, updatedAt: now, finishedAt: now })
               .where(eq(musicIngestions.id, id))
           ).pipe(Effect.asVoid),
-
         touch: (id, now) =>
           query((db) =>
             db
@@ -280,18 +323,20 @@ export class IngestionStore extends Context.Service<
               .set({ updatedAt: now })
               .where(eq(musicIngestions.id, id))
           ).pipe(Effect.asVoid),
-
         counts: (ownerId) =>
           query((db) =>
             db
-              .select({ liked: musicLikedTracks.liked, count: count() })
-              .from(musicLikedTracks)
-              .where(eq(musicLikedTracks.ownerId, ownerId))
-              .groupBy(musicLikedTracks.liked)
+              .select({
+                present: sql<number>`coalesce(sum(${eligibleTrack(musicTracks.ownerId, musicTracks.trackId)}),0)`,
+                total: sql<number>`count(*)`,
+              })
+              .from(musicTracks)
+              .where(eq(musicTracks.ownerId, ownerId))
+              .get()
           ).pipe(
-            Effect.map((rows) => ({
-              liked: rows.find((row) => row.liked)?.count ?? 0,
-              unliked: rows.find((row) => !row.liked)?.count ?? 0,
+            Effect.map((row) => ({
+              present: Number(row?.present ?? 0),
+              removed: Number(row?.total ?? 0) - Number(row?.present ?? 0),
             }))
           ),
       })

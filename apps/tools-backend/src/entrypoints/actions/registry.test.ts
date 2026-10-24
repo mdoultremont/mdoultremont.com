@@ -13,6 +13,10 @@ import { actionRegistry, bind, createRegistry, handlers } from "."
  * the action that serves it now. Removing an action breaks this list.
  */
 const legacy = {
+  "GET /api/music/sources": "music.sources.get",
+  "POST /api/music/sources": "music.sources.add",
+  "PUT /api/music/sources/enabled": "music.sources.setEnabled",
+  "DELETE /api/music/sources/:playlistId": "music.sources.remove",
   "oRPC flights/list": "flights.list",
   "POST /api/flights/:flightId/prepare": "flights.prepare",
   "oRPC flights/get": "flights.get",

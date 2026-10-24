@@ -77,9 +77,14 @@ function setup() {
     const trackId = `track${next++}`
     d1.sqlite
       .prepare(
-        "INSERT INTO music_liked_tracks (owner_id, track_id, name, artist_names, isrc, liked_at, liked, first_seen_at, last_seen_at) VALUES ('owner', ?, 'SPOTIFY NAME', '[\"SPOTIFY ARTIST\"]', ?, ?, 1, 1, 1)"
+        "INSERT INTO music_tracks (owner_id, track_id, name, artist_names, isrc, added_at, first_seen_at, last_seen_at) VALUES ('owner', ?, 'SPOTIFY NAME', '[\"SPOTIFY ARTIST\"]', ?, ?, 1, 1)"
       )
       .run(trackId, isrc, `2026-01-01T00:00:${String(next).padStart(2, "0")}Z`)
+    d1.sqlite
+      .prepare(
+        "INSERT INTO music_source_tracks (owner_id, source_id, track_id, added_at, present, last_seen_at) VALUES ('owner', 'liked', ?, '2026-01-01T00:00:00Z', 1, 1)"
+      )
+      .run(trackId)
     return trackId
   }
   const recording = (

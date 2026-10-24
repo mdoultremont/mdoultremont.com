@@ -1,10 +1,16 @@
+import {
+  storedSourceId,
+  eligibleTrack,
+} from "#backend/actions/music/collection"
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { Context, Effect, Layer } from "effect"
 import {
   Database,
   musicDecisions,
   musicDeliveries,
-  musicLikedTracks,
+  musicTracks,
+  musicSources,
+  musicSourceTracks,
   musicSettings,
 } from "#backend/modules/database"
 import { DeliveryPersistenceError } from "./errors"
@@ -29,7 +35,7 @@ export class DeliveryStore extends Context.Service<
       automatic: boolean,
       now: number
     ) => Effect.Effect<void, DeliveryPersistenceError>
-    /** Decisions of tracks that are still liked. */
+    /** Decisions of tracks present in an enabled source. */
     readonly decisions: (ownerId: string) => Effect.Effect<
       readonly {
         readonly trackId: string
@@ -66,8 +72,15 @@ export class DeliveryStore extends Context.Service<
     readonly clearRefused: (
       ownerId: string
     ) => Effect.Effect<void, DeliveryPersistenceError>
-    /** Records that Spotify no longer lists these tracks as liked. */
-    readonly markUnliked: (
+    readonly likedMemberships: (
+      ownerId: string,
+      trackIds: readonly string[]
+    ) => Effect.Effect<readonly string[], DeliveryPersistenceError>
+    readonly eligible: (
+      ownerId: string,
+      trackIds: readonly string[]
+    ) => Effect.Effect<ReadonlySet<string>, DeliveryPersistenceError>
+    readonly markRemoved: (
       ownerId: string,
       trackIds: readonly string[]
     ) => Effect.Effect<void, DeliveryPersistenceError>
@@ -146,19 +159,19 @@ export class DeliveryStore extends Context.Service<
               })
               .from(musicDecisions)
               .innerJoin(
-                musicLikedTracks,
+                musicTracks,
                 and(
-                  eq(musicLikedTracks.ownerId, musicDecisions.ownerId),
-                  eq(musicLikedTracks.trackId, musicDecisions.trackId)
+                  eq(musicTracks.ownerId, musicDecisions.ownerId),
+                  eq(musicTracks.trackId, musicDecisions.trackId)
                 )
               )
               .where(
                 and(
                   eq(musicDecisions.ownerId, ownerId),
-                  eq(musicLikedTracks.liked, true)
+                  eligibleTrack(musicTracks.ownerId, musicTracks.trackId)
                 )
               )
-              .orderBy(sql`${musicLikedTracks.likedAt} DESC`)
+              .orderBy(sql`${musicTracks.addedAt} DESC`)
           ),
 
         deliveries: (ownerId) =>
@@ -192,17 +205,75 @@ export class DeliveryStore extends Context.Service<
               )
           ).pipe(Effect.asVoid),
 
-        markUnliked: (ownerId, trackIds) =>
+        likedMemberships: (ownerId, trackIds) =>
+          query(async (db) => {
+            const result: string[] = []
+            for (let start = 0; start < trackIds.length; start += 50) {
+              const rows = await db
+                .select({ trackId: musicSourceTracks.trackId })
+                .from(musicSourceTracks)
+                .innerJoin(
+                  musicSources,
+                  and(
+                    eq(musicSources.ownerId, musicSourceTracks.ownerId),
+                    eq(musicSources.sourceId, musicSourceTracks.sourceId)
+                  )
+                )
+                .where(
+                  and(
+                    eq(musicSourceTracks.ownerId, ownerId),
+                    eq(
+                      musicSourceTracks.sourceId,
+                      storedSourceId({ kind: "liked" })
+                    ),
+                    eq(musicSourceTracks.present, true),
+                    eq(musicSources.enabled, true),
+                    inArray(
+                      musicSourceTracks.trackId,
+                      trackIds.slice(start, start + 50)
+                    )
+                  )
+                )
+              result.push(...rows.map((row) => row.trackId))
+            }
+            return result
+          }),
+        eligible: (ownerId, trackIds) =>
+          query(async (db) => {
+            const result = new Set<string>()
+            for (let start = 0; start < trackIds.length; start += 50) {
+              const rows = await db
+                .select({ trackId: musicTracks.trackId })
+                .from(musicTracks)
+                .where(
+                  and(
+                    eq(musicTracks.ownerId, ownerId),
+                    inArray(
+                      musicTracks.trackId,
+                      trackIds.slice(start, start + 50)
+                    ),
+                    eligibleTrack(musicTracks.ownerId, musicTracks.trackId)
+                  )
+                )
+              for (const row of rows) result.add(row.trackId)
+            }
+            return result
+          }),
+        markRemoved: (ownerId, trackIds) =>
           query(async (db) => {
             for (let start = 0; start < trackIds.length; start += 50)
               await db
-                .update(musicLikedTracks)
-                .set({ liked: false })
+                .update(musicSourceTracks)
+                .set({ present: false })
                 .where(
                   and(
-                    eq(musicLikedTracks.ownerId, ownerId),
+                    eq(musicSourceTracks.ownerId, ownerId),
+                    eq(
+                      musicSourceTracks.sourceId,
+                      storedSourceId({ kind: "liked" })
+                    ),
                     inArray(
-                      musicLikedTracks.trackId,
+                      musicSourceTracks.trackId,
                       trackIds.slice(start, start + 50)
                     )
                   )

@@ -532,7 +532,7 @@ export const musicIngestions = sqliteTable(
     pages: integer("pages").notNull().default(0),
     seen: integer("seen").notNull().default(0),
     added: integer("added").notNull().default(0),
-    unliked: integer("unliked").notNull().default(0),
+    removed: integer("unliked").notNull().default(0),
     total: integer("total"),
     error: text("error"),
     startedAt: integer("started_at").notNull(),

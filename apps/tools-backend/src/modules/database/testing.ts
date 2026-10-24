@@ -87,6 +87,11 @@ export function makeTestD1() {
         0,
         "spotify-user"
       )
+    sqlite
+      .prepare(
+        "INSERT INTO music_sources (owner_id, source_id, created_at, updated_at) VALUES (?, 'liked', 1, 1)"
+      )
+      .run(ownerId)
   }
 
   return { sqlite, binding, seedOwner, close: () => sqlite.close() }

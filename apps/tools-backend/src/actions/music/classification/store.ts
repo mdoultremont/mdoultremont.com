@@ -1,9 +1,10 @@
+import { eligibleTrack } from "#backend/actions/music/collection"
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm"
 import { Context, Effect, Layer } from "effect"
 import {
   Database,
   musicDecisions,
-  musicLikedTracks,
+  musicTracks,
   musicRecordings,
 } from "#backend/modules/database"
 import { ClassificationPersistenceError, type DecisionSummary } from "./errors"
@@ -23,13 +24,13 @@ export interface PendingTrack {
 
 const undecided = (ownerId: string) =>
   and(
-    eq(musicLikedTracks.ownerId, ownerId),
-    eq(musicLikedTracks.liked, true),
+    eq(musicTracks.ownerId, ownerId),
+    eligibleTrack(musicTracks.ownerId, musicTracks.trackId),
     isNull(musicDecisions.trackId)
   )
 const decisionJoin = and(
-  eq(musicDecisions.ownerId, musicLikedTracks.ownerId),
-  eq(musicDecisions.trackId, musicLikedTracks.trackId)
+  eq(musicDecisions.ownerId, musicTracks.ownerId),
+  eq(musicDecisions.trackId, musicTracks.trackId)
 )
 
 /** Decisions, and the queries that find tracks ready to classify. */
@@ -37,7 +38,7 @@ export class ClassificationStore extends Context.Service<
   ClassificationStore,
   {
     /**
-     * Liked tracks without a decision whose enrichment is settled: either
+     * Collected tracks without a decision whose enrichment is settled: either
      * recording data was looked up, or there is no ISRC to look up.
      * Only recording data is returned, never Spotify fields.
      */
@@ -70,7 +71,7 @@ export class ClassificationStore extends Context.Service<
       readonly DecisionSummary[],
       ClassificationPersistenceError
     >
-    /** Deletes every decision so all liked tracks are classified again. */
+    /** Deletes every decision so all collected tracks are classified again. */
     readonly clear: (
       ownerId: string
     ) => Effect.Effect<void, ClassificationPersistenceError>
@@ -94,29 +95,29 @@ export class ClassificationStore extends Context.Service<
           query((db) =>
             db
               .select({
-                trackId: musicLikedTracks.trackId,
+                trackId: musicTracks.trackId,
                 status: musicRecordings.status,
                 title: musicRecordings.title,
                 artistCredit: musicRecordings.artistCredit,
                 durationMs: musicRecordings.durationMs,
                 acoustic: musicRecordings.acoustic,
               })
-              .from(musicLikedTracks)
+              .from(musicTracks)
               .leftJoin(musicDecisions, decisionJoin)
               .leftJoin(
                 musicRecordings,
-                eq(musicRecordings.isrc, musicLikedTracks.isrc)
+                eq(musicRecordings.isrc, musicTracks.isrc)
               )
               .where(
                 and(
                   undecided(ownerId),
                   or(
-                    isNull(musicLikedTracks.isrc),
+                    isNull(musicTracks.isrc),
                     sql`${musicRecordings.isrc} IS NOT NULL`
                   )
                 )
               )
-              .orderBy(desc(musicLikedTracks.likedAt))
+              .orderBy(desc(musicTracks.addedAt))
               .limit(limit)
           ).pipe(
             Effect.map((rows) =>
@@ -157,28 +158,28 @@ export class ClassificationStore extends Context.Service<
               })
               .from(musicDecisions)
               .innerJoin(
-                musicLikedTracks,
+                musicTracks,
                 and(
-                  eq(musicLikedTracks.ownerId, musicDecisions.ownerId),
-                  eq(musicLikedTracks.trackId, musicDecisions.trackId)
+                  eq(musicTracks.ownerId, musicDecisions.ownerId),
+                  eq(musicTracks.trackId, musicDecisions.trackId)
                 )
               )
               .where(
                 and(
                   eq(musicDecisions.ownerId, ownerId),
-                  eq(musicLikedTracks.liked, true)
+                  eligibleTrack(musicTracks.ownerId, musicTracks.trackId)
                 )
               )
             const [waiting] = await db
               .select({
-                waitingForEnrichment: sql<number>`coalesce(sum(${musicLikedTracks.isrc} IS NOT NULL AND ${musicRecordings.isrc} IS NULL), 0)`,
-                pending: sql<number>`coalesce(sum(${musicLikedTracks.isrc} IS NULL OR ${musicRecordings.isrc} IS NOT NULL), 0)`,
+                waitingForEnrichment: sql<number>`coalesce(sum(${musicTracks.isrc} IS NOT NULL AND ${musicRecordings.isrc} IS NULL), 0)`,
+                pending: sql<number>`coalesce(sum(${musicTracks.isrc} IS NULL OR ${musicRecordings.isrc} IS NOT NULL), 0)`,
               })
-              .from(musicLikedTracks)
+              .from(musicTracks)
               .leftJoin(musicDecisions, decisionJoin)
               .leftJoin(
                 musicRecordings,
-                eq(musicRecordings.isrc, musicLikedTracks.isrc)
+                eq(musicRecordings.isrc, musicTracks.isrc)
               )
               .where(undecided(ownerId))
             const decidedCount = decided?.decided ?? 0
@@ -199,8 +200,8 @@ export class ClassificationStore extends Context.Service<
             db
               .select({
                 trackId: musicDecisions.trackId,
-                name: musicLikedTracks.name,
-                artistNames: musicLikedTracks.artistNames,
+                name: musicTracks.name,
+                artistNames: musicTracks.artistNames,
                 destinationIds: musicDecisions.destinationIds,
                 review: musicDecisions.review,
                 reason: musicDecisions.reason,
@@ -209,10 +210,10 @@ export class ClassificationStore extends Context.Service<
               })
               .from(musicDecisions)
               .innerJoin(
-                musicLikedTracks,
+                musicTracks,
                 and(
-                  eq(musicLikedTracks.ownerId, musicDecisions.ownerId),
-                  eq(musicLikedTracks.trackId, musicDecisions.trackId)
+                  eq(musicTracks.ownerId, musicDecisions.ownerId),
+                  eq(musicTracks.trackId, musicDecisions.trackId)
                 )
               )
               .where(eq(musicDecisions.ownerId, ownerId))

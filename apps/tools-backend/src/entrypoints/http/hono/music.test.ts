@@ -29,10 +29,18 @@ describe("music actions", () => {
       reviewPlaylistId: null,
       ready: false,
     })
-    expect(await api.client.music.ingestion.status()).toEqual({
-      latest: null,
-      liked: 0,
-      unliked: 0,
+    expect(await api.client.music.ingestion.status()).toMatchObject({
+      sources: [
+        {
+          sourceId: { kind: "liked" },
+          enabled: true,
+          present: 0,
+          removed: 0,
+          latest: null,
+        },
+      ],
+      present: 0,
+      removed: 0,
     })
     expect(await api.client.music.enrichment.status()).toMatchObject({
       enriched: 0,
@@ -53,7 +61,9 @@ describe("music actions", () => {
   })
 
   test("start background work and return at once", async () => {
-    const ingestion = await api.client.music.ingestion.start({ kind: "full" })
+    const {
+      ingestions: [ingestion],
+    } = await api.client.music.ingestion.start({ kind: "full" })
     expect(ingestion).toMatchObject({
       kind: "full",
       status: "queued",
@@ -61,11 +71,12 @@ describe("music actions", () => {
     })
     expect(messages()).toContainEqual({
       kind: "music.ingestion",
-      ingestionId: ingestion.id,
+      ingestionId: ingestion!.id,
     })
     expect(
-      (await api.client.music.ingestion.start({ kind: "incremental" })).id
-    ).toBe(ingestion.id)
+      (await api.client.music.ingestion.start({ kind: "incremental" }))
+        .ingestions[0]?.id
+    ).toBe(ingestion!.id)
     expect(
       await code(api.client.music.ingestion.start({ kind: "partial" } as never))
     ).toBe("BAD_REQUEST")
