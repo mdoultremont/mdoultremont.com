@@ -17,9 +17,9 @@ const changedOrConflict = (changes: number) =>
   changes === 0 ? Effect.fail(new DestinationConflict()) : Effect.void
 
 /**
- * Destination rows and the review playlist setting. The conflict rule (review
- * playlist ≠ enabled destination) is enforced in SQL too, so concurrent saves
- * cannot both win.
+ * Destination rows and the review playlist setting. The conflict rules (no
+ * source as a destination or review playlist; review playlist ≠ enabled
+ * destination) are enforced in SQL too, so concurrent saves cannot both win.
  */
 export class DestinationStore extends Context.Service<
   DestinationStore,

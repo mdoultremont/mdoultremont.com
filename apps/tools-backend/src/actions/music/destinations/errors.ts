@@ -28,7 +28,7 @@ export class DestinationConflict extends Data.TaggedError(
   "DestinationConflict"
 )<{}> {
   override get message() {
-    return "A source cannot also be a destination or the review playlist. The review playlist cannot also be an active destination"
+    return "This playlist is already a source, the review playlist, or an active destination"
   }
 }
 

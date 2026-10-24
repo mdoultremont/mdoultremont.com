@@ -16,7 +16,9 @@ import {
 } from "./errors"
 import { IngestionStore } from "./store"
 
+/** A full ingestion of a source is due when its last one started longer ago than this. */
 const fullIngestionInterval = 24 * 60 * 60 * 1000
+/** An in-progress ingestion untouched for this long lost its queue message. */
 const stalledAfter = 10 * 60 * 1000
 
 const sourceQuery = <A, E>(effect: Effect.Effect<A, E>) =>
@@ -29,6 +31,10 @@ export type IngestionError =
   | SpotifyError
   | InvalidSourcePage
 
+/**
+ * Ingestion: recording each enabled source's tracks as collected tracks.
+ * Work runs one Spotify page per queue message.
+ */
 export class MusicIngestion extends Context.Service<
   MusicIngestion,
   {
@@ -60,6 +66,10 @@ export class MusicIngestion extends Context.Service<
     readonly status: (
       ownerId: string
     ) => Effect.Effect<IngestionStatus, IngestionPersistenceError>
+    /**
+     * Hourly upkeep, per enabled source: resume a stalled ingestion, otherwise
+     * start a full ingestion once a day and an incremental one in between.
+     */
     readonly scheduled: (
       ownerId: string
     ) => Effect.Effect<void, IngestionPersistenceError | JobQueueError>

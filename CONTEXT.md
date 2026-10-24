@@ -146,10 +146,10 @@ it.
 
 **Delivery**:
 Adding eligible collected tracks to the playlists named in their decisions
-that are not yet there. Delivery only adds to enabled destinations or the review
-playlist. It never removes a track from a Spotify playlist. Right before a write, delivery re-checks
-present memberships in an enabled Liked Songs source. Playlist memberships
-come from ingestion.
+that are not yet there. Delivery only adds to enabled destinations or the
+review playlist; it never removes a track from a Spotify playlist. Right before
+writing, it re-checks that tracks are still in Liked Songs; playlist
+memberships come from the latest ingestion.
 _Avoid_: Sync, write-back
 
 **Automatic delivery**:
