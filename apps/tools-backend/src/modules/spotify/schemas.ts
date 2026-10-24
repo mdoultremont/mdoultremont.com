@@ -80,6 +80,8 @@ export const Playlist = Schema.Struct({
 export const Track = Schema.Struct({
   id: Schema.optional(Schema.NullOr(Schema.String)),
   type: Schema.optional(Schema.String),
+  is_local: Schema.optional(Schema.Boolean),
+  is_playable: Schema.optional(Schema.Boolean),
   name: Schema.optional(Schema.String),
   artists: Schema.optional(
     Schema.Array(Schema.Struct({ name: Schema.optional(Schema.String) }))
@@ -100,6 +102,8 @@ export const SavedTrackItem = Schema.Struct({
 
 /** Playlist items moved from `track` to `item` in 2026; both are accepted. */
 export const PlaylistItem = Schema.Struct({
+  added_at: Schema.optional(Schema.NullOr(Schema.String)),
+  is_local: Schema.optional(Schema.Boolean),
   item: Schema.optional(Schema.NullOr(Track)),
   track: Schema.optional(Schema.NullOr(Track)),
 })

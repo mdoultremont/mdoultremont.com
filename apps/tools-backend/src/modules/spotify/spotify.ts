@@ -78,6 +78,15 @@ export class Spotify extends Context.Service<
       ownerId: string,
       cursor?: string
     ) => Effect.Effect<SpotifyPage<SpotifySavedTrack>, SpotifyError>
+    readonly playlistTracksPage: (
+      ownerId: string,
+      playlistId: string,
+      cursor?: string
+    ) => Effect.Effect<SpotifyPage<SpotifySavedTrack>, SpotifyError>
+    readonly playlistSnapshot: (
+      ownerId: string,
+      playlistId: string
+    ) => Effect.Effect<string, SpotifyError>
     /** Which of the tracks are currently in Liked Songs. */
     readonly likedTracks: (
       ownerId: string,
@@ -551,30 +560,85 @@ const make = Effect.gen(function* () {
         for (const value of current.items) {
           const saved = Schema.decodeUnknownOption(Api.SavedTrackItem)(value)
           if (Option.isNone(saved)) continue
-          const { track, added_at } = saved.value
-          const id = yield* originalTrackId(track)
-          if (!id || !track.name) continue
-          items.push({
-            id,
-            name: track.name,
-            artistNames: (track.artists ?? []).flatMap((artist) =>
-              artist.name === undefined ? [] : [artist.name]
-            ),
-            isrc: track.external_ids?.isrc || null,
-            durationMs:
-              typeof track.duration_ms === "number" &&
-              Number.isSafeInteger(track.duration_ms) &&
-              track.duration_ms >= 0
-                ? track.duration_ms
-                : null,
-            addedAt: added_at,
-          })
+          const track = yield* savedTrack(
+            saved.value.track,
+            saved.value.added_at
+          )
+          if (track) items.push(track)
         }
         return {
           items,
           next: current.next,
           total: current.total,
         } as SpotifyPage<SpotifySavedTrack>
+      })
+    )
+  })
+
+  const playlistSnapshot = Effect.fn("Spotify.playlistSnapshot")(function* (
+    ownerId: string,
+    playlistId: string
+  ) {
+    yield* requireId(playlistId, "playlist")
+    return yield* authorized(ownerId, (accessToken) =>
+      apiGet(
+        `/v1/playlists/${playlistId}?fields=snapshot_id`,
+        accessToken
+      ).pipe(
+        Effect.flatMap(
+          decode(Api.Snapshot, "Spotify returned no playlist snapshot")
+        ),
+        Effect.map((value) => value.snapshot_id)
+      )
+    )
+  })
+
+  const playlistTracksPage = Effect.fn("Spotify.playlistTracksPage")(function* (
+    ownerId: string,
+    playlistId: string,
+    cursor?: string
+  ) {
+    yield* requireId(playlistId, "playlist")
+    const path = `/v1/playlists/${playlistId}/items`
+    if (cursor !== undefined && !isSameEndpoint(cursor, path))
+      return yield* fail(
+        new InvalidInput({ message: "Invalid playlist tracks cursor" })
+      )
+    return yield* authorized(ownerId, (accessToken) =>
+      Effect.gen(function* () {
+        const current = yield* apiGet(
+          cursor ?? `${path}?limit=50`,
+          accessToken
+        ).pipe(Effect.flatMap(page))
+        if (current.next !== null && !isSameEndpoint(current.next, path))
+          return yield* fail(
+            new InvalidResponse({
+              message: "Spotify returned an invalid playlist page URL",
+            })
+          )
+        const items: SpotifySavedTrack[] = []
+        for (const value of current.items) {
+          const entry = Schema.decodeUnknownOption(Api.PlaylistItem)(value)
+          if (Option.isNone(entry) || entry.value.is_local) continue
+          const track = entry.value.item ?? entry.value.track
+          if (
+            track?.type !== "track" ||
+            track.is_local ||
+            track.is_playable === false
+          )
+            continue
+          // Old playlists may have no addition date. An epoch fallback never displaces a known date.
+          const saved = yield* savedTrack(
+            track,
+            entry.value.added_at ?? "1970-01-01T00:00:00Z"
+          )
+          if (saved) items.push(saved)
+        }
+        return {
+          items,
+          next: current.next,
+          total: current.total,
+        } satisfies SpotifyPage<SpotifySavedTrack>
       })
     )
   })
@@ -700,12 +764,36 @@ const make = Effect.gen(function* () {
     playlist,
     createPrivatePlaylist,
     savedTracksPage,
+    playlistTracksPage,
+    playlistSnapshot,
     likedTracks,
     playlistTrackIds,
     addTracksToPlaylist,
     disconnect,
   }
 })
+
+function savedTrack(track: typeof Api.Track.Type, addedAt: string) {
+  return Effect.gen(function* () {
+    const id = yield* originalTrackId(track)
+    if (!id || !track.name) return null
+    return {
+      id,
+      name: track.name,
+      artistNames: (track.artists ?? []).flatMap((artist) =>
+        artist.name === undefined ? [] : [artist.name]
+      ),
+      isrc: track.external_ids?.isrc || null,
+      durationMs:
+        typeof track.duration_ms === "number" &&
+        Number.isSafeInteger(track.duration_ms) &&
+        track.duration_ms >= 0
+          ? track.duration_ms
+          : null,
+      addedAt,
+    } satisfies SpotifySavedTrack
+  })
+}
 
 /** Relinked responses represent the original saved/playlist item, not its playable replacement. */
 function originalTrackId(track: typeof Api.Track.Type) {

@@ -861,3 +861,131 @@ it.effect(
     )
   }
 )
+
+describe("Spotify source playlists", () => {
+  it.effect(
+    "reads saved-track metadata from both playlist item shapes and skips unavailable items",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(
+            json({ access_token: "fresh", expires_in: 3600 })
+          )
+          const track = {
+            id: "replacement",
+            type: "track",
+            name: "Song",
+            artists: [{ name: "Artist" }],
+            external_ids: { isrc: "BEABC2600001" },
+            duration_ms: 234567,
+            linked_from: { id: "original" },
+            is_local: false,
+            is_playable: true,
+          }
+          setup.fetcher.mockResolvedValueOnce(
+            json({
+              items: [
+                {
+                  added_at: "2026-10-03T00:00:00Z",
+                  item: track,
+                  is_local: false,
+                },
+                {
+                  added_at: null,
+                  item: null,
+                  track: { ...track, id: "old", linked_from: null },
+                },
+                { added_at: null, item: { ...track, type: "episode" } },
+                { added_at: null, item: { ...track, is_local: true } },
+                { added_at: null, item: { ...track, is_playable: false } },
+                { added_at: null, item: track, is_local: true },
+                { added_at: null, item: null },
+              ],
+              next: "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50",
+              total: 51,
+            })
+          )
+          expect(
+            yield* spotify.playlistTracksPage("github-42", "shazam")
+          ).toEqual({
+            items: [
+              {
+                id: "original",
+                name: "Song",
+                artistNames: ["Artist"],
+                isrc: "BEABC2600001",
+                durationMs: 234567,
+                addedAt: "2026-10-03T00:00:00Z",
+              },
+              {
+                id: "old",
+                name: "Song",
+                artistNames: ["Artist"],
+                isrc: "BEABC2600001",
+                durationMs: 234567,
+                addedAt: "1970-01-01T00:00:00Z",
+              },
+            ],
+            next: "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50",
+            total: 51,
+          })
+          expect(requestUrl(setup, 3)).toBe(
+            "https://api.spotify.com/v1/playlists/shazam/items?limit=50"
+          )
+          setup.fetcher.mockResolvedValueOnce(
+            json({ items: [], next: null, total: 51 })
+          )
+          yield* spotify.playlistTracksPage(
+            "github-42",
+            "shazam",
+            "https://api.spotify.com/v1/playlists/shazam/items?offset=50&limit=50"
+          )
+          expect(requestUrl(setup, 4)).toContain("offset=50")
+          setup.fetcher.mockResolvedValueOnce(json({ snapshot_id: "version1" }))
+          expect(yield* spotify.playlistSnapshot("github-42", "shazam")).toBe(
+            "version1"
+          )
+          expect(requestUrl(setup, 5)).toBe(
+            "https://api.spotify.com/v1/playlists/shazam?fields=snapshot_id"
+          )
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "rejects foreign, cross-playlist, and cross-endpoint cursors",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          for (const cursor of [
+            "https://evil.example/v1/playlists/shazam/items?offset=50",
+            "https://api.spotify.com/v1/playlists/other/items?offset=50",
+            "https://api.spotify.com/v1/me/tracks?offset=50",
+          ])
+            expect(
+              (yield* failureReason(
+                spotify.playlistTracksPage("github-42", "shazam", cursor)
+              ))._tag
+            ).toBe("InvalidInput")
+          expect(setup.fetcher).not.toHaveBeenCalled()
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+          setup.fetcher.mockResolvedValueOnce(
+            json({ items: [], next: "https://evil.example/steal", total: 0 })
+          )
+          expect(
+            (yield* failureReason(
+              spotify.playlistTracksPage("github-42", "shazam")
+            ))._tag
+          ).toBe("InvalidResponse")
+        })
+      )
+    }
+  )
+})
