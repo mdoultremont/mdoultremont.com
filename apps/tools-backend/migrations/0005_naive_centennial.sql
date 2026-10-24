@@ -42,8 +42,5 @@ CREATE UNIQUE INDEX `music_ingestions_active_source_idx` ON `music_ingestions` (
 INSERT INTO music_sources (owner_id, source_id, enabled, created_at, updated_at)
 SELECT owner_id, 'liked', 1, connected_at, connected_at FROM spotify_connections;
 --> statement-breakpoint
-INSERT INTO music_tracks (owner_id, track_id, name, artist_names, isrc, added_at, first_seen_at, last_seen_at)
-SELECT owner_id, track_id, name, artist_names, isrc, liked_at, first_seen_at, last_seen_at FROM music_liked_tracks;
---> statement-breakpoint
-INSERT INTO music_source_tracks (owner_id, source_id, track_id, added_at, present, last_seen_at)
-SELECT owner_id, 'liked', track_id, liked_at, liked, last_seen_at FROM music_liked_tracks;
+DROP TABLE `music_liked_tracks`;--> statement-breakpoint
+ALTER TABLE `music_ingestions` RENAME COLUMN `unliked` TO `removed`;

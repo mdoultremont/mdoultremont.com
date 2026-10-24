@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
 import { expect, test } from "vitest"
 
-test("the source migration preserves likes, removals, and the previous Worker's tables", () => {
+test("the source migration seeds Liked Songs, drops the liked-only table, and scopes ingestions to a source", () => {
   const sqlite = new DatabaseSync(":memory:")
   try {
     sqlite.exec("PRAGMA foreign_keys = ON")
@@ -19,11 +19,8 @@ test("the source migration preserves likes, removals, and the previous Worker's 
       VALUES ('owner', 'Owner', 'owner@example.com', 1, 1, 1), ('empty', 'Empty', 'empty@example.com', 1, 1, 1);
       INSERT INTO spotify_connections (owner_id, account_id, encrypted_refresh_token, scopes, connected_at, needs_reconnect, spotify_user_id)
       VALUES ('owner', 'account', 'encrypted', 'scopes', 42, 0, 'spotify'), ('empty', 'empty', 'encrypted', 'scopes', 43, 0, 'empty');
-      INSERT INTO music_liked_tracks (owner_id, track_id, name, artist_names, isrc, liked_at, liked, first_seen_at, last_seen_at)
-      VALUES ('owner', 'a', 'Song', '["Artist"]', 'ISRC', '2026-01-01T00:00:00Z', 1, 10, 20),
-        ('owner', 'b', 'Removed', '[]', NULL, '2025-01-01T00:00:00Z', 0, 5, 15);
-      INSERT INTO music_ingestions (id, owner_id, kind, status, started_at, updated_at)
-      VALUES ('active', 'owner', 'full', 'running', 10, 20);
+      INSERT INTO music_ingestions (id, owner_id, kind, status, unliked, started_at, updated_at)
+      VALUES ('active', 'owner', 'full', 'running', 3, 10, 20);
     `)
     sqlite.exec(readFileSync(new URL(migration, directory), "utf8"))
     expect(
@@ -37,36 +34,17 @@ test("the source migration preserves likes, removals, and the previous Worker's 
       { owner_id: "owner", source_id: "liked", enabled: 1 },
     ])
     expect(
-      sqlite.prepare("SELECT * FROM music_tracks WHERE track_id = 'a'").get()
-    ).toEqual({
-      owner_id: "owner",
-      track_id: "a",
-      name: "Song",
-      artist_names: '["Artist"]',
-      isrc: "ISRC",
-      added_at: "2026-01-01T00:00:00Z",
-      first_seen_at: 10,
-      last_seen_at: 20,
-    })
+      sqlite
+        .prepare("SELECT source_id, snapshot_id, removed FROM music_ingestions")
+        .get()
+    ).toEqual({ source_id: "liked", snapshot_id: null, removed: 3 })
     expect(
       sqlite
         .prepare(
-          "SELECT track_id, present FROM music_source_tracks ORDER BY track_id"
+          "SELECT count(*) AS count FROM sqlite_master WHERE name = 'music_liked_tracks'"
         )
-        .all()
-    ).toEqual([
-      { track_id: "a", present: 1 },
-      { track_id: "b", present: 0 },
-    ])
-    expect(
-      sqlite
-        .prepare("SELECT source_id, snapshot_id FROM music_ingestions")
-        .get()
-    ).toEqual({ source_id: "liked", snapshot_id: null })
-    expect(
-      sqlite.prepare("SELECT count(*) AS count FROM music_liked_tracks").get()
-        ?.count
-    ).toBe(2)
+        .get()?.count
+    ).toBe(0)
     sqlite.exec(`INSERT INTO music_ingestions (id, owner_id, source_id, kind, status, started_at, updated_at)
       VALUES ('playlist', 'owner', 'shazam', 'full', 'queued', 10, 20)`)
     expect(() =>

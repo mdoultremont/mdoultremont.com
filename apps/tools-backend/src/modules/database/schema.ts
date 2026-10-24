@@ -433,30 +433,6 @@ export const musicSettings = sqliteTable("music_settings", {
   updatedAt: integer("updated_at").notNull(),
 })
 
-/** One Spotify Liked Songs entry as last seen by ingestion. Display fields are never classifier input. */
-export const musicLikedTracks = sqliteTable(
-  "music_liked_tracks",
-  {
-    ownerId: text("owner_id")
-      .notNull()
-      .references(() => spotifyConnections.ownerId, { onDelete: "cascade" }),
-    trackId: text("track_id").notNull(),
-    name: text("name").notNull(),
-    artistNames: text("artist_names", { mode: "json" })
-      .$type<readonly string[]>()
-      .notNull(),
-    isrc: text("isrc"),
-    likedAt: text("liked_at").notNull(),
-    liked: integer("liked", { mode: "boolean" }).notNull().default(true),
-    firstSeenAt: integer("first_seen_at").notNull(),
-    lastSeenAt: integer("last_seen_at").notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.ownerId, table.trackId] }),
-    index("music_liked_tracks_isrc_idx").on(table.isrc),
-  ]
-)
-
 export const musicSources = sqliteTable(
   "music_sources",
   {
@@ -532,7 +508,7 @@ export const musicIngestions = sqliteTable(
     pages: integer("pages").notNull().default(0),
     seen: integer("seen").notNull().default(0),
     added: integer("added").notNull().default(0),
-    removed: integer("unliked").notNull().default(0),
+    removed: integer("removed").notNull().default(0),
     total: integer("total"),
     error: text("error"),
     startedAt: integer("started_at").notNull(),

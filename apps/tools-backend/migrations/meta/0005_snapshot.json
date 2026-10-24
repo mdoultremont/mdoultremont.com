@@ -1363,8 +1363,8 @@
           "autoincrement": false,
           "default": 0
         },
-        "unliked": {
-          "name": "unliked",
+        "removed": {
+          "name": "removed",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1432,101 +1432,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "music_liked_tracks": {
-      "name": "music_liked_tracks",
-      "columns": {
-        "owner_id": {
-          "name": "owner_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "track_id": {
-          "name": "track_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "artist_names": {
-          "name": "artist_names",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "isrc": {
-          "name": "isrc",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "liked_at": {
-          "name": "liked_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "liked": {
-          "name": "liked",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        },
-        "first_seen_at": {
-          "name": "first_seen_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "last_seen_at": {
-          "name": "last_seen_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "music_liked_tracks_isrc_idx": {
-          "name": "music_liked_tracks_isrc_idx",
-          "columns": ["isrc"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "music_liked_tracks_owner_id_spotify_connections_owner_id_fk": {
-          "name": "music_liked_tracks_owner_id_spotify_connections_owner_id_fk",
-          "tableFrom": "music_liked_tracks",
-          "tableTo": "spotify_connections",
-          "columnsFrom": ["owner_id"],
-          "columnsTo": ["owner_id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "music_liked_tracks_owner_id_track_id_pk": {
-          "columns": ["owner_id", "track_id"],
-          "name": "music_liked_tracks_owner_id_track_id_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
