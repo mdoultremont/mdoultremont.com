@@ -40,6 +40,7 @@ const fixtureReady = {
 async function mountPlayer(page: Page, options: PlayerFixtureOptions = {}) {
   const fixtureModulePath = "/tests/browser/support/mount-player.tsx"
   await page.goto("/__player_browser_fixture__")
+  await page.waitForLoadState("networkidle")
   await page.evaluate(
     async ({ fixtureOptions, modulePath }) => {
       const { mountPlayer: mount } = await import(modulePath)
