@@ -60,6 +60,61 @@ describe("music actions", () => {
     })
   })
 
+  test("addresses built-in sources with a discriminated id and can pause every input", async () => {
+    expect(await api.client.music.sources.get()).toMatchObject({
+      sources: [
+        {
+          sourceId: { kind: "liked" },
+          enabled: true,
+          present: 0,
+          removed: 0,
+          latest: null,
+        },
+      ],
+    })
+    expect(
+      await api.client.music.sources.setEnabled({
+        sourceId: { kind: "liked" },
+        enabled: false,
+      })
+    ).toEqual({ enabled: false })
+    expect(await api.client.music.ingestion.start({ kind: "full" })).toEqual({
+      ingestions: [],
+    })
+    expect(messages()).toHaveLength(0)
+    expect(
+      await code(
+        api.client.music.sources.setEnabled({
+          sourceId: "liked",
+          enabled: true,
+        } as never)
+      )
+    ).toBe("BAD_REQUEST")
+    expect(
+      await code(api.client.music.sources.remove({ playlistId: "liked" }))
+    ).toBe("BAD_REQUEST")
+    expect(
+      await code(
+        api.client.music.sources.setEnabled({
+          sourceId: { kind: "playlist", playlistId: "missing" },
+          enabled: false,
+        })
+      )
+    ).toBe("BAD_REQUEST")
+    expect(
+      await api.client.music.sources.setEnabled({
+        sourceId: { kind: "liked" },
+        enabled: true,
+      })
+    ).toEqual({ enabled: true })
+    const { sources } = await api.client.music.sources.get()
+    expect(sources[0]?.latest).toMatchObject({
+      source: { kind: "liked" },
+      status: "queued",
+    })
+    expect(sources[0]?.latest).not.toHaveProperty("sourceId")
+  })
+
   test("start background work and return at once", async () => {
     const {
       ingestions: [ingestion],

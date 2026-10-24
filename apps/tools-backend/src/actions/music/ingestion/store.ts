@@ -10,7 +10,7 @@ import {
 } from "#backend/modules/database"
 import {
   eligibleTrack,
-  sourceIdFromStorage,
+  ingestionFromStorage,
   storedSourceId,
   type SourceId,
 } from "#backend/actions/music/collection"
@@ -22,10 +22,6 @@ import {
 
 // Ten rows keep both upserts below D1's 100-parameter limit.
 const rowsPerInsert = 10
-const toIngestion = (row: typeof musicIngestions.$inferSelect): Ingestion => ({
-  ...row,
-  source: sourceIdFromStorage(row.sourceId),
-})
 
 export class IngestionStore extends Context.Service<
   IngestionStore,
@@ -102,7 +98,7 @@ export class IngestionStore extends Context.Service<
             .from(musicIngestions)
             .where(eq(musicIngestions.id, id))
             .get()
-        ).pipe(Effect.map((row) => (row ? toIngestion(row) : null)))
+        ).pipe(Effect.map((row) => (row ? ingestionFromStorage(row) : null)))
       return IngestionStore.of({
         start: ({ id, ownerId, source, kind, now }) =>
           Effect.gen(function* () {
@@ -122,7 +118,10 @@ export class IngestionStore extends Context.Service<
                 .returning()
             )
             if (inserted[0])
-              return { ingestion: toIngestion(inserted[0]), created: true }
+              return {
+                ingestion: ingestionFromStorage(inserted[0]),
+                created: true,
+              }
             const active = yield* query((db) =>
               db
                 .select()
@@ -140,7 +139,7 @@ export class IngestionStore extends Context.Service<
               return yield* new IngestionPersistenceError({
                 cause: "Ingestion conflicted but none is active",
               })
-            return { ingestion: toIngestion(active), created: false }
+            return { ingestion: ingestionFromStorage(active), created: false }
           }),
         get,
         latest: (ownerId, source, kind) =>
@@ -158,7 +157,7 @@ export class IngestionStore extends Context.Service<
               .orderBy(desc(musicIngestions.startedAt), desc(sql`rowid`))
               .limit(1)
               .get()
-          ).pipe(Effect.map((row) => (row ? toIngestion(row) : null))),
+          ).pipe(Effect.map((row) => (row ? ingestionFromStorage(row) : null))),
         setSnapshot: (id, snapshotId, now) =>
           query((db) =>
             db

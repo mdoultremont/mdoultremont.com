@@ -136,6 +136,9 @@ export class MusicIngestion extends Context.Service<
             ingestion.ownerId,
             ingestion.source.playlistId
           )
+          const current = yield* store.get(ingestion.id)
+          if (current?.status !== "queued" && current?.status !== "running")
+            return { ownerId: null, added: 0 }
           yield* store.setSnapshot(
             ingestion.id,
             snapshotId,
@@ -164,6 +167,9 @@ export class MusicIngestion extends Context.Service<
               ingestion.source.playlistId,
               ingestion.cursor ?? undefined
             )
+        const current = yield* store.get(ingestion.id)
+        if (current?.status !== "queued" && current?.status !== "running")
+          return { ownerId: null, added: 0 }
         if (page.next !== null && page.next === ingestion.cursor)
           return yield* new InvalidSourcePage({
             message: "Spotify returned a source page that does not advance",

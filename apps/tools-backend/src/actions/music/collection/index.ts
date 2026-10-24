@@ -12,7 +12,11 @@ export type {
   Source,
   Ingestion,
 } from "@mdoultremont/tools-contracts/music"
-export { storedSourceId, sourceIdFromStorage } from "./source-id"
+export {
+  storedSourceId,
+  sourceIdFromStorage,
+  ingestionFromStorage,
+} from "./source-id"
 
 export function eligibleTrack(ownerId: AnyColumn, trackId: AnyColumn) {
   return sql`EXISTS (

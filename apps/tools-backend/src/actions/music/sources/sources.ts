@@ -1,6 +1,7 @@
 import { Clock, Context, Effect, Layer } from "effect"
 import {
   SourceStore,
+  sourceIdFromStorage,
   SourceConflict,
   SourceInputError,
   type SourcePersistenceError,
@@ -101,7 +102,8 @@ export class Sources extends Context.Service<
 }
 
 function validPlaylistId(value: string) {
-  return /^[A-Za-z0-9]{1,64}$/u.test(value) && value !== "liked"
+  return /^[A-Za-z0-9]{1,64}$/u.test(value) &&
+    sourceIdFromStorage(value).kind === "playlist"
     ? Effect.succeed(value)
     : Effect.fail(
         new SourceInputError({

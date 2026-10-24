@@ -31,12 +31,22 @@ function setup() {
       ownerId: "spotify-user",
     })
   )
+  const playlistSnapshot = vi.fn<Spotify["Service"]["playlistSnapshot"]>(() =>
+    Effect.succeed("version1")
+  )
+  const playlistTracksPage = vi.fn<Spotify["Service"]["playlistTracksPage"]>(
+    () => Effect.succeed({ items: [], next: null, total: 0 })
+  )
   const dependencies = Layer.mergeAll(
     SourceStore.layer,
     IngestionStore.layer,
     DestinationStore.layer,
     SpotifyConnections.layer,
-    Layer.succeed(Spotify, { playlist } as unknown as Spotify["Service"]),
+    Layer.succeed(Spotify, {
+      playlist,
+      playlistSnapshot,
+      playlistTracksPage,
+    } as unknown as Spotify["Service"]),
     Layer.succeed(
       JobQueue,
       JobQueue.of({
@@ -60,6 +70,8 @@ function setup() {
     d1,
     sent,
     playlist,
+    playlistTracksPage,
+    playlistSnapshot,
     run: <A, E>(
       body: Effect.Effect<
         A,
@@ -218,3 +230,53 @@ describe("music sources", () => {
     }
   )
 })
+
+it.effect(
+  "does not restore a disabled source's work when a Spotify page arrives late",
+  () => {
+    const t = setup()
+    return t.run(
+      Effect.gen(function* () {
+        const sources = yield* Sources
+        const ingestion = yield* MusicIngestion
+        yield* sources.add("owner", "shazam")
+        const queued = (yield* sources.read("owner"))[1]!.latest!
+        t.playlistTracksPage.mockReturnValue(
+          sources
+            .setEnabled(
+              "owner",
+              { kind: "playlist", playlistId: "shazam" },
+              false
+            )
+            .pipe(
+              Effect.orDie,
+              Effect.as({
+                items: [
+                  {
+                    id: "late",
+                    name: "Late",
+                    artistNames: [],
+                    isrc: null,
+                    durationMs: null,
+                    addedAt: "2026-01-01T00:00:00Z",
+                  },
+                ],
+                next: null,
+                total: 1,
+              })
+            )
+        )
+        expect(yield* ingestion.processNext(queued.id)).toEqual({
+          ownerId: null,
+          added: 0,
+        })
+        expect((yield* sources.read("owner"))[1]).toMatchObject({
+          enabled: false,
+          present: 0,
+          snapshotId: null,
+          latest: { status: "failed" },
+        })
+      })
+    )
+  }
+)

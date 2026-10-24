@@ -456,6 +456,39 @@ describe("playlist ingestion", () => {
   )
 
   it.effect(
+    "a full playlist read removes absent entries without removing the same track from Liked Songs",
+    () => {
+      const t = setup()
+      t.addPlaylist()
+      return t.run(
+        Effect.gen(function* () {
+          const ingestion = yield* MusicIngestion
+          t.setLibrary([track("shared")])
+          t.setPlaylist([track("shared")])
+          yield* ingestion.start("owner", "full")
+          yield* t.drain
+          yield* TestClock.adjust(hour)
+          t.setPlaylist([], "version2")
+          yield* ingestion.startSource(
+            "owner",
+            { kind: "playlist", playlistId: "shazam" },
+            "full"
+          )
+          yield* t.drain
+          expect(yield* ingestion.status("owner")).toMatchObject({
+            present: 1,
+            removed: 0,
+            sources: [
+              { present: 1, removed: 0 },
+              { present: 0, removed: 1, latest: { removed: 1 } },
+            ],
+          })
+        })
+      )
+    }
+  )
+
+  it.effect(
     "runs and resumes each enabled source independently, with a daily full read",
     () => {
       const t = setup()

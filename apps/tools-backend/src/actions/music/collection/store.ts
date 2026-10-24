@@ -8,7 +8,11 @@ import {
 } from "#backend/modules/database"
 import type { Source, SourceId } from "@mdoultremont/tools-contracts/music"
 import { SourceConflict, SourcePersistenceError } from "./errors"
-import { sourceIdFromStorage, storedSourceId } from "./source-id"
+import {
+  sourceIdFromStorage,
+  storedSourceId,
+  ingestionFromStorage,
+} from "./source-id"
 
 type SourceRow = Omit<Source, "present" | "removed" | "latest">
 
@@ -144,12 +148,7 @@ export class SourceStore extends Context.Service<
                   sourceId: sourceIdFromStorage(row.sourceId),
                   present: counts.find((entry) => entry.present)?.count ?? 0,
                   removed: counts.find((entry) => !entry.present)?.count ?? 0,
-                  latest: latest
-                    ? {
-                        ...latest,
-                        source: sourceIdFromStorage(latest.sourceId),
-                      }
-                    : null,
+                  latest: latest ? ingestionFromStorage(latest) : null,
                 }
               })
             )
