@@ -91,17 +91,21 @@ export const Track = Schema.Struct({
     Schema.Struct({ isrc: Schema.optional(Schema.String) })
   ),
   duration_ms: Schema.optional(Schema.Unknown),
-  album: Schema.optional(
-    Schema.NullOr(
-      Schema.Struct({
-        images: Schema.optional(
-          Schema.Array(Schema.Struct({ url: Schema.String }))
-        ),
-      })
-    )
-  ),
+  album: Schema.optional(Schema.Unknown),
   linked_from: Schema.optional(
     Schema.NullOr(Schema.Struct({ id: Schema.optional(Schema.Unknown) }))
+  ),
+})
+
+export const AlbumArtwork = Schema.Struct({
+  images: Schema.Array(Schema.Unknown),
+})
+
+export const ArtworkImage = Schema.Struct({
+  url: Schema.String.check(
+    Schema.makeFilter(
+      (url) => URL.canParse(url) && new URL(url).protocol === "https:"
+    )
   ),
 })
 

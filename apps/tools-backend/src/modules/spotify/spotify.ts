@@ -777,9 +777,17 @@ function savedTrack(track: typeof Api.Track.Type, addedAt: string) {
   return Effect.gen(function* () {
     const id = yield* originalTrackId(track)
     if (!id || !track.name) return null
-    const artworkUrl = track.album?.images?.find((image) =>
-      image.url.startsWith("https://")
-    )?.url
+    const album = Schema.decodeUnknownOption(Api.AlbumArtwork)(track.album)
+    let artworkUrl: string | undefined
+    if (Option.isSome(album)) {
+      for (const value of album.value.images) {
+        const image = Schema.decodeUnknownOption(Api.ArtworkImage)(value)
+        if (Option.isSome(image)) {
+          artworkUrl = image.value.url
+          break
+        }
+      }
+    }
     return {
       id,
       name: track.name,

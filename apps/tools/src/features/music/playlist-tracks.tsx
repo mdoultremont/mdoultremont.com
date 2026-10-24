@@ -10,7 +10,7 @@ type TrackPage = Awaited<ReturnType<typeof api.music.spotify.likedTracks>>
 type More =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "error"; message: string }
+  | { kind: "error"; message: string; reconnect: boolean }
 type View =
   | { kind: "loading" }
   | { kind: "error"; message: string; reconnect: boolean }
@@ -84,6 +84,7 @@ export function PlaylistTracks({
           more: {
             kind: "error",
             message: errorMessage(cause, "More tracks could not be loaded"),
+            reconnect: needsConnection(cause),
           },
         })
     }
@@ -223,7 +224,14 @@ export function PlaylistTracks({
           {more.message}
         </p>
       ) : null}
-      {page.next ? (
+      {more.kind === "error" && more.reconnect ? (
+        <a
+          href="/music/settings"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Check Spotify connection
+        </a>
+      ) : page.next ? (
         <Button
           variant="outline"
           disabled={more.kind === "loading"}
