@@ -1,11 +1,16 @@
 import { createRoot } from "react-dom/client"
 import { useState } from "react"
 import { PlaylistTracks } from "../../../src/features/music/playlist-tracks"
+import { PlayerProvider } from "../../../src/features/music/player"
 
 export function mountPlaylistTracks() {
   const element = document.createElement("div")
   document.body.appendChild(element)
-  createRoot(element).render(<Fixture />)
+  createRoot(element).render(
+    <PlayerProvider>
+      <Fixture />
+    </PlayerProvider>
+  )
 }
 
 function Fixture() {

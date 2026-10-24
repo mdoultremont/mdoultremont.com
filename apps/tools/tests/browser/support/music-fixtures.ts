@@ -1,3 +1,5 @@
+import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
+
 const artwork =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -85,10 +87,50 @@ export const fixtureSources = [
   },
 ]
 
+export const fixturePlayerStatus = {
+  status: "ready",
+  devices: [
+    {
+      controllable: true,
+      id: "fixture-speaker",
+      name: "Living room speaker",
+      type: "Speaker",
+      active: true,
+    },
+    {
+      controllable: true,
+      id: "fixture-phone",
+      name: "Phone",
+      type: "Smartphone",
+      active: false,
+    },
+  ],
+  playback: {
+    playing: true,
+    device: {
+      id: "fixture-speaker",
+      name: "Living room speaker",
+      restricted: false,
+    },
+    item: {
+      kind: "track",
+      id: fixtureTracks[0]!.id,
+      name: fixtureTracks[0]!.name,
+      artistNames: fixtureTracks[0]!.artistNames,
+      imageUrl: artwork,
+    },
+    allows: { pause: true, resume: true },
+  },
+} satisfies PlayerStatus
+
 export const musicFixtureResponses: Record<
   string,
   (input: Record<string, unknown>) => unknown
 > = {
+  "player/status": () => fixturePlayerStatus,
+  "player/play": () => ({ status: "accepted" }),
+  "player/pause": () => ({ status: "accepted" }),
+  "player/resume": () => ({ status: "accepted" }),
   "sources/get": () => ({ sources: fixtureSources }),
   "ingestion/status": () => ({
     sources: fixtureSources,

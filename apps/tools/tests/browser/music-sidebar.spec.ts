@@ -30,7 +30,11 @@ test("music sections show configured input, output, and review tracks", async ({
   await expect(
     page.getByRole("heading", { name: "Liked Songs", exact: true })
   ).toBeVisible()
-  await expect(page.getByText("Radiohead", { exact: true })).toBeVisible()
+  await expect(
+    page
+      .getByRole("region", { name: "Liked Songs tracks", exact: true })
+      .getByText("Radiohead", { exact: true })
+  ).toBeVisible()
   await expect(page.getByRole("button", { name: /Discoveries/ })).toContainText(
     "Paused"
   )
@@ -80,7 +84,9 @@ test("mobile navigation closes after selecting a music section", async ({
     await m.mountMusic()
   }, "/tests/browser/support/mount-music.tsx")
   await expect(
-    page.getByText("Everything In Its Right Place", { exact: true })
+    page
+      .getByRole("region", { name: "Liked Songs tracks", exact: true })
+      .getByText("Everything In Its Right Place", { exact: true })
   ).toBeVisible()
   await page.getByRole("button", { name: "Toggle Sidebar" }).click()
   await expect(page.getByRole("dialog")).toBeVisible()

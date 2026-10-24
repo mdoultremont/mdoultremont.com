@@ -220,9 +220,11 @@ const PlayerContext = createContext<ReturnType<
   typeof usePlayerController
 > | null>(null)
 
+const playerClient = api.music.player
+
 export function PlayerProvider({
   children,
-  client = api.music.player,
+  client = playerClient,
   initialState = initialPlayerState,
 }: {
   readonly children?: ReactNode
@@ -249,10 +251,10 @@ export function PlayerBar() {
   return (
     <section
       aria-label="Spotify player"
-      className="flex min-w-0 flex-col gap-4 rounded-xl border p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border bg-muted/20 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-medium">Spotify player</h2>
+        <h2 className="text-sm font-medium">Spotify player</h2>
         <Button
           type="button"
           variant="ghost"
@@ -296,7 +298,7 @@ export function PlayerBar() {
         </p>
       ) : null}
       {view.status === "ready" ? (
-        <>
+        <div className="grid min-w-0 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)]">
           <div className="flex min-w-0 items-center gap-3">
             {item?.kind === "track" && item.imageUrl ? (
               <img
@@ -319,7 +321,10 @@ export function PlayerBar() {
                 </p>
               ) : null}
               {view.playback ? (
-                <p className="text-sm text-muted-foreground">
+                <p
+                  className="truncate text-sm text-muted-foreground"
+                  title={view.playback.device.name}
+                >
                   {view.playback.playing ? "Playing" : "Paused"} on{" "}
                   {view.playback.device.name}
                 </p>
@@ -344,7 +349,7 @@ export function PlayerBar() {
               )}
             </Button>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
             <span
               id="player-device-label"
               className="text-sm text-muted-foreground"
@@ -358,10 +363,12 @@ export function PlayerBar() {
             >
               <SelectTrigger
                 aria-labelledby="player-device-label"
-                className="max-w-full"
+                className="w-full min-w-0"
               >
-                <SelectValue>
-                  {view.target?.name ?? "Choose a device"}
+                <SelectValue className="min-w-0">
+                  <span className="truncate">
+                    {view.target?.name ?? "Choose a device"}
+                  </span>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -385,23 +392,23 @@ export function PlayerBar() {
             </Select>
           </div>
           {view.devices.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground sm:col-span-2">
               No devices found. Open Spotify on a device, then refresh playback.
             </p>
           ) : view.devices.every((device) => !device.controllable) ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground sm:col-span-2">
               These devices cannot be controlled. Open Spotify on another
               device, then refresh playback.
             </p>
           ) : view.missingChoice ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground sm:col-span-2">
               The selected device is unavailable. Choose a device to play
               tracks.
             </p>
           ) : null}
-        </>
+        </div>
       ) : null}
-      <output aria-live="polite" className="block text-sm">
+      <output aria-live="polite" className="block text-sm empty:hidden">
         {busy ? (
           <span className="flex items-center gap-2">
             <Spinner aria-hidden="true" />

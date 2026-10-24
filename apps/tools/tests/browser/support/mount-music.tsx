@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router"
 import { AppShell } from "../../../src/features/apps/shell"
 import { MusicSettings } from "../../../src/features/music/music-settings"
+import { MusicPlayerLayout } from "../../../src/features/music/music-player-layout"
 import {
   PlaylistPage,
   loadOutputPlaylists,
@@ -34,9 +35,18 @@ export async function mountMusic(path = "/music/input") {
       </AppShell>
     ),
   })
-  const input = createRoute({
+  const music = createRoute({
     getParentRoute: () => apps,
-    path: "/music/input",
+    path: "/music",
+    component: () => (
+      <MusicPlayerLayout>
+        <Outlet />
+      </MusicPlayerLayout>
+    ),
+  })
+  const input = createRoute({
+    getParentRoute: () => music,
+    path: "/input",
     validateSearch: (search: Record<string, unknown>) => ({
       playlist:
         typeof search.playlist === "string" ? search.playlist : undefined,
@@ -54,8 +64,8 @@ export async function mountMusic(path = "/music/input") {
     )
   }
   const output = createRoute({
-    getParentRoute: () => apps,
-    path: "/music/output",
+    getParentRoute: () => music,
+    path: "/output",
     validateSearch: (search: Record<string, unknown>) => ({
       playlist:
         typeof search.playlist === "string" ? search.playlist : undefined,
@@ -76,13 +86,15 @@ export async function mountMusic(path = "/music/input") {
     )
   }
   const settings = createRoute({
-    getParentRoute: () => apps,
-    path: "/music/settings",
+    getParentRoute: () => music,
+    path: "/settings",
     component: MusicSettings,
   })
   const router = createRouter({
     history: createMemoryHistory({ initialEntries: [path] }),
-    routeTree: root.addChildren([apps.addChildren([input, output, settings])]),
+    routeTree: root.addChildren([
+      apps.addChildren([music.addChildren([input, output, settings])]),
+    ]),
   })
   await router.load()
   const element = document.createElement("div")

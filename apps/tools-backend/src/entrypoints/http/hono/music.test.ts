@@ -3,8 +3,6 @@ import { Effect, Redacted } from "effect"
 import { TokenCipher } from "#backend/modules/token-cipher"
 import { spotifyScopes } from "#backend/modules/spotify"
 import { errorReason } from "@mdoultremont/tools-contracts"
-import { Effect, Redacted } from "effect"
-import { TokenCipher } from "#backend/modules/token-cipher"
 
 vi.mock("cloudflare:workers", () => ({ env: {} }))
 import { code, makeHarness, origin } from "./testing"

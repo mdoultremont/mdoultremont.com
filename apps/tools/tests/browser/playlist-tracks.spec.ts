@@ -1,4 +1,17 @@
 import { expect, test } from "@playwright/test"
+import { musicFixtureResponses } from "./support/music-fixtures"
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/rpc/music/player/**", (route) => {
+    const action = new URL(route.request().url()).pathname.replace(
+      "/api/rpc/music/",
+      ""
+    )
+    return route.fulfill({
+      json: { json: musicFixtureResponses[action]!({}) },
+    })
+  })
+})
 
 const track = {
   id: "one",

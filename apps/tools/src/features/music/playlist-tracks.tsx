@@ -5,6 +5,7 @@ import { errorReason } from "@mdoultremont/tools-contracts"
 import type { SourceId } from "@mdoultremont/tools-contracts/music"
 import { Button, buttonVariants } from "@/features/ui/button"
 import { Spinner } from "@/features/ui/spinner"
+import { TrackPlayButton } from "./player"
 
 type TrackPage = Awaited<ReturnType<typeof api.music.spotify.likedTracks>>
 type More =
@@ -155,6 +156,9 @@ export function PlaylistTracks({
                 >
                   #
                 </th>
+                <th scope="col" className="w-12 px-2 py-3">
+                  <span className="sr-only">Playback</span>
+                </th>
                 <th scope="col" className="px-4 py-3 font-medium">
                   Track
                 </th>
@@ -172,6 +176,9 @@ export function PlaylistTracks({
                 <tr key={index} className="hover:bg-muted/30">
                   <td className="hidden px-4 py-3 text-right text-muted-foreground tabular-nums sm:table-cell">
                     {index + 1}
+                  </td>
+                  <td className="px-2 py-3">
+                    <TrackPlayButton trackId={track.id} name={track.name} />
                   </td>
                   <td
                     className="px-4 py-3"
