@@ -288,7 +288,7 @@ export function PlayerBar() {
       ) : null}
       {view.status === "connection_lost" ? (
         <p>
-          Spotify needs to be connected again.{" "}
+          Connect Spotify to control playback.{" "}
           <a
             className="underline underline-offset-4"
             href="/api/music/spotify/connect"
@@ -465,6 +465,7 @@ export function TrackPlayButton({
       variant="ghost"
       size="icon"
       aria-label={`Play ${name}`}
+      aria-description={playing ? "Currently playing" : undefined}
       title={
         view.canPlay
           ? `Play on ${view.target?.name}`

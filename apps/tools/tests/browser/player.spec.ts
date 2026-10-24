@@ -42,7 +42,7 @@ async function mountPlayer(page: Page, options: PlayerFixtureOptions = {}) {
   await page.goto("/__player_browser_fixture__")
   await page.evaluate(
     async ({ fixtureOptions, modulePath }) => {
-      const { mountPlayer: mount } = await import(/* @vite-ignore */ modulePath)
+      const { mountPlayer: mount } = await import(modulePath)
       mount(fixtureOptions)
     },
     { fixtureOptions: options, modulePath: fixtureModulePath }
