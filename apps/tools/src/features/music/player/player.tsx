@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { AudioLinesIcon, PlayIcon } from "lucide-react"
+import { PlayIcon } from "lucide-react"
 import { Option, Schema } from "effect"
 import {
   ActionErrorDataSchema,
@@ -29,6 +29,7 @@ import {
   type PlayerEvent,
   type PlayerFailure,
   type PlayerState,
+  type QueuedTrack,
 } from "./player-state"
 
 import { useBrowserPlayer } from "./browser-player"
@@ -190,10 +191,13 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     refresh
   )
 
-  async function command(request: PlayerCommand) {
+  async function command(
+    request: PlayerCommand,
+    queue?: readonly QueuedTrack[]
+  ) {
     if (document.visibilityState === "hidden") return
     const previous = stateRef.current
-    sendEvent({ type: "start", command: request, now: Date.now() })
+    sendEvent({ type: "start", command: request, queue, now: Date.now() })
     const current = stateRef.current
     if (current.epoch === previous.epoch) return
     const epoch = current.epoch
@@ -238,18 +242,25 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     chooseDevice: (deviceId: string | null) =>
       sendEvent({ type: "choose", deviceId }),
     refresh,
-    /** Plays `trackId`, then `nextTrackIds` (at most 99 are queued). */
-    playTrack: (trackId: string, nextTrackIds: readonly string[] = []) => {
+    /** Plays `track`, then `nextTracks` (at most 99 are queued). */
+    playTrack: (
+      track: QueuedTrack,
+      nextTracks: readonly QueuedTrack[] = []
+    ) => {
       const target = deriveView(stateRef.current, Date.now()).target
-      if (target)
-        void command({
-          kind: "play",
-          trackId,
-          nextTrackIds: nextTrackIds
-            .filter((id) => /^[A-Za-z0-9]+$/u.test(id))
-            .slice(0, 99),
-          deviceId: target.id,
-        })
+      const queued = nextTracks
+        .filter((next) => next.id !== null && /^[A-Za-z0-9]+$/u.test(next.id))
+        .slice(0, 99)
+      if (target && track.id)
+        void command(
+          {
+            kind: "play",
+            trackId: track.id,
+            nextTrackIds: queued.flatMap((next) => (next.id ? [next.id] : [])),
+            deviceId: target.id,
+          },
+          [track, ...queued]
+        )
     },
     pause: () => {
       const deviceId = deriveView(stateRef.current, Date.now()).currentDeviceId
@@ -301,15 +312,15 @@ export function usePlayer() {
 }
 
 export function TrackPlayButton({
-  trackId,
-  name,
-  nextTrackIds,
+  track,
+  nextTracks,
 }: {
-  readonly trackId: string
-  readonly name: string
+  readonly track: QueuedTrack & { readonly id: string }
   /** The tracks that follow in the list, queued so Next continues through them. */
-  readonly nextTrackIds?: () => readonly string[]
+  readonly nextTracks?: () => readonly QueuedTrack[]
 }) {
+  const trackId = track.id
+  const name = track.name
   const { state, view, playTrack } = usePlayer()
   const item = view.playback?.item
   const playing =
@@ -332,14 +343,32 @@ export function TrackPlayButton({
           : "Choose an available device and refresh playback to play"
       }
       disabled={!view.canPlay}
-      onClick={() => playTrack(trackId, nextTrackIds?.())}
+      onClick={() => playTrack(track, nextTracks?.())}
       data-playing={playing || undefined}
     >
-      {playing ? (
-        <AudioLinesIcon aria-hidden="true" />
-      ) : (
-        <PlayIcon aria-hidden="true" />
-      )}
+      {playing ? <PlayingBars /> : <PlayIcon aria-hidden="true" />}
     </Button>
+  )
+}
+
+/** An equalizer that moves while the track plays. Durations differ so the bars never fall in step. */
+function PlayingBars() {
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="playing-bars"
+      className="flex h-3.5 items-end gap-[2px]"
+    >
+      {["0.8s", "1.1s", "0.95s", "1.25s"].map((duration, index) => (
+        <span
+          key={duration}
+          className="h-full w-[2.5px] origin-bottom animate-equalize rounded-full bg-current motion-reduce:animate-none"
+          style={{
+            animationDuration: duration,
+            animationDelay: `-${index * 350}ms`,
+          }}
+        />
+      ))}
+    </span>
   )
 }

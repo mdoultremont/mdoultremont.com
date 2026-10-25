@@ -80,20 +80,18 @@ test("mount and choosing a playback target never send playback writes", async ({
   )
 })
 
-test("an accepted play waits for observed playback and a double click sends one request", async ({
+test("a play shows the requested track as playing at once and a double click sends one request", async ({
   page,
 }) => {
   await mountPlayer(page)
-  await page.getByRole("button", { name: "Play Fixture Song" }).dblclick()
+  const row = page.getByRole("button", { name: "Play Fixture Song" })
+  await row.dblclick()
   await expect(
-    page.getByRole("region", { name: "Spotify player", exact: true })
-  ).toHaveAttribute("aria-busy", "true")
-  await expect(
-    page.getByRole("button", { name: "Resume playback" })
+    page.getByRole("button", { name: "Pause playback" })
   ).toBeVisible()
-  await expect(
-    page.getByRole("button", { name: "Play Fixture Song" })
-  ).toBeDisabled()
+  await expect(row).toHaveAttribute("data-playing", "true")
+  await expect(row.locator('[data-slot="playing-bars"]')).toBeVisible()
+  await expect(row).toBeEnabled()
   expect((await calls(page)).filter(({ kind }) => kind === "play")).toEqual([
     {
       kind: "play",
@@ -109,12 +107,42 @@ test("an accepted play waits for observed playback and a double click sends one 
   await expect(
     page.getByRole("button", { name: "Pause playback" })
   ).toBeVisible()
+  await expect(row).toHaveAttribute("data-playing", "true")
   await expect(
-    page.getByRole("button", { name: "Play Fixture Song" })
-  ).toHaveAttribute("data-playing", "true")
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).not.toHaveAttribute("aria-busy")
+})
+
+test("an accepted play that Spotify never confirms falls back to the observed state", async ({
+  page,
+}) => {
+  await mountPlayer(page)
+  const row = page.getByRole("button", { name: "Play Fixture Song" })
+  await row.click()
   await expect(
-    page.getByRole("button", { name: "Play Fixture Song" })
-  ).toBeEnabled()
+    page.getByRole("button", { name: "Pause playback" })
+  ).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
+  ).toBeVisible({ timeout: 10_000 })
+  await expect(row).not.toHaveAttribute("data-playing", "true")
+  await expect(row.locator('[data-slot="playing-bars"]')).toHaveCount(0)
+})
+
+test("a command accepted but not yet confirmed can be replaced by a new one", async ({
+  page,
+}) => {
+  await mountPlayer(page)
+  await page.getByRole("button", { name: "Play Fixture Song" }).click()
+  await page.getByRole("button", { name: "Pause playback" }).click()
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
+  ).toBeVisible()
+  expect(
+    (await calls(page))
+      .filter(({ kind }) => kind === "play" || kind === "pause")
+      .map(({ kind }) => kind)
+  ).toEqual(["play", "pause"])
 })
 
 test("pause targets the observed playback device after choosing a different target", async ({

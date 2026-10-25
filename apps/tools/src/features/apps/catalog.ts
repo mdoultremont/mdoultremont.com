@@ -16,7 +16,7 @@ import { ParagliderIcon } from "@/features/flights/icon"
 /** The public portfolio, which lives on its own domain. */
 export const portfolioUrl = "https://mdoultremont.com"
 
-/** Input playlists are listed above these, one link each, by the music layout. */
+/** Named in breadcrumbs. The music layout draws its own sidebar links. */
 export const musicPages = [
   {
     to: "/music/output",
@@ -28,7 +28,7 @@ export const musicPages = [
 
 /**
  * How each private app appears in the browser, in display order. `pages` are
- * the app's sidebar links.
+ * the app's sidebar links, unless `ownNav` says the app renders its own.
  */
 export const appCatalog = [
   {
@@ -38,6 +38,7 @@ export const appCatalog = [
     description: "Sort Spotify Liked Songs into playlists.",
     icon: Music2Icon,
     pages: musicPages,
+    ownNav: true,
   },
   {
     id: "flights",
@@ -71,9 +72,12 @@ export const appCatalog = [
     readonly label: string
     readonly icon: LucideIcon
   }>
+  readonly ownNav?: boolean
 }>
 
-export type CatalogApp = (typeof appCatalog)[number]
+export type CatalogApp = (typeof appCatalog)[number] & {
+  readonly ownNav?: boolean
+}
 export type AppPage = CatalogApp["pages"][number]
 
 export const appName = (app: App) =>

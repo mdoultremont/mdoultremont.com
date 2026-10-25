@@ -30,6 +30,20 @@ export function PlaylistTracks({
   const [view, setView] = useState<View>({ kind: "loading" })
   const [attempt, setAttempt] = useState(0)
   const controller = useRef<AbortController | null>(null)
+  const loadMoreRef = useRef(loadMore)
+  loadMoreRef.current = loadMore
+  const [sentinel, setSentinel] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!sentinel) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) void loadMoreRef.current()
+      },
+      { rootMargin: "600px 0px" }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel])
 
   function read(cursor?: string, signal?: AbortSignal) {
     return collection.kind === "liked"
@@ -144,16 +158,16 @@ export function PlaylistTracks({
         <div className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
           <Music2Icon aria-hidden="true" className="mx-auto mb-3 size-6" />
           {page.next
-            ? "No available tracks on this page. Continue to see more."
+            ? "No available tracks on this page."
             : "No available tracks in this playlist."}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border">
+        <div className="overflow-clip rounded-xl border">
           <table className="w-full table-fixed text-sm">
             <caption className="sr-only">
               Tracks in {name}, in Spotify order
             </caption>
-            <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+            <thead className="sticky top-16 z-10 bg-background text-left text-xs text-muted-foreground shadow-[inset_0_-1px_0_var(--color-border)] md:top-0">
               <tr>
                 <th
                   scope="col"
@@ -184,12 +198,9 @@ export function PlaylistTracks({
                   </td>
                   <td className="px-2 py-3">
                     <TrackPlayButton
-                      trackId={track.id}
-                      name={track.name}
-                      nextTrackIds={() =>
-                        page.items
-                          .slice(index + 1, index + 100)
-                          .map((next) => next.id)
+                      track={queued(track)}
+                      nextTracks={() =>
+                        page.items.slice(index + 1, index + 100).map(queued)
                       }
                     />
                   </td>
@@ -251,29 +262,32 @@ export function PlaylistTracks({
         >
           Check Spotify connection
         </a>
-      ) : page.next ? (
-        <Button
-          variant="outline"
-          disabled={more.kind === "loading"}
-          onClick={() => void loadMore()}
-        >
-          {more.kind === "loading" ? (
-            <>
-              <Spinner aria-hidden="true" />
-              Loading more…
-            </>
-          ) : more.kind === "error" ? (
-            "Try loading more again"
-          ) : (
-            "Load more"
-          )}
+      ) : more.kind === "error" ? (
+        <Button variant="outline" onClick={() => void loadMore()}>
+          Try loading more again
         </Button>
-      ) : null}
-      {more.kind === "loading" ? (
-        <output className="sr-only">Loading more tracks</output>
+      ) : more.kind === "loading" ? (
+        <output className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+          <Spinner aria-hidden="true" />
+          Loading more tracks…
+        </output>
+      ) : page.next ? (
+        <div ref={setSentinel} aria-hidden="true" className="h-px" />
       ) : null}
     </section>
   )
+}
+
+/** A listed track as the player shows it before Spotify confirms playback. */
+function queued(track: TrackPage["items"][number]) {
+  return {
+    kind: "track" as const,
+    id: track.id,
+    name: track.name,
+    artistNames: track.artistNames,
+    imageUrl: track.artworkUrl ?? null,
+    durationMs: track.durationMs,
+  }
 }
 
 function duration(milliseconds: number | null) {

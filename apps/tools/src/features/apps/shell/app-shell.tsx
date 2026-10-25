@@ -19,7 +19,7 @@ import {
 import { TooltipProvider } from "@/features/ui/tooltip"
 import { AppSidebar } from "./app-sidebar"
 import { AuthError } from "./auth-error"
-import { SidebarSlotsProvider } from "./sidebar-slots"
+import { ShellSlotsProvider, ShellSlotTarget } from "./shell-slots"
 
 /** The signed-in apps frame (shadcn sidebar-08). */
 export function AppShell({
@@ -44,7 +44,7 @@ export function AppShell({
 
   return (
     <TooltipProvider>
-      <SidebarSlotsProvider>
+      <ShellSlotsProvider>
         <SidebarProvider className="md:h-svh md:overflow-hidden">
           <AppSidebar
             user={user}
@@ -54,7 +54,7 @@ export function AppShell({
           />
           <SidebarInset className="md:min-h-0 md:overflow-hidden">
             <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 bg-background md:static md:rounded-t-xl">
-              <div className="flex items-center gap-2 px-4">
+              <div className="flex min-w-0 items-center gap-2 px-4">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
                   orientation="vertical"
@@ -85,6 +85,10 @@ export function AppShell({
                   </BreadcrumbList>
                 </Breadcrumb>
               </div>
+              <ShellSlotTarget
+                slot="actions"
+                className="ml-auto flex shrink-0 items-center gap-2 px-4 empty:hidden"
+              />
             </header>
             <div
               data-slot="app-scroll-area"
@@ -97,7 +101,7 @@ export function AppShell({
             </div>
           </SidebarInset>
         </SidebarProvider>
-      </SidebarSlotsProvider>
+      </ShellSlotsProvider>
     </TooltipProvider>
   )
 }

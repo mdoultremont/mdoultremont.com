@@ -25,7 +25,7 @@ const track = {
 const cursor =
   "https://api.spotify.com/v1/playlists/jazz/items?offset=50&limit=50"
 
-test("preserves duplicates, retries pagination, and continues past an empty page", async ({
+test("preserves duplicates, loads past an empty page, and retries a failed page only on request", async ({
   page,
 }) => {
   let continuationCalls = 0
@@ -56,11 +56,12 @@ test("preserves duplicates, retries pagination, and continues past an empty page
     const m = await import(modulePath)
     m.mountPlaylistTracks()
   }, "/tests/browser/support/mount-playlist-tracks.tsx")
-  await expect(
-    page.getByText("No available tracks on this page. Continue to see more.")
-  ).toBeVisible()
-  await page.getByRole("button", { name: "Load more", exact: true }).click()
   await expect(page.getByRole("alert")).toBeVisible()
+  await expect(
+    page.getByText("No available tracks on this page.")
+  ).toBeVisible()
+  await page.waitForTimeout(500)
+  expect(continuationCalls).toBe(1)
   await page.getByRole("button", { name: "Try loading more again" }).click()
   await expect(page.getByText("Blue in Green", { exact: true })).toHaveCount(2)
   await expect(page.getByText("Miles Davis", { exact: true })).toHaveCount(2)
@@ -69,8 +70,9 @@ test("preserves duplicates, retries pagination, and continues past an empty page
     page.getByText("2 tracks loaded · 3 Spotify items")
   ).toBeVisible()
   await expect(
-    page.getByRole("button", { name: "Load more", exact: true })
+    page.getByRole("button", { name: "Try loading more again" })
   ).toHaveCount(0)
+  await expect(page.getByText("Loading more tracks…")).toHaveCount(0)
 })
 
 test("selection changes discard a delayed response", async ({ page }) => {
@@ -158,8 +160,9 @@ for (const reason of ["NotConnected", "ReconnectNeeded", "RateLimited"]) {
       m.mountPlaylistTracks()
     }, "/tests/browser/support/mount-playlist-tracks.tsx")
     await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
-    await page.getByRole("button", { name: "Load more", exact: true }).click()
     await expect(page.getByRole("alert")).toHaveText("Spotify needs attention")
+    await page.waitForTimeout(500)
+    expect(continuationCalls).toBe(1)
     await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
     await expect(
       page.getByText("1 track loaded · 2 Spotify items")

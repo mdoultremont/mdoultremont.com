@@ -1,8 +1,11 @@
 import type {
+  NowPlaying,
   Playback,
   PlayerDevice,
   PlayerStatus,
 } from "@mdoultremont/tools-contracts/music"
+
+export type QueuedTrack = Extract<NowPlaying, { kind: "track" }>
 
 export type PlayerCommand =
   | {
@@ -48,9 +51,13 @@ export interface PlayerState {
   readonly pending: {
     readonly command: PlayerCommand
     readonly stage: "sending" | "confirming"
+    /** When the owner asked, so the intended playback starts from that moment. */
+    readonly startedAt: number
     readonly acceptedAt: number
     readonly checks: number
   } | null
+  /** The tracks of the last list played from, so Next can show its track before Spotify confirms. */
+  readonly queue: readonly QueuedTrack[]
   readonly unconfirmed: boolean
   readonly notice: string | null
   readonly connectionLost: boolean
@@ -66,6 +73,7 @@ export const initialPlayerState: PlayerState = {
   stale: false,
   chosenDeviceId: null,
   pending: null,
+  queue: [],
   unconfirmed: false,
   notice: null,
   connectionLost: false,
@@ -81,6 +89,8 @@ export type PlayerEvent =
   | {
       readonly type: "start"
       readonly command: PlayerCommand
+      /** For a play command: the played track, then the tracks queued after it. */
+      readonly queue?: readonly QueuedTrack[]
       readonly now: number
     }
   | { readonly type: "accepted"; readonly epoch: number; readonly now: number }
@@ -189,6 +199,7 @@ export function playerReducer(
     return { ...state, chosenDeviceId: event.deviceId }
   if (event.type === "hidden") return { ...state, stale: true }
   if (event.type === "start") {
+    if (state.pending?.stage === "sending") return state
     const view = deriveView(state, event.now)
     const command = event.command
     const enabled =
@@ -204,7 +215,14 @@ export function playerReducer(
     return {
       ...state,
       epoch: state.epoch + 1,
-      pending: { command, stage: "sending", acceptedAt: 0, checks: 0 },
+      pending: {
+        command,
+        stage: "sending",
+        startedAt: event.now,
+        acceptedAt: 0,
+        checks: 0,
+      },
+      queue: command.kind === "play" ? (event.queue ?? []) : state.queue,
       notice: null,
       unconfirmed: false,
     }
@@ -278,14 +296,10 @@ export function deriveView(state: PlayerState, now: number) {
         controllable.find((device) => device.id === browserId))
       : controllable.find((device) => device.id === state.chosenDeviceId)) ??
     null
-  const playback: Playback | null = ready?.playback ?? null
+  const playback = intended(state)?.playback ?? null
   const currentDeviceId = playback?.device.id ?? null
   const blocked =
-    !ready ||
-    state.stale ||
-    state.connectionLost ||
-    state.pending !== null ||
-    state.pausedUntil > now
+    !ready || state.stale || state.connectionLost || state.pausedUntil > now
   const currentControllable =
     currentDeviceId !== null &&
     !state.unavailableBrowserIds.includes(currentDeviceId) &&
@@ -319,11 +333,84 @@ export function deriveView(state: PlayerState, now: number) {
   }
 }
 
-/** Where the playing track is now, advanced from the last observation while it plays. */
-export function playbackProgress(state: PlayerState, now: number) {
+/** Advances an observed position to `at`, while the track plays. */
+function positionAt(playback: Playback, observedAt: number, at: number) {
+  if (playback.progressMs === null) return null
+  const elapsed = playback.playing ? Math.max(0, at - observedAt) : 0
+  const duration =
+    playback.item?.kind === "track" ? playback.item.durationMs : null
+  return Math.min(duration ?? Infinity, playback.progressMs + elapsed)
+}
+
+/**
+ * The playback to show: what Spotify reported, or, while a command waits for
+ * confirmation, what it asked for. `at` is when that playback was true. An
+ * unconfirmed or refused command ends the pending state, so the view falls
+ * back to what Spotify reports.
+ */
+function intended(
+  state: PlayerState
+): { readonly playback: Playback | null; readonly at: number } | null {
   if (state.server.status !== "loaded" || state.server.data.status !== "ready")
     return null
-  const playback = state.server.data.playback
+  const observed = state.server.data.playback
+  const at = state.server.at
+  const pending = state.pending
+  if (!pending) return { playback: observed, at }
+  const command = pending.command
+  const startedAt = pending.startedAt
+  if (command.kind === "pause" || command.kind === "resume")
+    return observed
+      ? {
+          playback: {
+            ...observed,
+            playing: command.kind === "resume",
+            progressMs: positionAt(observed, at, startedAt),
+          },
+          at: startedAt,
+        }
+      : { playback: observed, at }
+  const playedIndex = state.queue.findIndex(
+    (entry) =>
+      entry.id ===
+      (command.kind === "play" ? command.trackId : command.fromTrackId)
+  )
+  const track =
+    playedIndex === -1
+      ? undefined
+      : state.queue[command.kind === "play" ? playedIndex : playedIndex + 1]
+  if (!track) return { playback: observed, at }
+  const device = state.server.data.devices.find(
+    (entry) => entry.controllable && entry.id === command.deviceId
+  )
+  const base: Playback | null =
+    observed?.device.id === command.deviceId
+      ? observed
+      : device
+        ? {
+            device: {
+              id: command.deviceId,
+              name: device.name,
+              restricted: false,
+            },
+            allows: { pause: true, resume: true, next: true },
+            playing: true,
+            item: null,
+            progressMs: 0,
+          }
+        : null
+  if (!base) return { playback: observed, at }
+  return {
+    playback: { ...base, playing: true, item: track, progressMs: 0 },
+    at: startedAt,
+  }
+}
+
+/** Where the playing track is now, advanced from the last observation while it plays. */
+export function playbackProgress(state: PlayerState, now: number) {
+  const shown = intended(state)
+  if (!shown) return null
+  const { playback, at } = shown
   const item = playback?.item
   if (
     !playback ||
@@ -332,9 +419,8 @@ export function playbackProgress(state: PlayerState, now: number) {
     playback.progressMs === null
   )
     return null
-  const elapsed = playback.playing ? Math.max(0, now - state.server.at) : 0
   return {
-    positionMs: Math.min(item.durationMs, playback.progressMs + elapsed),
+    positionMs: positionAt(playback, at, now) ?? 0,
     durationMs: item.durationMs,
     playing: playback.playing,
   }

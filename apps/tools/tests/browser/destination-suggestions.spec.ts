@@ -69,9 +69,13 @@ test("suggests on demand, dismisses locally and creates a paused destination", a
   await expect(
     panel.getByText("You have handled every suggestion.", { exact: false })
   ).toBeVisible()
+  const created = page.locator(
+    'a[data-sidebar="menu-button"][href="/music/output/suggested"]'
+  )
+  await expect(created).toHaveText("Relaxed listening")
   await expect(
-    page.getByRole("button", { name: /Relaxed listening.*Paused/ })
-  ).toBeVisible()
+    page.getByRole("listitem").filter({ has: created })
+  ).toContainText("Paused")
   expect(calls.filter((call) => call.action === "destinations/create")).toEqual(
     [
       {

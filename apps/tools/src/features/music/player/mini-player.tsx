@@ -88,9 +88,7 @@ export function MiniPlayer({
         disabled={view.playback?.playing ? !view.canPause : !view.canResume}
         onClick={view.playback?.playing ? pause : resume}
       >
-        {busy ? (
-          <Spinner aria-hidden="true" />
-        ) : view.playback?.playing ? (
+        {view.playback?.playing ? (
           <PauseIcon aria-hidden="true" />
         ) : (
           <PlayIcon aria-hidden="true" />

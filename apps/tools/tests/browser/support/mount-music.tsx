@@ -10,7 +10,8 @@ import {
 import { AppShell } from "../../../src/features/apps/shell"
 import { MusicSettings } from "../../../src/features/music/music-settings"
 import { MusicLayout } from "../../../src/features/music/music-layout"
-import { OutputPlaylists } from "../../../src/features/music/output-playlists"
+import { OutputPlaylistPage } from "../../../src/features/music/output-playlist-page"
+import { SuggestPage } from "../../../src/features/music/suggest-page"
 import { InputPlaylistPage } from "../../../src/features/music/input-playlist-page"
 
 const user = {
@@ -49,25 +50,19 @@ export async function mountMusic(path = "/music/input/liked") {
       return <InputPlaylistPage playlistKey={playlist} />
     },
   })
+  const suggest = createRoute({
+    getParentRoute: () => music,
+    path: "/output/",
+    component: SuggestPage,
+  })
   const output = createRoute({
     getParentRoute: () => music,
-    path: "/output",
-    validateSearch: (search: Record<string, unknown>) => ({
-      playlist:
-        typeof search.playlist === "string" ? search.playlist : undefined,
-    }),
-    component: Outputs,
+    path: "/output/$playlist",
+    component: function Output() {
+      const { playlist } = output.useParams()
+      return <OutputPlaylistPage playlistId={playlist} />
+    },
   })
-  function Outputs() {
-    const navigate = output.useNavigate()
-    const { playlist } = output.useSearch()
-    return (
-      <OutputPlaylists
-        selected={playlist}
-        onSelect={(key) => void navigate({ search: { playlist: key } })}
-      />
-    )
-  }
   const settings = createRoute({
     getParentRoute: () => music,
     path: "/settings",
@@ -76,7 +71,7 @@ export async function mountMusic(path = "/music/input/liked") {
   const router = createRouter({
     history: createMemoryHistory({ initialEntries: [path] }),
     routeTree: root.addChildren([
-      apps.addChildren([music.addChildren([input, output, settings])]),
+      apps.addChildren([music.addChildren([input, suggest, output, settings])]),
     ]),
   })
   await router.load()
