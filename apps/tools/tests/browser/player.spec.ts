@@ -34,7 +34,9 @@ const fixtureReady = {
       name: "Fixture Song",
       artistNames: ["Fixture Artist"],
       imageUrl: null,
+      durationMs: null,
     },
+    progressMs: null,
     allows: { pause: true, resume: true, next: true },
   },
 }
@@ -64,11 +66,15 @@ test("mount and choosing a playback target never send playback writes", async ({
   page,
 }) => {
   await mountPlayer(page)
-  await expect(page.getByText("Paused on Fixture Speaker")).toBeVisible()
-  const chooser = page.getByRole("combobox", { name: "Play tracks on" })
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
+  ).toBeVisible()
+  const chooser = page.getByRole("button", { name: /^Play tracks on/ })
   await chooser.click()
-  await page.getByRole("option", { name: "Fixture Phone" }).click()
-  await expect(chooser).toContainText("Fixture Phone")
+  await page.getByRole("menuitemradio", { name: "Fixture Phone" }).click()
+  await expect(chooser).toHaveAccessibleName(
+    `Play tracks on ${"Fixture Phone"}`
+  )
   expect((await calls(page)).filter(({ kind }) => kind !== "status")).toEqual(
     []
   )
@@ -80,9 +86,11 @@ test("an accepted play waits for observed playback and a double click sends one 
   await mountPlayer(page)
   await page.getByRole("button", { name: "Play Fixture Song" }).dblclick()
   await expect(
-    page.getByText("Request sent. Waiting for Spotify…")
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).toHaveAttribute("aria-busy", "true")
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
   ).toBeVisible()
-  await expect(page.getByText("Paused on Fixture Speaker")).toBeVisible()
   await expect(
     page.getByRole("button", { name: "Play Fixture Song" })
   ).toBeDisabled()
@@ -98,7 +106,9 @@ test("an accepted play waits for observed playback and a double click sends one 
     ...fixtureReady,
     playback: { ...fixtureReady.playback, playing: true },
   })
-  await expect(page.getByText("Playing on Fixture Speaker")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Pause playback" })
+  ).toBeVisible()
   await expect(
     page.getByRole("button", { name: "Play Fixture Song" })
   ).toHaveAttribute("data-playing", "true")
@@ -116,13 +126,13 @@ test("pause targets the observed playback device after choosing a different targ
       playback: { ...fixtureReady.playback, playing: true },
     },
   })
-  const chooser = page.getByRole("combobox", { name: "Play tracks on" })
+  const chooser = page.getByRole("button", { name: /^Play tracks on/ })
   await chooser.click()
-  await page.getByRole("option", { name: "Fixture Phone" }).click()
+  await page.getByRole("menuitemradio", { name: "Fixture Phone" }).click()
   await page.getByRole("button", { name: "Pause playback" }).click()
   await expect(
-    page.getByText("Request sent. Waiting for Spotify…")
-  ).toBeVisible()
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).toHaveAttribute("aria-busy", "true")
   expect((await calls(page)).filter(({ kind }) => kind === "pause")).toEqual([
     { kind: "pause", deviceId: "fixture-speaker" },
   ])
@@ -150,7 +160,7 @@ test("no available devices disables track playback", async ({ page }) => {
   })
   await expect(
     page.getByText(
-      "No devices found. Open Spotify on a device, then refresh playback."
+      "No devices found. Open Spotify on a device, then refresh devices."
     )
   ).toBeVisible()
   await expect(
@@ -182,9 +192,9 @@ test("restricted devices are visible but cannot be selected or played", async ({
   await expect(
     page.getByText("These devices cannot be controlled.")
   ).toBeVisible()
-  await page.getByRole("combobox", { name: "Play tracks on" }).click()
+  await page.getByRole("button", { name: /^Play tracks on/ }).click()
   await expect(
-    page.getByRole("option", { name: "Fixture TV (restricted)" })
+    page.getByRole("menuitemradio", { name: "Fixture TV (restricted)" })
   ).toBeDisabled()
   await expect(
     page.getByRole("button", { name: "Play Fixture Song" })
@@ -204,19 +214,21 @@ test("Retry-After blocks manual and automatic status work until the delay expire
       data: { reason: "RateLimited", retryAfterSeconds: 5 },
     },
   })
-  await expect(page.getByText("Paused on Fixture Speaker")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
+  ).toBeVisible()
   await page.getByRole("button", { name: "Play Fixture Song" }).click()
   await expect(
-    page.getByText(
-      "Spotify has asked us to wait. Playback will refresh after the rate limit expires."
-    )
+    page.getByText("Spotify has asked us to wait. Playback will refresh soon.")
   ).toBeVisible()
   const beforeRefresh = (await calls(page)).filter(
     ({ kind }) => kind === "status"
   )
+  await page.getByRole("button", { name: /^Play tracks on/ }).click()
   await expect(
-    page.getByRole("button", { name: "Refresh playback" })
+    page.getByRole("menuitem", { name: "Refresh devices" })
   ).toBeDisabled()
+  await page.keyboard.press("Escape")
   await page.clock.runFor(4_000)
   expect((await calls(page)).filter(({ kind }) => kind === "status")).toEqual(
     beforeRefresh
@@ -243,7 +255,8 @@ test("a status response from before hiding the page is ignored and refreshed on 
     page.getByRole("button", { name: "Play Fixture Song" })
   ).toHaveAttribute("data-playing", "true")
   await page.evaluate(() => window.playerFixture.deferNextStatus())
-  await page.getByRole("button", { name: "Refresh playback" }).click()
+  await page.getByRole("button", { name: /^Play tracks on/ }).click()
+  await page.getByRole("menuitem", { name: "Refresh devices" }).click()
   await expect
     .poll(
       async () =>
@@ -268,7 +281,9 @@ test("a status response from before hiding the page is ignored and refreshed on 
     playback: { ...fixtureReady.playback, playing: false },
   })
   await page.evaluate(() => window.playerFixture.resolveDeferredStatus())
-  await expect(page.getByText("Playing on Fixture Speaker")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Pause playback" })
+  ).toBeVisible()
   await page.evaluate(() => {
     window.playerFixture.deferNextStatus()
     Object.defineProperty(document, "visibilityState", {
@@ -290,13 +305,16 @@ test("a status response from before hiding the page is ignored and refreshed on 
     page.getByRole("button", { name: "Play Fixture Song" })
   ).toBeDisabled()
   await page.evaluate(() => window.playerFixture.resolveDeferredStatus())
-  await expect(page.getByText("Paused on Fixture Speaker")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Resume playback" })
+  ).toBeVisible()
 })
 
 test("unmounting ignores a late status response", async ({ page }) => {
   await mountPlayer(page)
   await page.evaluate(() => window.playerFixture.deferNextStatus())
-  await page.getByRole("button", { name: "Refresh playback" }).click()
+  await page.getByRole("button", { name: /^Play tracks on/ }).click()
+  await page.getByRole("menuitem", { name: "Refresh devices" }).click()
   await expect
     .poll(
       async () =>
@@ -335,12 +353,12 @@ test("the browser becomes the idle target and activation does not confirm playba
     })
     window.fakeSpotify.emit("ready", { device_id: "browser-device" })
   })
-  const chooser = page.getByRole("combobox", { name: "Play tracks on" })
-  await expect(chooser).toContainText("This browser")
+  const chooser = page.getByRole("button", { name: /^Play tracks on/ })
+  await expect(chooser).toHaveAccessibleName(`Play tracks on ${"This browser"}`)
   await page.getByRole("button", { name: "Play Fixture Song" }).click()
   await expect(
-    page.getByText("Request sent. Waiting for Spotify…")
-  ).toBeVisible()
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).toHaveAttribute("aria-busy", "true")
   expect(await page.evaluate(() => window.fakeSpotify.activatedInGesture)).toBe(
     true
   )
@@ -395,9 +413,9 @@ for (const [event, message] of [
       })
       window.fakeSpotify.emit("ready", { device_id: "browser-device" })
     }, fixtureReady)
-    await page.getByRole("combobox", { name: "Play tracks on" }).click()
+    await page.getByRole("button", { name: /^Play tracks on/ }).click()
     await page
-      .getByRole("option", { name: "This browser", exact: true })
+      .getByRole("menuitemradio", { name: "This browser", exact: true })
       .click()
     await page.evaluate((name) => window.fakeSpotify.emit(name), event)
     await expect(page.getByText(message, { exact: false })).toBeVisible()

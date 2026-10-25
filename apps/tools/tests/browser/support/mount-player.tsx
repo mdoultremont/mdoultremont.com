@@ -65,7 +65,9 @@ const fixtureStatus: PlayerStatus = {
       name: "Fixture Song",
       artistNames: ["Fixture Artist"],
       imageUrl: null,
+      durationMs: null,
     },
+    progressMs: null,
     allows: { pause: true, resume: true, next: true },
   },
 }

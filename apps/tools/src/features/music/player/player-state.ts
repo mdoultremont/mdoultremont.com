@@ -36,7 +36,12 @@ export interface PlayerState {
   readonly unavailableBrowserIds: readonly string[]
   readonly server:
     | { readonly status: "loading" }
-    | { readonly status: "loaded"; readonly data: PlayerStatus }
+    | {
+        readonly status: "loaded"
+        readonly data: PlayerStatus
+        /** When this status was observed, to advance playback progress locally. */
+        readonly at: number
+      }
     | { readonly status: "failed" }
   readonly stale: boolean
   readonly chosenDeviceId: string | null
@@ -225,7 +230,7 @@ export function playerReducer(
     return reconcile(
       {
         ...state,
-        server: { status: "loaded", data: event.data },
+        server: { status: "loaded", data: event.data, at: event.now },
         stale: false,
         notice: null,
         connectionLost: false,
@@ -311,6 +316,27 @@ export function deriveView(state: PlayerState, now: number) {
       playback?.item?.kind === "track" &&
       playback.allows.next,
     rateLimited: state.pausedUntil > now,
+  }
+}
+
+/** Where the playing track is now, advanced from the last observation while it plays. */
+export function playbackProgress(state: PlayerState, now: number) {
+  if (state.server.status !== "loaded" || state.server.data.status !== "ready")
+    return null
+  const playback = state.server.data.playback
+  const item = playback?.item
+  if (
+    !playback ||
+    item?.kind !== "track" ||
+    item.durationMs === null ||
+    playback.progressMs === null
+  )
+    return null
+  const elapsed = playback.playing ? Math.max(0, now - state.server.at) : 0
+  return {
+    positionMs: Math.min(item.durationMs, playback.progressMs + elapsed),
+    durationMs: item.durationMs,
+    playing: playback.playing,
   }
 }
 

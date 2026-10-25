@@ -126,7 +126,9 @@ export const fixturePlayerStatus = {
       name: fixtureTracks[0]!.name,
       artistNames: fixtureTracks[0]!.artistNames,
       imageUrl: artwork,
+      durationMs: fixtureTracks[0]!.durationMs,
     },
+    progressMs: 70_000,
     allows: { pause: true, resume: true, next: true },
   },
 } satisfies PlayerStatus

@@ -1104,9 +1104,11 @@ const currentPlayback = {
   is_playing: false,
   device: playbackDevice,
   currently_playing_type: "track",
+  progress_ms: 70_000,
   item: {
     id: "trackA",
     name: "Song",
+    duration_ms: 251_000,
     artists: [{ name: "Artist" }],
     album: { images: [{ url: "https://image.example/album.jpg" }] },
   },
@@ -1300,6 +1302,7 @@ describe("Spotify Connect player", () => {
         name: "Song",
         artistNames: ["Artist"],
         imageUrl: "https://image.example/album.jpg",
+        durationMs: 251_000,
       },
     ],
     [
@@ -1312,6 +1315,7 @@ describe("Spotify Connect player", () => {
         name: "Song",
         artistNames: ["Artist"],
         imageUrl: "https://image.example/album.jpg",
+        durationMs: 251_000,
       },
     ],
     [
@@ -1324,6 +1328,7 @@ describe("Spotify Connect player", () => {
         name: "Song",
         artistNames: ["Artist"],
         imageUrl: "https://image.example/album.jpg",
+        durationMs: 251_000,
       },
     ],
     [
@@ -1336,6 +1341,7 @@ describe("Spotify Connect player", () => {
         name: "Song",
         artistNames: ["Artist"],
         imageUrl: "https://image.example/album.jpg",
+        durationMs: 251_000,
       },
     ],
     ["episode", null, "episode", { kind: "other" }],
@@ -1360,6 +1366,7 @@ describe("Spotify Connect player", () => {
           expect(status.status).toBe("ready")
           if (status.status !== "ready") return
           expect(status.playback?.item).toEqual(expected)
+          expect(status.playback?.progressMs).toBe(70_000)
           expect(status.playback?.allows).toEqual({
             pause: false,
             resume: false,

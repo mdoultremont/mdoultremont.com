@@ -5,6 +5,7 @@ import {
   deriveView,
   initialPlayerState,
   nextPollDelay,
+  playbackProgress,
   playerReducer,
   type PlayerCommand,
   type PlayerState,
@@ -32,7 +33,9 @@ const ready: PlayerStatus = {
       name: "Song",
       artistNames: ["Artist"],
       imageUrl: null,
+      durationMs: null,
     },
+    progressMs: null,
     allows: { pause: true, resume: true, next: true },
   },
 }
@@ -117,6 +120,7 @@ describe("player state", () => {
             name: "Local",
             artistNames: [],
             imageUrl: null,
+            durationMs: null,
           },
         },
       })
@@ -226,6 +230,7 @@ describe("player state", () => {
       },
       {
         ...ready.playback!,
+        progressMs: null,
         allows: { pause: false, resume: false, next: false },
       },
     ]) {
@@ -472,5 +477,43 @@ describe("browser playback device", () => {
     state = observe(state, skipped)
     expect(state.pending).toBeNull()
     expect(state.unconfirmed).toBe(false)
+  })
+
+  test("progress advances from the observation while playing and holds while paused", () => {
+    const observed = {
+      ...playing,
+      playback: { ...playing.playback!, progressMs: 10_000 },
+    }
+    const withDuration: PlayerStatus = {
+      ...observed,
+      playback: {
+        ...observed.playback,
+        item: {
+          ...(playing.playback!.item as object),
+          durationMs: 12_000,
+        } as never,
+      },
+    }
+    const state = playerReducer(initialPlayerState, {
+      type: "loaded",
+      data: withDuration,
+      epoch: 0,
+      seq: 1,
+      now: 1000,
+    })
+    expect(playbackProgress(state, 2500)?.positionMs).toBe(11_500)
+    expect(playbackProgress(state, 60_000)?.positionMs).toBe(12_000)
+    const paused = playerReducer(initialPlayerState, {
+      type: "loaded",
+      data: {
+        ...withDuration,
+        playback: { ...withDuration.playback!, playing: false },
+      } as PlayerStatus,
+      epoch: 0,
+      seq: 1,
+      now: 1000,
+    })
+    expect(playbackProgress(paused, 60_000)?.positionMs).toBe(10_000)
+    expect(playbackProgress(loaded(), 0)).toBeNull()
   })
 })

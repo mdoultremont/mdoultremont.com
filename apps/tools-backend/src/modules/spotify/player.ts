@@ -34,6 +34,7 @@ const CurrentPlayback = Schema.Struct({
   is_playing: Schema.Boolean,
   device: Device,
   currently_playing_type: Schema.String,
+  progress_ms: Schema.optional(Schema.NullOr(Schema.Number)),
   item: Schema.NullOr(Schema.Unknown),
   actions: Schema.optional(
     Schema.Struct({
@@ -47,6 +48,7 @@ const Track = Schema.Struct({
   name: Schema.String,
   artists: Schema.Array(Schema.Struct({ name: Schema.String })),
   linked_from: Schema.optional(Schema.Unknown),
+  duration_ms: Schema.optional(Schema.Number),
   album: Schema.optional(
     Schema.Struct({
       images: Schema.Array(Schema.Struct({ url: Schema.String })),
@@ -165,6 +167,7 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
           name: track.name,
           artistNames: track.artists.map((artist) => artist.name),
           imageUrl: track.album?.images[0]?.url ?? null,
+          durationMs: track.duration_ms ?? null,
         }
       }
       const actions = value.actions
@@ -176,6 +179,7 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
           restricted: value.device.is_restricted,
         },
         item,
+        progressMs: value.progress_ms ?? null,
         allows: {
           pause:
             actions?.pausing !== true && actions?.disallows?.pausing !== true,

@@ -37,6 +37,7 @@ export const NowPlayingSchema = Schema.Union([
     name: Schema.String,
     artistNames: Schema.Array(Schema.String),
     imageUrl: Schema.NullOr(Schema.String),
+    durationMs: Schema.NullOr(Schema.Number),
   }),
   Schema.Struct({ kind: Schema.Literal("other") }),
 ])
@@ -50,6 +51,8 @@ export const PlaybackSchema = Schema.Struct({
     restricted: Schema.Boolean,
   }),
   item: Schema.NullOr(NowPlayingSchema),
+  /** Position in the item when Spotify reported playback, if known. */
+  progressMs: Schema.NullOr(Schema.Number),
   allows: Schema.Struct({
     pause: Schema.Boolean,
     resume: Schema.Boolean,
