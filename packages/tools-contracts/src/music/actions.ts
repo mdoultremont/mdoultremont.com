@@ -16,6 +16,7 @@ import {
   SpotifyConnectionStatusSchema,
   SpotifyPlaylistSchema,
   SpotifySavedTracksPageSchema,
+  isCoverImage,
 } from "./schemas"
 
 import {
@@ -59,12 +60,14 @@ const SavedTracksCursor = Schema.String.check(
   )
 )
 
+const SpotifyPlaylistId = Schema.String.check(
+  Schema.makeFilter(
+    (id: string) => /^[A-Za-z0-9]+$/u.test(id) || "Invalid playlist ID"
+  )
+)
+
 const PlaylistTracksInput = Schema.Struct({
-  playlistId: Schema.String.check(
-    Schema.makeFilter(
-      (id: string) => /^[A-Za-z0-9]+$/u.test(id) || "Invalid playlist ID"
-    )
-  ),
+  playlistId: SpotifyPlaylistId,
   cursor: Schema.optional(Schema.String),
 }).check(
   Schema.makeFilter(
@@ -180,6 +183,26 @@ export const musicActions = {
       http: { method: "GET", path: "/music/spotify/liked-tracks" },
       input: Schema.Struct({ cursor: Schema.optional(SavedTracksCursor) }),
       output: SpotifySavedTracksPageSchema,
+    }),
+    setPlaylistCover: action({
+      description:
+        "Replaces the cover of a playlist owned by the connected Spotify account. `image` is a base64 JPEG of up to 256 KB. Spotify processes it asynchronously, so playlist reads may show the old cover for a short while.",
+      effect: "write",
+      http: {
+        method: "POST",
+        path: "/music/spotify/playlists/:playlistId/cover",
+      },
+      input: Schema.Struct({
+        playlistId: SpotifyPlaylistId,
+        image: Schema.String.check(
+          Schema.makeFilter(
+            (image: string) =>
+              isCoverImage(image) ||
+              "Cover must be a base64 JPEG of up to 256 KB"
+          )
+        ),
+      }),
+      output: Schema.Struct({ status: Schema.Literal("accepted") }),
     }),
     playlistTracks: action({
       description:

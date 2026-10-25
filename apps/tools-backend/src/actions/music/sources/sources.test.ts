@@ -28,6 +28,8 @@ function setup() {
       name: id,
       public: false,
       collaborative: false,
+      description: null,
+      imageUrl: null,
       ownerId: "spotify-user",
     })
   )

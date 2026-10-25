@@ -15,14 +15,14 @@ export const inputKey = (id: SourceId) =>
 const { Provider, useLibrary } = createPlaylistLibrary({
   label: "Input playlists",
   configuration: () => api.music.sources.get(),
-  playlists: (configuration, name): readonly InputPlaylist[] =>
+  playlists: (configuration, spotify): readonly InputPlaylist[] =>
     configuration.sources.map((source) => ({
       key: inputKey(source.sourceId),
       source,
       name:
         source.sourceId.kind === "liked"
           ? "Liked Songs"
-          : name(source.sourceId.playlistId),
+          : spotify(source.sourceId.playlistId).name,
     })),
 })
 

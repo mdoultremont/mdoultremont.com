@@ -61,6 +61,7 @@ const fail = (code: ActionErrorCode, message: string, data?: ActionErrorData) =>
 const spotifyCodes = {
   NotConnected: "CONFLICT",
   PlaybackPermissionMissing: "CONFLICT",
+  CoverPermissionMissing: "CONFLICT",
   PremiumRequired: "FORBIDDEN",
   PlaybackRefused: "FORBIDDEN",
   DeviceUnavailable: "NOT_FOUND",

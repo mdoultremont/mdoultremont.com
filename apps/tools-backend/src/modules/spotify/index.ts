@@ -2,6 +2,7 @@ export { Spotify } from "./spotify"
 export { SpotifyConnections, type SpotifyConnection } from "./connections"
 export {
   AccessDenied,
+  CoverPermissionMissing,
   PlaybackPermissionMissing,
   PremiumRequired,
   PlaybackRefused,

@@ -5,7 +5,7 @@ import {
   SkipForwardIcon,
   SpeakerIcon,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/features/ui/button"
 import {
   DropdownMenu,
@@ -176,11 +176,20 @@ function Progress() {
       return () => clearTimeout(timer)
     }
   }, [playing, ended, refresh])
-  if (!progress) return null
   const percent =
-    progress.durationMs > 0
+    progress && progress.durationMs > 0
       ? (progress.positionMs / progress.durationMs) * 100
       : 0
+  // Glide only forward within one track; a new track, repeat, or seek back snaps.
+  const shown = useRef<{ track: string; percent: number } | null>(null)
+  const glide =
+    shown.current !== null &&
+    shown.current.track === progress?.track &&
+    percent >= shown.current.percent
+  useEffect(() => {
+    shown.current = progress ? { track: progress.track, percent } : null
+  })
+  if (!progress) return null
   return (
     <div className="flex items-center gap-2 text-[0.6875rem] text-muted-foreground tabular-nums">
       <span>{clock(progress.positionMs)}</span>
@@ -196,7 +205,10 @@ function Progress() {
         className="h-1 flex-1 overflow-hidden rounded-full bg-muted"
       >
         <div
-          className="h-full rounded-full bg-foreground/70 transition-[width] duration-1000 ease-linear"
+          className={cn(
+            "h-full rounded-full bg-foreground/70",
+            glide && "transition-[width] duration-1000 ease-linear"
+          )}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -231,7 +243,8 @@ function DeviceMenu({
             title={`Play tracks on ${view.target?.name ?? "no device"}`}
             className={cn(
               "min-w-0",
-              elsewhere && "max-w-36",
+              elsewhere &&
+                "max-w-36 bg-spotify text-black hover:bg-spotify-hover hover:text-black dark:hover:bg-spotify-hover aria-expanded:bg-spotify-hover aria-expanded:text-black",
               view.target === null && "text-muted-foreground",
               className
             )}

@@ -442,6 +442,12 @@ describe("Spotify reads", () => {
                 public: false,
                 collaborative: false,
                 owner: { id: "spotify-42" },
+                description:
+                  'Late &amp; slow, <a href="spotify:artist:x">Miles</a> &#x27;59',
+                images: [
+                  { url: "http://insecure.example/cover.jpg" },
+                  { url: "https://i.scdn.co/image/jazz", height: 640 },
+                ],
               },
             ],
             next: "https://api.spotify.com/v1/me/playlists?offset=1&limit=50",
@@ -464,8 +470,12 @@ describe("Spotify reads", () => {
           })
         )
         expect(yield* spotify.playlists("github-42")).toMatchObject([
-          { id: "one" },
-          { id: "two" },
+          {
+            id: "one",
+            description: "Late & slow, Miles '59",
+            imageUrl: "https://i.scdn.co/image/jazz",
+          },
+          { id: "two", description: null, imageUrl: null },
         ])
       })
     )
@@ -540,6 +550,85 @@ describe("Spotify reads", () => {
       )
     }
   )
+})
+
+describe("Spotify playlist covers", () => {
+  const cover = "/9j/4AAQSkZJRgABAQ=="
+
+  it.effect(
+    "asks to reconnect for cover uploads without breaking the connection",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          yield* connect(setup)
+          setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+          const calls = setup.fetcher.mock.calls.length
+          expect(
+            (yield* failureReason(
+              spotify.setPlaylistCover("github-42", "jazz", cover)
+            ))._tag
+          ).toBe("CoverPermissionMissing")
+          expect(
+            setup.fetcher.mock.calls
+              .slice(calls)
+              .some(([url]) => String(url).includes("/images"))
+          ).toBe(false)
+          expect(setup.getConnection()?.needsReconnect).toBe(false)
+        })
+      )
+    }
+  )
+
+  it.effect("uploads the cover as a base64 JPEG body", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        const spotify = yield* Spotify
+        yield* connect(setup)
+        const connection = setup.getConnection()!
+        setup.setConnection({
+          ...connection,
+          scopes: connection.scopes + " ugc-image-upload",
+        })
+        setup.fetcher.mockResolvedValueOnce(json({ access_token: "fresh" }))
+        setup.fetcher.mockResolvedValueOnce(new Response(null, { status: 202 }))
+        yield* spotify.setPlaylistCover("github-42", "jazz", cover)
+        const [url, init] = setup.fetcher.mock.calls.at(-1)!
+        expect(String(url)).toBe(
+          "https://api.spotify.com/v1/playlists/jazz/images"
+        )
+        expect(init?.method).toBe("PUT")
+        expect(new Headers(init?.headers).get("content-type")).toBe(
+          "image/jpeg"
+        )
+        expect(requestBody(setup, -1)).toBe(cover)
+      })
+    )
+  })
+
+  it.effect("rejects a payload that is not a small base64 JPEG", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        const spotify = yield* Spotify
+        yield* connect(setup)
+        const calls = setup.fetcher.mock.calls.length
+        for (const image of [
+          "iVBORw0KGgo=",
+          "/9j/" + "A".repeat(256 * 1024),
+          "/9j/<script>",
+        ])
+          expect(
+            (yield* failureReason(
+              spotify.setPlaylistCover("github-42", "jazz", image)
+            ))._tag
+          ).toBe("InvalidInput")
+        expect(setup.fetcher.mock.calls.length).toBe(calls)
+      })
+    )
+  })
 })
 
 describe("Spotify playlist delivery boundary", () => {
@@ -1203,6 +1292,7 @@ describe("Spotify Connect player", () => {
             .split(" ")
           expect(scopes).toEqual([
             ...spotifyScopes,
+            "ugc-image-upload",
             ...playbackScopes.split(" "),
           ])
           yield* connect(setup)

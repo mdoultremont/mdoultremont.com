@@ -388,3 +388,57 @@ test("a row queues the tracks after it and Next skips on the current device", as
     page.getByText("Request sent. Waiting for Spotify…")
   ).toHaveCount(0)
 })
+
+test("the progress bar glides within a track and snaps back when the next one starts", async ({
+  page,
+}) => {
+  const fixture = await fixtureMusic(page, {
+    ...fixturePlayerStatus,
+    playback: { ...fixturePlayerStatus.playback, progressMs: 200_000 },
+  })
+  await mountMusic(page)
+  const player = page.getByRole("region", {
+    name: "Spotify player",
+    exact: true,
+  })
+  const bar = player.locator('[aria-hidden="true"].bg-muted > div')
+  await expect(bar).toHaveClass(/transition-\[width\]/u)
+  await bar.evaluate((element) => {
+    const frames: { width: number; glide: boolean }[] = []
+    Object.assign(window, { progressFrames: frames })
+    new MutationObserver(() =>
+      frames.push({
+        width: Number.parseFloat((element as HTMLElement).style.width),
+        glide: element.classList.contains("transition-[width]"),
+      })
+    ).observe(element, { attributes: true })
+  })
+  await player.getByRole("button", { name: "Next track" }).click()
+  fixture.setStatus({
+    ...fixturePlayerStatus,
+    playback: {
+      ...fixturePlayerStatus.playback,
+      progressMs: 0,
+      item: {
+        kind: "track",
+        id: "track2",
+        name: "Open Eye Signal",
+        artistNames: ["Jon Hopkins"],
+        imageUrl: null,
+        durationMs: 472_000,
+      },
+    },
+  })
+  await expect(player.getByText("Open Eye Signal")).toBeVisible()
+  await expect(bar).toHaveClass(/transition-\[width\]/u)
+  const frames = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          progressFrames: { width: number; glide: boolean }[]
+        }
+      ).progressFrames
+  )
+  const reset = frames.find((frame) => frame.width < 1)
+  expect(reset).toEqual({ width: expect.any(Number), glide: false })
+})

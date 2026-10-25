@@ -64,6 +64,14 @@ export class PlaybackPermissionMissing extends Data.TaggedError(
   }
 }
 
+export class CoverPermissionMissing extends Data.TaggedError(
+  "CoverPermissionMissing"
+)<{}> {
+  override get message() {
+    return "Connect Spotify again to allow changing playlist covers"
+  }
+}
+
 export class PremiumRequired extends Data.TaggedError("PremiumRequired")<{}> {
   override get message() {
     return "Spotify requires Premium for playback control"
@@ -86,6 +94,7 @@ export class DeviceUnavailable extends Data.TaggedError(
 
 export type SpotifyErrorReason =
   | PlaybackPermissionMissing
+  | CoverPermissionMissing
   | PremiumRequired
   | PlaybackRefused
   | DeviceUnavailable

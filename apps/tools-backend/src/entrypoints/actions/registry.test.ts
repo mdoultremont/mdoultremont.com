@@ -36,6 +36,8 @@ const legacy = {
   "GET /api/music/spotify/liked-tracks": "music.spotify.likedTracks",
   "GET /api/music/spotify/playlists/:playlistId/tracks":
     "music.spotify.playlistTracks",
+  "POST /api/music/spotify/playlists/:playlistId/cover":
+    "music.spotify.setPlaylistCover",
   "GET /api/music/destinations": "music.destinations.get",
   "PUT /api/music/destinations": "music.destinations.save",
   "POST /api/music/destinations/create": "music.destinations.create",
