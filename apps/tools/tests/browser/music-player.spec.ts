@@ -94,8 +94,11 @@ test("each duplicate row plays exactly its track on the chosen device", async ({
       input: { deviceId: "fixture-phone", trackId: "track2", nextTrackIds: [] },
     },
   ])
-  await expect(rows.nth(0)).toBeDisabled()
-  await expect(rows.nth(1)).toBeDisabled()
+  await expect(rows.nth(0)).toHaveAttribute("data-playing", "true")
+  await expect(rows.nth(1)).toHaveAttribute("data-playing", "true")
+  await expect(page.locator('[data-slot="playing-bars"]')).toHaveCount(2)
+  await expect(rows.nth(0)).toBeEnabled()
+  await expect(rows.nth(1)).toBeEnabled()
   fixture.setStatus({
     ...fixturePlayerStatus,
     playback: {
@@ -151,7 +154,7 @@ test("one player preserves the chosen target through input, output, and settings
   await page.getByRole("menuitemradio", { name: "Phone", exact: true }).click()
   const reads = fixture.statusReads()
   for (const [path, heading] of [
-    ["output", "Output playlists"],
+    ["output", "Suggest playlists"],
     ["settings", "Settings"],
     ["input/liked", "Liked Songs"],
   ]) {
@@ -294,7 +297,8 @@ test("playlist tracks can take over playback in this browser while another devic
   ).toBeVisible()
   await expect(
     page.getByRole("button", { name: "Play A Walk", exact: true })
-  ).not.toHaveAttribute("data-playing", "true")
+  ).toHaveAttribute("data-playing", "true")
+  await expect(page.locator('[data-slot="playing-bars"]')).toHaveCount(1)
   fixture.setStatus({
     ...fixturePlayerStatus,
     playback: {
@@ -317,6 +321,9 @@ test("playlist tracks can take over playback in this browser while another devic
   await expect(
     page.getByRole("button", { name: "Play A Walk", exact: true })
   ).toHaveAttribute("data-playing", "true")
+  await expect(
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).not.toHaveAttribute("aria-busy")
 })
 
 test("a row queues the tracks after it and Next skips on the current device", async ({

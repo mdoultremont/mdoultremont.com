@@ -143,7 +143,16 @@ export function mountPlayer(options: PlayerFixtureOptions = {}) {
   root.render(
     <PlayerProvider client={client}>
       <MiniPlayer variant="sidebar" />
-      <TrackPlayButton trackId="fixture-track" name="Fixture Song" />
+      <TrackPlayButton
+        track={{
+          kind: "track",
+          id: "fixture-track",
+          name: "Fixture Song",
+          artistNames: ["Fixture Artist"],
+          imageUrl: null,
+          durationMs: 200_000,
+        }}
+      />
     </PlayerProvider>
   )
 }

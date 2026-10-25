@@ -60,7 +60,16 @@ function render(initialState: PlayerState) {
       PlayerProvider,
       { initialState, client },
       createElement(MiniPlayer, { variant: "sidebar" }),
-      createElement(TrackPlayButton, { trackId: "trackA", name: "Song" })
+      createElement(TrackPlayButton, {
+        track: {
+          kind: "track",
+          id: "trackA",
+          name: "Song",
+          artistNames: ["Artist"],
+          imageUrl: null,
+          durationMs: null,
+        },
+      })
     )
   )
   expect(
@@ -115,23 +124,34 @@ describe("Spotify player rendering", () => {
     expect(html).not.toContain('data-playing="true"')
     expect(html).not.toContain("<img")
   })
-  test("pending requests disable controls and do not claim playback started", () => {
+  test("a pending play shows the requested track at once", () => {
     const pending = playerReducer(loaded(), {
       type: "start",
       command: {
         kind: "play",
         deviceId: "speaker",
-        trackId: "trackA",
+        trackId: "trackB",
         nextTrackIds: [],
       },
+      queue: [
+        {
+          kind: "track",
+          id: "trackB",
+          name: "Other Song",
+          artistNames: ["Other Artist"],
+          imageUrl: null,
+          durationMs: null,
+        },
+      ],
       now: 0,
     })
     const html = render(
       playerReducer(pending, { type: "accepted", epoch: pending.epoch, now: 0 })
     )
     expect(html).toContain('aria-busy="true"')
-    expect(html).not.toContain('aria-label="Pause playback"')
-    expect(html).toMatch(disabledRow)
+    expect(html).toContain("Other Song")
+    expect(html).toContain('aria-label="Pause playback"')
+    expect(html).not.toContain('data-playing="true"')
   })
   test("failed observations show Spotify's reason and disable controls", () => {
     const html = render(
@@ -146,12 +166,12 @@ describe("Spotify player rendering", () => {
     expect(html).toContain("Spotify is temporarily unavailable")
     expect(html).toMatch(disabledRow)
   })
-  test("only actual observed playback marks the matching row", () => {
+  test("observed playback marks the matching row", () => {
     const html = render(
       loaded({ ...ready, playback: { ...ready.playback!, playing: true } })
     )
     expect(html).toContain('data-playing="true"')
-    expect(html).toContain("lucide-audio-lines")
+    expect(html).toContain('data-slot="playing-bars"')
     expect(html).toContain('aria-label="Pause playback"')
   })
 
@@ -165,7 +185,7 @@ describe("Spotify player rendering", () => {
     })
     expect(html).toMatch(disabledRow)
     expect(html).not.toContain('data-playing="true"')
-    expect(html).not.toContain("lucide-audio-lines")
+    expect(html).not.toContain('data-slot="playing-bars"')
   })
   test("shows the track position and length", () => {
     const html = render(

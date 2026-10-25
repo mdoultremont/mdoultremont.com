@@ -69,6 +69,15 @@ const playing: PlayerStatus = {
   playback: { ...ready.playback!, playing: true },
 }
 
+const track = (id: string) => ({
+  kind: "track" as const,
+  id,
+  name: `Song ${id}`,
+  artistNames: ["Artist"],
+  imageUrl: null,
+  durationMs: 200_000,
+})
+
 describe("player state", () => {
   test("drops reads from before a command and applies only the newest observation", () => {
     let state = start(loaded())
@@ -144,12 +153,55 @@ describe("player state", () => {
     expect(nextPollDelay(state, 3000)).toBe(20_000)
   })
 
-  test("blocks a second command synchronously, including while confirming", () => {
+  test("blocks a second command while the first is sent, then lets a new one replace it", () => {
     let state = start(loaded())
     expect(start(state, { kind: "resume", deviceId: "current" })).toBe(state)
+    expect(nextPollDelay(state, 0)).toBeNull()
     state = accepted(state)
-    expect(start(state)).toBe(state)
-    expect(nextPollDelay(start(loaded()), 0)).toBeNull()
+    const replaced = start(state, { kind: "resume", deviceId: "current" })
+    expect(replaced.epoch).toBe(state.epoch + 1)
+    expect(replaced.pending?.command.kind).toBe("resume")
+  })
+
+  test("shows the requested playback at once and falls back to Spotify when unconfirmed", () => {
+    const queue = [track("trackB"), track("trackC")]
+    let state = playerReducer(loaded(), {
+      type: "start",
+      command: { ...play, trackId: "trackB", nextTrackIds: ["trackC"] },
+      queue,
+      now: 50,
+    })
+    let view = deriveView(state, 50)
+    expect(view.playback?.item).toEqual(queue[0])
+    expect(view.playback?.playing).toBe(true)
+    expect(view.canPause).toBe(true)
+    expect(playbackProgress(state, 1050)?.positionMs).toBe(1000)
+
+    const playingB: PlayerStatus = {
+      ...playing,
+      playback: { ...playing.playback!, item: queue[0]! },
+    }
+    state = observe(accepted(state), playingB)
+    expect(state.pending).toBeNull()
+    state = playerReducer(state, {
+      type: "start",
+      command: { kind: "next", deviceId: "current", fromTrackId: "trackB" },
+      now: 2000,
+    })
+    expect(deriveView(state, 2000).playback?.item).toEqual(queue[1])
+
+    state = observe(observe(accepted(state), playingB), playingB)
+    expect(state.unconfirmed).toBe(true)
+    expect(deriveView(state, 4000).playback?.item).toEqual(queue[0])
+
+    state = playerReducer(loaded(playing), {
+      type: "start",
+      command: { kind: "pause", deviceId: "current" },
+      now: 0,
+    })
+    view = deriveView(state, 0)
+    expect(view.playback?.playing).toBe(false)
+    expect(view.canResume).toBe(true)
   })
 
   test("never falls back to another active device after an explicit selection vanishes", () => {
