@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Option, Schema } from "effect"
 
 export const spotifyScopes = [
   "user-library-read",
@@ -7,6 +7,9 @@ export const spotifyScopes = [
   "playlist-modify-private",
   "playlist-modify-public",
 ] as const
+
+/** Requested on connect, but checked only when a cover is uploaded. */
+export const spotifyCoverScope = "ugc-image-upload"
 
 export const spotifyPlaybackScopes = [
   "streaming",
@@ -24,6 +27,9 @@ export interface SpotifyPlaylist {
   readonly public: boolean | null
   readonly collaborative: boolean
   readonly ownerId: string
+  /** Plain text: Spotify's HTML entities decoded and tags removed. */
+  readonly description: string | null
+  readonly imageUrl: string | null
 }
 
 export interface SpotifySavedTrack {
@@ -83,6 +89,8 @@ export const Playlist = Schema.Struct({
   owner: Schema.Struct({ id: Schema.NonEmptyString }),
   public: Schema.optional(Schema.NullOr(Schema.Boolean)),
   collaborative: Schema.optional(Schema.Boolean),
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  images: Schema.optional(Schema.NullOr(Schema.Array(Schema.Unknown))),
 })
 
 /** A relinked track carries the ID the owner actually saved in `linked_from`. */
@@ -140,4 +148,38 @@ export const toPlaylist = (value: typeof Playlist.Type): SpotifyPlaylist => ({
   ownerId: value.owner.id,
   public: value.public ?? null,
   collaborative: value.collaborative === true,
+  description: plainText(value.description ?? "") || null,
+  imageUrl: firstImageUrl(value.images ?? []),
 })
+
+/** The first usable image; Spotify lists the largest first. */
+export const firstImageUrl = (images: readonly unknown[]) => {
+  for (const value of images) {
+    const image = Schema.decodeUnknownOption(ArtworkImage)(value)
+    if (Option.isSome(image)) return image.value.url
+  }
+  return null
+}
+
+const entities: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+}
+
+function plainText(html: string) {
+  return html
+    .replace(/<[^>]*>/gu, "")
+    .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/giu, (match, entity: string) => {
+      if (entity[0] !== "#") return entities[entity.toLowerCase()] ?? match
+      const code =
+        entity[1] === "x" || entity[1] === "X"
+          ? Number.parseInt(entity.slice(2), 16)
+          : Number(entity.slice(1))
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match
+    })
+    .trim()
+}

@@ -25,19 +25,25 @@ export type PlaylistLibrary<Playlist> =
       readonly namesMissing: boolean
     }
 
-/** Reads Spotify playlist names; `null` when Spotify cannot be reached. */
-const spotifyNames = () =>
+/** What a library shows of a Spotify playlist. */
+export interface SpotifyDetails {
+  readonly name: string
+  readonly imageUrl: string | null
+}
+
+/** Reads Spotify playlist details; `null` when Spotify cannot be reached. */
+const spotifyDetails = () =>
   api.music.spotify
     .playlists()
     .then(
       (result) =>
-        new Map(result.items.map((playlist) => [playlist.id, playlist.name]))
+        new Map(result.items.map((playlist) => [playlist.id, playlist]))
     )
     .catch(() => null)
 
 /**
- * A playlist list the sidebar and pages share, loaded once with Spotify names.
- * `playlists` builds the list; its `name` falls back to the playlist ID.
+ * A playlist list the sidebar and pages share, loaded once with Spotify details.
+ * `playlists` builds the list; `spotify` falls back to the playlist ID as name.
  */
 export function createPlaylistLibrary<Configuration, Playlist>({
   label,
@@ -48,7 +54,7 @@ export function createPlaylistLibrary<Configuration, Playlist>({
   configuration: () => Promise<Configuration>
   playlists: (
     configuration: Configuration,
-    name: (playlistId: string) => string
+    spotify: (playlistId: string) => SpotifyDetails
   ) => readonly Playlist[]
 }) {
   const Context = createContext<{
@@ -65,16 +71,19 @@ export function createPlaylistLibrary<Configuration, Playlist>({
     const [revision, setRevision] = useState(0)
     useEffect(() => {
       const request = new AbortController()
-      Promise.all([configuration(), spotifyNames()])
-        .then(([loaded, names]) => {
+      Promise.all([configuration(), spotifyDetails()])
+        .then(([loaded, details]) => {
           if (request.signal.aborted) return
           setLibrary({
             status: "ready",
-            namesMissing: names === null,
-            playlists: playlists(
-              loaded,
-              (playlistId) => names?.get(playlistId) ?? playlistId
-            ),
+            namesMissing: details === null,
+            playlists: playlists(loaded, (playlistId) => {
+              const found = details?.get(playlistId)
+              return {
+                name: found?.name ?? playlistId,
+                imageUrl: found?.imageUrl ?? null,
+              }
+            }),
           })
         })
         .catch((cause: unknown) => {

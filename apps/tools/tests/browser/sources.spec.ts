@@ -32,6 +32,8 @@ for (const width of [1280, 390]) {
       ownerId: "owner",
       public: false,
       collaborative: false,
+      description: null,
+      imageUrl: null,
     }))
     const actions: Record<string, (input: Record<string, unknown>) => unknown> =
       {

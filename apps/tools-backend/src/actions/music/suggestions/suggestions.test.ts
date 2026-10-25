@@ -79,6 +79,8 @@ function setup() {
       ownerId: "spotify-user",
       public: false,
       collaborative: false,
+      description: null,
+      imageUrl: null,
     })
   )
   const playlists = vi.fn<Spotify["Service"]["playlists"]>(() =>
@@ -89,6 +91,8 @@ function setup() {
         ownerId: "spotify-user",
         public: false,
         collaborative: false,
+        description: null,
+        imageUrl: null,
       },
     ])
   )

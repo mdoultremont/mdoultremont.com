@@ -19,6 +19,8 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
       ownerId: "owner",
       public: false,
       collaborative: false,
+      description: "Late-night trio recordings",
+      imageUrl: null,
     },
     {
       id: "review",
@@ -26,6 +28,8 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
       ownerId: "owner",
       public: false,
       collaborative: false,
+      description: null,
+      imageUrl: null,
     },
   ]
   const actions: Record<string, (input: Record<string, unknown>) => unknown> = {
@@ -67,6 +71,8 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
         ownerId: "owner",
         public: false,
         collaborative: false,
+        description: null,
+        imageUrl: null,
       })
       return { playlist: { id: "private-created", name }, destination }
     },
@@ -105,18 +111,14 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   await suggestions.getByRole("option", { name: "Jazz" }).click()
   await panel.getByRole("button", { name: "Add playlist" }).click()
   const jazz = panel.getByRole("listitem").filter({ hasText: "Jazz" })
-  await expect(
-    jazz.getByText("Add a track description to use this playlist")
-  ).toBeVisible()
-  await expect(
-    jazz.getByRole("button", { name: "Use playlist" })
-  ).toBeDisabled()
+  await expect(jazz.getByText("Late-night trio recordings")).toBeVisible()
   await jazz.getByRole("button", { name: "Edit description" }).click()
   await jazz
     .getByLabel("Which tracks belong here?")
     .fill("Improvised acoustic music")
   await jazz.getByRole("button", { name: "Save description" }).click()
   await expect(jazz.getByText("Improvised acoustic music")).toBeVisible()
+  await jazz.getByRole("button", { name: "Use playlist" }).click()
   await expect(jazz.getByRole("button", { name: "Pause" })).toBeEnabled()
 
   await picker.fill("Focus mix")
@@ -132,7 +134,19 @@ test("owner adds playlists, describes them, and chooses tracks needing review", 
   expect(writes).toEqual([
     {
       action: "destinations/save",
-      input: { playlistId: "jazz", description: "", enabled: false },
+      input: {
+        playlistId: "jazz",
+        description: "Late-night trio recordings",
+        enabled: false,
+      },
+    },
+    {
+      action: "destinations/save",
+      input: {
+        playlistId: "jazz",
+        description: "Improvised acoustic music",
+        enabled: false,
+      },
     },
     {
       action: "destinations/save",

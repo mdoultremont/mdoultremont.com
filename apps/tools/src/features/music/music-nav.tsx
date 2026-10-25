@@ -31,6 +31,7 @@ interface NavLink {
   readonly to: string
   readonly name: string
   readonly icon: LucideIcon
+  readonly imageUrl?: string | null
   readonly paused: boolean
 }
 
@@ -83,6 +84,7 @@ export function MusicNav() {
           to: outputPath(playlist.playlistId),
           name: playlist.name,
           icon: playlist.role === "review" ? InboxIcon : ListMusicIcon,
+          imageUrl: playlist.imageUrl,
           paused: !playlist.enabled,
         })}
       >
@@ -148,12 +150,14 @@ function PageLink({
   to,
   name,
   icon: Icon,
+  imageUrl,
   paused = false,
   className,
 }: {
   to: string
   name: string
   icon: LucideIcon
+  imageUrl?: string | null
   paused?: boolean
   className?: string
 }) {
@@ -171,7 +175,15 @@ function PageLink({
         render={<Link to={to} />}
         className={paused ? "text-sidebar-foreground/60" : className}
       >
-        <Icon />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            className="size-4 shrink-0 rounded-[3px] object-cover"
+          />
+        ) : (
+          <Icon />
+        )}
         <span>{name}</span>
       </SidebarMenuButton>
       {paused ? <SidebarMenuBadge>Paused</SidebarMenuBadge> : null}

@@ -36,8 +36,20 @@ export const SpotifyPlaylistSchema = Schema.Struct({
   public: Schema.NullOr(Schema.Boolean),
   collaborative: Schema.Boolean,
   ownerId: Schema.String,
+  /** Plain text, decoded from Spotify's HTML. */
+  description: Schema.NullOr(Schema.String),
+  imageUrl: Schema.NullOr(Schema.String),
 })
 export type SpotifyPlaylist = typeof SpotifyPlaylistSchema.Type
+
+/** Spotify's limit on an uploaded cover's base64 payload. */
+export const coverMaxBase64Length = 256 * 1024
+
+/** A base64 JPEG Spotify accepts as a playlist cover. */
+export const isCoverImage = (value: string) =>
+  value.length <= coverMaxBase64Length &&
+  value.startsWith("/9j/") &&
+  /^[A-Za-z0-9+/]+={0,2}$/u.test(value)
 
 export const SpotifySavedTracksPageSchema = Schema.Struct({
   items: Schema.Array(

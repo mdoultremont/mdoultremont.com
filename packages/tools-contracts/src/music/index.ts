@@ -1,5 +1,10 @@
 export { musicActions } from "./actions"
-export { SourceIdSchema, SourceSchema } from "./schemas"
+export {
+  coverMaxBase64Length,
+  isCoverImage,
+  SourceIdSchema,
+  SourceSchema,
+} from "./schemas"
 export type {
   ClassificationStatus,
   DecisionSummary,

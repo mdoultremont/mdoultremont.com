@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { EllipsisIcon } from "lucide-react"
+import { EllipsisIcon, ListMusicIcon } from "lucide-react"
 import { useState } from "react"
 import { api, errorMessage } from "@/features/api"
 import { PageHeader } from "@/features/apps/shell"
@@ -13,6 +13,7 @@ import {
 } from "@/features/ui/dropdown-menu"
 import { Spinner } from "@/features/ui/spinner"
 import { toast } from "@/features/ui/toast"
+import { CoverDialog } from "./cover-dialog"
 import { useOutputLibrary, type OutputPlaylist } from "./output-library"
 import { LibraryFallback } from "./playlist-library"
 import { PlaylistTracks } from "./playlist-tracks"
@@ -39,6 +40,7 @@ export function OutputPlaylistPage({ playlistId }: { playlistId: string }) {
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
+            <PlaylistCover imageUrl={playlist.imageUrl} />
             {playlist.name}
             {playlist.role === "review" ? (
               <Badge variant="outline">Review</Badge>
@@ -67,9 +69,25 @@ export function OutputPlaylistPage({ playlistId }: { playlistId: string }) {
   )
 }
 
+function PlaylistCover({ imageUrl }: { imageUrl: string | null }) {
+  return (
+    <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted md:size-14">
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <ListMusicIcon
+          aria-hidden="true"
+          className="size-5 text-muted-foreground"
+        />
+      )}
+    </span>
+  )
+}
+
 function PlaylistActions({ playlist }: { playlist: OutputPlaylist }) {
   const { reload } = useOutputLibrary()
   const [busy, setBusy] = useState(false)
+  const [changingCover, setChangingCover] = useState(false)
 
   async function setEnabled(enabled: boolean) {
     setBusy(true)
@@ -90,36 +108,46 @@ function PlaylistActions({ playlist }: { playlist: OutputPlaylist }) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label={`${playlist.name} actions`}
-            disabled={busy}
-          />
-        }
-      >
-        {busy ? (
-          <Spinner aria-hidden="true" />
-        ) : (
-          <EllipsisIcon aria-hidden="true" />
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-48">
-        {playlist.role === "destination" ? (
-          <DropdownMenuItem
-            disabled={playlist.enabled ? false : !playlist.description}
-            onClick={() => void setEnabled(!playlist.enabled)}
-          >
-            {playlist.enabled ? "Pause sorting" : "Resume sorting"}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={`${playlist.name} actions`}
+              disabled={busy}
+            />
+          }
+        >
+          {busy ? (
+            <Spinner aria-hidden="true" />
+          ) : (
+            <EllipsisIcon aria-hidden="true" />
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          {playlist.role === "destination" ? (
+            <DropdownMenuItem
+              disabled={playlist.enabled ? false : !playlist.description}
+              onClick={() => void setEnabled(!playlist.enabled)}
+            >
+              {playlist.enabled ? "Pause sorting" : "Resume sorting"}
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem onClick={() => setChangingCover(true)}>
+            Change cover
           </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuItem render={<Link to="/music/settings" />}>
-          Manage output playlists
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem render={<Link to="/music/settings" />}>
+            Manage output playlists
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CoverDialog
+        playlist={playlist}
+        open={changingCover}
+        onOpenChange={setChangingCover}
+      />
+    </>
   )
 }

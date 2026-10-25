@@ -20,6 +20,7 @@ import { TokenCipher } from "#backend/modules/token-cipher"
 import { type SpotifyConnection, SpotifyConnections } from "./connections"
 import {
   AccessDenied,
+  CoverPermissionMissing,
   InvalidInput,
   InvalidResponse,
   NotConnected,
@@ -31,7 +32,10 @@ import {
   Unavailable,
 } from "./errors"
 import { makePlayer } from "./player"
-import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
+import {
+  isCoverImage,
+  type PlayerStatus,
+} from "@mdoultremont/tools-contracts/music"
 import * as Api from "./schemas"
 import {
   type SpotifyConnectionStatus,
@@ -128,6 +132,15 @@ export class Spotify extends Context.Service<
       ownerId: string,
       playlistId: string,
       trackIds: readonly string[]
+    ) => Effect.Effect<void, SpotifyError>
+    /**
+     * Replaces a playlist's cover with a base64 JPEG. Spotify processes it
+     * asynchronously, so reads may return the old cover for a while.
+     */
+    readonly setPlaylistCover: (
+      ownerId: string,
+      playlistId: string,
+      jpegBase64: string
     ) => Effect.Effect<void, SpotifyError>
     readonly disconnect: (ownerId: string) => Effect.Effect<void, SpotifyError>
   }
@@ -390,7 +403,11 @@ const make = Effect.gen(function* () {
     url.searchParams.set("redirect_uri", redirectUri)
     url.searchParams.set(
       "scope",
-      [...spotifyScopes, ...Api.spotifyPlaybackScopes].join(" ")
+      [
+        ...spotifyScopes,
+        Api.spotifyCoverScope,
+        ...Api.spotifyPlaybackScopes,
+      ].join(" ")
     )
     url.searchParams.set("state", state)
     return url.toString()
@@ -519,7 +536,7 @@ const make = Effect.gen(function* () {
     return yield* authorized(ownerId, (accessToken, connection) =>
       // Without a field filter Spotify also returns the first page of tracks.
       apiGet(
-        `/v1/playlists/${playlistId}?fields=id,name,owner(id),public,collaborative`,
+        `/v1/playlists/${playlistId}?fields=id,name,owner(id),public,collaborative,description,images`,
         accessToken
       ).pipe(
         Effect.flatMap(
@@ -786,6 +803,32 @@ const make = Effect.gen(function* () {
     }
   )
 
+  const setPlaylistCover = Effect.fn("Spotify.setPlaylistCover")(function* (
+    ownerId: string,
+    playlistId: string,
+    jpegBase64: string
+  ) {
+    yield* requireId(playlistId, "playlist")
+    if (!isCoverImage(jpegBase64))
+      return yield* fail(
+        new InvalidInput({
+          message: "Cover must be a base64 JPEG of up to 256 KB",
+        })
+      )
+    yield* authorized(ownerId, (accessToken, connection) =>
+      connection.scopes.split(/\s+/u).includes(Api.spotifyCoverScope)
+        ? HttpClientRequest.put(
+            new URL(`/v1/playlists/${playlistId}/images`, apiOrigin)
+          ).pipe(
+            HttpClientRequest.bearerToken(accessToken),
+            HttpClientRequest.bodyText(jpegBase64, "image/jpeg"),
+            send,
+            Effect.asVoid
+          )
+        : fail(new CoverPermissionMissing())
+    )
+  })
+
   const disconnect = Effect.fn("Spotify.disconnect")(function* (
     ownerId: string
   ) {
@@ -812,6 +855,7 @@ const make = Effect.gen(function* () {
     playlists,
     playlist,
     createPrivatePlaylist,
+    setPlaylistCover,
     savedTracksPage,
     playlistTracksPage,
     playlistSnapshot,
@@ -827,16 +871,9 @@ function savedTrack(track: typeof Api.Track.Type, addedAt: string) {
     const id = yield* originalTrackId(track)
     if (!id || !track.name) return null
     const album = Schema.decodeUnknownOption(Api.AlbumArtwork)(track.album)
-    let artworkUrl: string | undefined
-    if (Option.isSome(album)) {
-      for (const value of album.value.images) {
-        const image = Schema.decodeUnknownOption(Api.ArtworkImage)(value)
-        if (Option.isSome(image)) {
-          artworkUrl = image.value.url
-          break
-        }
-      }
-    }
+    const artworkUrl = Option.isSome(album)
+      ? Api.firstImageUrl(album.value.images)
+      : null
     return {
       id,
       name: track.name,

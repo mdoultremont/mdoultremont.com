@@ -63,6 +63,24 @@ export const musicHandlers = {
           )
         })
     ),
+    setPlaylistCover: bind(
+      actions.spotify.setPlaylistCover,
+      Spotify.layer,
+      (input, caller) =>
+        Effect.gen(function* () {
+          const spotify = yield* Spotify
+          const ownedPlaylist = yield* spotify.playlist(
+            caller.userId,
+            input.playlistId
+          )
+          yield* spotify.setPlaylistCover(
+            caller.userId,
+            ownedPlaylist.id,
+            input.image
+          )
+          return { status: "accepted" as const }
+        })
+    ),
     status: bind(actions.spotify.status, Spotify.layer, (_, caller) =>
       Spotify.use((spotify) => spotify.status(caller.userId))
     ),

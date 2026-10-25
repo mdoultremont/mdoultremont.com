@@ -118,6 +118,68 @@ describe("music actions", () => {
     ).toBe("FORBIDDEN")
     expect(network).not.toHaveBeenCalled()
   })
+  test("uploads a cover only to a playlist the account owns", async () => {
+    const encrypted = await Effect.runPromise(
+      TokenCipher.use((cipher) => cipher.encrypt("refresh-token")).pipe(
+        Effect.provide(
+          TokenCipher.layer(
+            Redacted.make(
+              btoa(String.fromCharCode(...new Uint8Array(32).fill(7)))
+            )
+          )
+        )
+      )
+    )
+    api.d1.sqlite
+      .prepare(
+        "UPDATE spotify_connections SET encrypted_refresh_token = ?, scopes = ? WHERE owner_id = 'owner'"
+      )
+      .run(encrypted, [...spotifyScopes, "ugc-image-upload"].join(" "))
+    let owned = true
+    const uploads: string[] = []
+    network.mockImplementation(async (input, init) => {
+      const url = new URL(String(input))
+      if (url.hostname === "accounts.spotify.com")
+        return Response.json({ access_token: "access", expires_in: 3600 })
+      if (url.pathname === "/v1/playlists/jazz")
+        return Response.json({
+          id: "jazz",
+          name: "Jazz",
+          owner: { id: owned ? "spotify-user" : "another-account" },
+        })
+      if (
+        url.pathname === "/v1/playlists/jazz/images" &&
+        init?.method === "PUT"
+      ) {
+        uploads.push(String(init.body))
+        return new Response(null, { status: 202 })
+      }
+      throw new Error("Unexpected Spotify URL " + url.pathname)
+    })
+    const image = "/9j/4AAQSkZJRgABAQ=="
+    expect(
+      await api.client.music.spotify.setPlaylistCover({
+        playlistId: "jazz",
+        image,
+      })
+    ).toEqual({ status: "accepted" })
+    expect(uploads).toEqual([image])
+    owned = false
+    const error = await api.client.music.spotify
+      .setPlaylistCover({ playlistId: "jazz", image })
+      .catch((cause: unknown) => cause)
+    expect(errorReason(error)).toBe("AccessDenied")
+    expect(uploads).toHaveLength(1)
+    expect(
+      await code(
+        api.client.music.spotify.setPlaylistCover({
+          playlistId: "jazz",
+          image: "not a jpeg",
+        })
+      )
+    ).toBe("BAD_REQUEST")
+  })
+
   test("read the owner's setup and pipeline status", async () => {
     expect(await api.client.music.destinations.get()).toEqual({
       destinations: [],

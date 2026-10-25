@@ -21,6 +21,8 @@ export const fixturePlaylists = [
     ownerId: "owner",
     public: false,
     collaborative: false,
+    description: null,
+    imageUrl: null,
   },
   {
     id: "inbox",
@@ -28,6 +30,8 @@ export const fixturePlaylists = [
     ownerId: "owner",
     public: false,
     collaborative: false,
+    description: null,
+    imageUrl: null,
   },
   {
     id: "jazz",
@@ -35,6 +39,8 @@ export const fixturePlaylists = [
     ownerId: "owner",
     public: false,
     collaborative: false,
+    description: null,
+    imageUrl: null,
   },
   {
     id: "review",
@@ -42,6 +48,8 @@ export const fixturePlaylists = [
     ownerId: "owner",
     public: false,
     collaborative: false,
+    description: null,
+    imageUrl: null,
   },
 ]
 
@@ -248,6 +256,8 @@ export function destinationSuggestionFixtures() {
         ownerId: "owner",
         public: false,
         collaborative: false,
+        description: null,
+        imageUrl: null,
       })
       return { playlist: { id: "suggested", name }, destination }
     },

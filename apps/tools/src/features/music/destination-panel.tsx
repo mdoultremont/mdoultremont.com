@@ -103,7 +103,7 @@ export function DestinationPanel() {
       await mutate(() =>
         api.music.destinations.save({
           playlistId: selectedPlaylist.id,
-          description: "",
+          description: selectedPlaylist.description ?? "",
           enabled: false,
         })
       )

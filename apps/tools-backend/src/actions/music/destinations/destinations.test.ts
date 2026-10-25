@@ -24,6 +24,8 @@ const playlist = (id: string, name = id): SpotifyPlaylist => ({
   ownerId: "spotify-user",
   public: false,
   collaborative: false,
+  description: null,
+  imageUrl: null,
 })
 
 const tagOf = <A, E extends { _tag: string }>(effect: Effect.Effect<A, E>) =>
