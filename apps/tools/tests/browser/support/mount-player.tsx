@@ -98,6 +98,9 @@ export function mountPlayer(options: PlayerFixtureOptions = {}) {
   window.playerFixture = fixture
 
   const client = {
+    async token() {
+      return { accessToken: "fixture-sdk-token" }
+    },
     async status() {
       calls.push({ kind: "status", at: Date.now() })
       if (deferStatus) {

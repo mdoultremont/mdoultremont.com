@@ -6,6 +6,8 @@ import {
   musicFixtureResponses,
 } from "./support/music-fixtures"
 
+import { fakeSpotify } from "./support/fake-spotify"
+
 async function mountMusic(page: Page) {
   await page.goto("/music/settings")
   await page.waitForLoadState("networkidle")
@@ -22,6 +24,7 @@ async function fixtureMusic(
   page: Page,
   initialStatus: PlayerStatus = fixturePlayerStatus
 ) {
+  await fakeSpotify(page)
   let status = initialStatus
   const commands: { action: string; input: Record<string, unknown> }[] = []
   let statusReads = 0
@@ -31,6 +34,10 @@ async function fixtureMusic(
       ""
     )
     const input = route.request().postDataJSON()?.json ?? {}
+    if (action === "player/token")
+      return route.fulfill({
+        json: { json: { accessToken: "fixture-sdk-token" } },
+      })
     if (action === "player/status") {
       statusReads++
       return route.fulfill({ json: { json: status } })
@@ -228,4 +235,71 @@ test("mobile player and row controls stay within the page without covering track
       () => document.documentElement.scrollWidth <= innerWidth
     )
   ).toBe(true)
+})
+
+test("playlist tracks can take over playback in this browser while another device is active", async ({
+  page,
+}) => {
+  const fixture = await fixtureMusic(page)
+  await mountMusic(page)
+  await expect
+    .poll(() => page.evaluate(() => window.fakeSpotify?.connected))
+    .toBe(true)
+  fixture.setStatus({
+    ...fixturePlayerStatus,
+    devices: [
+      ...fixturePlayerStatus.devices,
+      {
+        controllable: true,
+        id: "browser-device",
+        name: "Tools browser player",
+        type: "Computer",
+        active: false,
+      },
+    ],
+  })
+  await page.evaluate(() =>
+    window.fakeSpotify.emit("ready", { device_id: "browser-device" })
+  )
+  const chooser = page.getByRole("combobox", { name: "Play tracks on" })
+  await expect(chooser).toContainText("Living room speaker")
+  await chooser.click()
+  await page.getByRole("option", { name: "This browser", exact: true }).click()
+  await page.getByRole("button", { name: "Play A Walk", exact: true }).click()
+  await expect
+    .poll(() => fixture.commands)
+    .toEqual([
+      {
+        action: "player/play",
+        input: { deviceId: "browser-device", trackId: "track4" },
+      },
+    ])
+  expect(await page.evaluate(() => window.fakeSpotify.activatedInGesture)).toBe(
+    true
+  )
+  await expect(page.getByText("Playing on Living room speaker")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Play A Walk", exact: true })
+  ).not.toHaveAttribute("data-playing", "true")
+  fixture.setStatus({
+    ...fixturePlayerStatus,
+    playback: {
+      ...fixturePlayerStatus.playback,
+      device: {
+        id: "browser-device",
+        name: "Tools browser player",
+        restricted: false,
+      },
+      item: {
+        kind: "track",
+        id: "track4",
+        name: "A Walk",
+        artistNames: ["Tycho"],
+        imageUrl: null,
+      },
+    },
+  })
+  await expect(
+    page.getByRole("button", { name: "Play A Walk", exact: true })
+  ).toHaveAttribute("data-playing", "true")
 })

@@ -1,5 +1,9 @@
 import { Schema } from "effect"
 
+export const PlaybackTokenSchema = Schema.Struct({
+  accessToken: Schema.NonEmptyString,
+})
+
 export const DeviceIdSchema = Schema.NonEmptyString.check(
   Schema.isMaxLength(1024)
 )

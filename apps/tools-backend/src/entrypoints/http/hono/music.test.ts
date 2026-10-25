@@ -379,6 +379,9 @@ describe("player actions", () => {
 async function preparePlayer(
   scopes = [
     ...spotifyScopes,
+    "streaming",
+    "user-read-email",
+    "user-read-private",
     "user-read-playback-state",
     "user-modify-playback-state",
   ].join(" ")
@@ -397,6 +400,57 @@ async function preparePlayer(
 }
 
 describe("player HTTP results", () => {
+  test("hands only the access token to a signed-in browser without caching the response", async () => {
+    await preparePlayer()
+    network.mockImplementation(async () =>
+      Response.json({
+        access_token: "sdk-access",
+        refresh_token: "rotated-refresh",
+        expires_in: 3600,
+      })
+    )
+    const response = await api.request("/api/v1/music/player/token", {
+      method: "POST",
+      headers: { Origin: origin, "Content-Type": "application/json" },
+      body: "{}",
+    })
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+    expect(await response.json()).toEqual({ accessToken: "sdk-access" })
+    expect(await api.client.music.player.token()).toEqual({
+      accessToken: "sdk-access",
+    })
+    expect(network).toHaveBeenCalledTimes(2)
+    await preparePlayer(spotifyScopes.join(" "))
+    expect(
+      errorReason(
+        await api.client.music.player.token().catch((cause: unknown) => cause)
+      )
+    ).toBe("PlaybackPermissionMissing")
+    api.signIn(["flights"])
+    expect(await code(api.client.music.player.token())).toBe("FORBIDDEN")
+  })
+
+  test("delegated callers cannot retrieve Spotify credentials through HTTP or RPC", async () => {
+    const delegated = makeHarness({
+      authenticate: async () => ({ userId: "owner", apps: ["music"], origin }),
+    })
+    try {
+      expect(await code(delegated.client.music.player.token())).toBe(
+        "FORBIDDEN"
+      )
+      const response = await delegated.request("/api/v1/music/player/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      })
+      expect(response.status).toBe(403)
+      expect(network).not.toHaveBeenCalled()
+    } finally {
+      delegated.close()
+    }
+  })
+
   for (const [providerStatus, reason, errorCode] of [
     [403, "PremiumRequired", "FORBIDDEN"],
     [403, "PlaybackRefused", "FORBIDDEN"],

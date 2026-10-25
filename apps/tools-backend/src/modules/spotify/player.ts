@@ -275,5 +275,12 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
   const resume = Effect.fn("Spotify.resume")(
     (ownerId: string, device: string) => changePlayback(ownerId, device, true)
   )
-  return { playerStatus, play, pause, resume }
+  const playbackToken = Effect.fn("Spotify.playbackToken")((ownerId: string) =>
+    authorized(ownerId, (accessToken, connection) =>
+      permitted(connection)
+        ? Effect.succeed({ accessToken })
+        : Effect.fail(spotifyError(new PlaybackPermissionMissing()))
+    )
+  )
+  return { playerStatus, playbackToken, play, pause, resume }
 }
