@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForLoadState("networkidle")
 })
 
-test("music sections show configured input, output, and review tracks", async ({
+test("sidebar lists input and output playlists, each opening its own page, plus suggestions and settings", async ({
   page,
 }) => {
   await page.evaluate(async (modulePath) => {
@@ -49,20 +49,39 @@ test("music sections show configured input, output, and review tracks", async ({
   await expect(
     page.getByText("2 tracks loaded · 2 Spotify items")
   ).toBeVisible()
-  await page
-    .locator('a[data-sidebar="menu-button"][href="/music/output"]')
-    .click()
+  const jazz = page.locator(
+    'a[data-sidebar="menu-button"][href="/music/output/jazz"]'
+  )
+  await jazz.click()
+  await expect(jazz).toHaveAttribute("aria-current", "page")
   await expect(
-    page.locator('a[data-sidebar="menu-button"][href="/music/output"]')
-  ).toHaveAttribute("aria-current", "page")
+    page.getByRole("heading", { level: 1, name: "Late night jazz" })
+  ).toBeVisible()
   await expect(
-    page.getByRole("heading", { name: "Late night jazz", exact: true })
+    page
+      .locator("header")
+      .getByRole("button", { name: "Late night jazz actions" })
   ).toBeVisible()
   await expect(page.getByText("Blue in Green", { exact: true })).toBeVisible()
   await expect(page.getByText("1 track loaded · 1 Spotify item")).toBeVisible()
-  await page.getByRole("button", { name: /To discover/ }).click()
+  const review = page.locator(
+    'a[data-sidebar="menu-button"][href="/music/output/review"]'
+  )
+  await review.click()
+  await expect(
+    page.getByRole("heading", { level: 1, name: /To discover/ })
+  ).toContainText("Review")
   await expect(
     page.getByText("No available tracks in this playlist.")
+  ).toBeVisible()
+  const suggest = page.locator(
+    'a[data-sidebar="menu-button"][href="/music/output"]'
+  )
+  await expect(suggest).toHaveText("Suggest playlists")
+  await suggest.click()
+  await expect(suggest).toHaveAttribute("aria-current", "page")
+  await expect(
+    page.getByRole("region", { name: "Suggested playlists", exact: true })
   ).toBeVisible()
   await page
     .locator('a[data-sidebar="menu-button"][href="/music/settings"]')
@@ -76,6 +95,20 @@ test("music sections show configured input, output, and review tracks", async ({
   await expect(
     page.getByRole("link", { name: "Dashboard", exact: true })
   ).toHaveCount(0)
+  await expect(page.locator('[data-sidebar="group-label"]')).toHaveText([
+    "Input playlists",
+    "Output playlists",
+  ])
+  const footer = page.locator('[data-sidebar="footer"]')
+  const settings = footer.locator('a[href="/music/settings"]')
+  await expect(settings).toHaveText("Settings")
+  const [settingsBox, playerBox] = await Promise.all([
+    settings.boundingBox(),
+    page
+      .getByRole("region", { name: "Spotify player", exact: true })
+      .boundingBox(),
+  ])
+  expect(settingsBox!.y + settingsBox!.height).toBeLessThanOrEqual(playerBox!.y)
 })
 
 test("the page scrolls inside the panel while the sidebar and header stay put", async ({
@@ -124,11 +157,11 @@ test("mobile navigation closes after selecting a music section", async ({
   await page.getByRole("button", { name: "Toggle Sidebar" }).click()
   await expect(page.getByRole("dialog")).toBeVisible()
   await page
-    .locator('a[data-sidebar="menu-button"][href="/music/output"]')
+    .locator('a[data-sidebar="menu-button"][href="/music/output/jazz"]')
     .click()
   await expect(page.getByRole("dialog")).toHaveCount(0)
   await expect(
-    page.getByRole("heading", { name: "Late night jazz", exact: true })
+    page.getByRole("heading", { level: 1, name: "Late night jazz" })
   ).toBeVisible()
   expect(
     await page.evaluate(

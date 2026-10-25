@@ -21,6 +21,7 @@ import { NativeSelect, NativeSelectOption } from "@/features/ui/native-select"
 import { Separator } from "@/features/ui/separator"
 import { Spinner } from "@/features/ui/spinner"
 import { Textarea } from "@/features/ui/textarea"
+import { useOutputLibrary } from "./output-library"
 
 type ViewState =
   | { readonly kind: "loading" }
@@ -42,6 +43,7 @@ export function DestinationPanel() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingDescription, setEditingDescription] = useState("")
   const [reviewId, setReviewId] = useState("")
+  const { reload: reloadOutputs } = useOutputLibrary()
 
   useEffect(() => {
     let active = true
@@ -78,6 +80,7 @@ export function DestinationPanel() {
     setError(null)
     try {
       await change()
+      reloadOutputs()
       try {
         await refresh()
       } catch {

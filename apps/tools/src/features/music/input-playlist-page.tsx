@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/features/ui/alert-dialog"
 import { Badge } from "@/features/ui/badge"
-import { Button, buttonVariants } from "@/features/ui/button"
+import { Button } from "@/features/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,37 +24,16 @@ import {
   DropdownMenuTrigger,
 } from "@/features/ui/dropdown-menu"
 import { Spinner } from "@/features/ui/spinner"
+import { toast } from "@/features/ui/toast"
 import { useInputLibrary, type InputPlaylist } from "./input-library"
 import { inputPath } from "./music-nav"
+import { LibraryFallback } from "./playlist-library"
 import { PlaylistTracks } from "./playlist-tracks"
 
 export function InputPlaylistPage({ playlistKey }: { playlistKey: string }) {
   const { library, reload } = useInputLibrary()
-  if (library.status === "loading")
-    return (
-      <output className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner aria-hidden="true" />
-        Loading playlist…
-      </output>
-    )
-  if (library.status === "error")
-    return (
-      <div className="space-y-3 rounded-xl border p-6">
-        <p role="alert">{library.message}</p>
-        {library.reconnect ? (
-          <a
-            href="/music/settings"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Connect Spotify in Settings
-          </a>
-        ) : (
-          <Button variant="outline" onClick={reload}>
-            Try again
-          </Button>
-        )}
-      </div>
-    )
+  if (library.status !== "ready")
+    return <LibraryFallback library={library} reload={reload} />
   const playlist = library.playlists.find((entry) => entry.key === playlistKey)
   if (!playlist)
     return (
@@ -111,18 +90,18 @@ function PlaylistActions({ playlist }: { playlist: InputPlaylist }) {
   const navigate = useNavigate()
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const id = playlist.source.sourceId
 
   async function change(run: () => Promise<unknown>, after?: () => void) {
     setBusy(true)
-    setError(null)
     try {
       await run()
       reload()
       after?.()
     } catch (cause) {
-      setError(errorMessage(cause, "The playlist could not be changed"))
+      toast(errorMessage(cause, "The playlist could not be changed"), {
+        type: "error",
+      })
     } finally {
       setBusy(false)
     }
@@ -130,11 +109,6 @@ function PlaylistActions({ playlist }: { playlist: InputPlaylist }) {
 
   return (
     <>
-      {error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
