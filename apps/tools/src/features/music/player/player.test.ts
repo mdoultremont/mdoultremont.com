@@ -7,7 +7,8 @@ import {
   playerReducer,
   type PlayerState,
 } from "./player-state"
-import { PlayerBar, PlayerProvider, TrackPlayButton } from "./player"
+import { MiniPlayer } from "./mini-player"
+import { PlayerProvider, TrackPlayButton } from "./player"
 
 const ready: PlayerStatus = {
   status: "ready",
@@ -29,8 +30,10 @@ const ready: PlayerStatus = {
       name: "Song",
       artistNames: ["Artist"],
       imageUrl: null,
+      durationMs: null,
     },
-    allows: { pause: true, resume: true },
+    progressMs: null,
+    allows: { pause: true, resume: true, next: true },
   },
 }
 const loaded = (data: PlayerStatus = ready) =>
@@ -50,12 +53,13 @@ function render(initialState: PlayerState) {
     play: vi.fn<Client["play"]>(),
     pause: vi.fn<Client["pause"]>(),
     resume: vi.fn<Client["resume"]>(),
+    next: vi.fn<Client["next"]>(),
   }
   const html = renderToStaticMarkup(
     createElement(
       PlayerProvider,
       { initialState, client },
-      createElement(PlayerBar),
+      createElement(MiniPlayer, { variant: "sidebar" }),
       createElement(TrackPlayButton, { trackId: "trackA", name: "Song" })
     )
   )
@@ -102,11 +106,10 @@ describe("Spotify player rendering", () => {
     expect(html).toContain("These devices cannot be controlled")
     expect(html).toMatch(disabledRow)
   })
-  test("shows paused playback separately from the future track target", () => {
+  test("names the track target only when it is not this browser", () => {
     const html = render(loaded())
-    expect(html).toContain("Paused")
-    expect(html).toContain("Kitchen")
-    expect(html).toContain("Play tracks on")
+    expect(html).toContain('aria-label="Play tracks on Kitchen"')
+    expect(html).toContain(">Kitchen</span>")
     expect(html).toContain('aria-label="Resume playback"')
     expect(html).not.toMatch(disabledRow)
     expect(html).not.toContain('data-playing="true"')
@@ -115,17 +118,22 @@ describe("Spotify player rendering", () => {
   test("pending requests disable controls and do not claim playback started", () => {
     const pending = playerReducer(loaded(), {
       type: "start",
-      command: { kind: "play", deviceId: "speaker", trackId: "trackA" },
+      command: {
+        kind: "play",
+        deviceId: "speaker",
+        trackId: "trackA",
+        nextTrackIds: [],
+      },
       now: 0,
     })
     const html = render(
       playerReducer(pending, { type: "accepted", epoch: pending.epoch, now: 0 })
     )
-    expect(html).toContain("Waiting for Spotify")
-    expect(html).toContain("Paused")
+    expect(html).toContain('aria-busy="true"')
+    expect(html).not.toContain('aria-label="Pause playback"')
     expect(html).toMatch(disabledRow)
   })
-  test("stale observations explain why controls are unavailable", () => {
+  test("failed observations show Spotify's reason and disable controls", () => {
     const html = render(
       playerReducer(loaded(), {
         type: "failed",
@@ -135,7 +143,6 @@ describe("Spotify player rendering", () => {
         now: 0,
       })
     )
-    expect(html).toContain("Playback is out of date")
     expect(html).toContain("Spotify is temporarily unavailable")
     expect(html).toMatch(disabledRow)
   })
@@ -159,5 +166,23 @@ describe("Spotify player rendering", () => {
     expect(html).toMatch(disabledRow)
     expect(html).not.toContain('data-playing="true"')
     expect(html).not.toContain("lucide-audio-lines")
+  })
+  test("shows the track position and length", () => {
+    const html = render(
+      loaded({
+        ...ready,
+        playback: {
+          ...ready.playback!,
+          progressMs: 70_000,
+          item: {
+            ...(ready.playback!.item as object),
+            durationMs: 251_000,
+          } as never,
+        },
+      })
+    )
+    expect(html).toContain('aria-label="Track progress"')
+    expect(html).toContain(">1:10</span>")
+    expect(html).toContain(">4:11</span>")
   })
 })

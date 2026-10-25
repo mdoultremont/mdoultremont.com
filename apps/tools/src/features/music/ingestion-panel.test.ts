@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
 import type { Ingestion, Source } from "@mdoultremont/tools-contracts/music"
 import { IngestionPanel } from "./ingestion-panel"
+import { InputLibraryProvider } from "./input-library"
 
 const ingestion: Ingestion = {
   id: "ing-1",
@@ -38,9 +39,13 @@ const source = (
 })
 const render = (sources: readonly Source[]) =>
   renderToStaticMarkup(
-    createElement(IngestionPanel, {
-      initialStatus: { sources, present: 0, removed: 0 },
-    })
+    createElement(
+      InputLibraryProvider,
+      null,
+      createElement(IngestionPanel, {
+        initialStatus: { sources, present: 0, removed: 0 },
+      })
+    )
   )
 
 describe("sources panel", () => {

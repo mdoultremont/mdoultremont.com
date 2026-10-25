@@ -22,12 +22,13 @@ import { Route as AppsFlightsEquipmentRouteImport } from './routes/_apps/flights
 import { Route as AppsFlightsImportRouteImport } from './routes/_apps/flights/import'
 import { Route as AppsFlightsLogbookRouteImport } from './routes/_apps/flights/logbook'
 import { Route as AppsMusicIndexRouteImport } from './routes/_apps/music/index'
-import { Route as AppsMusicInputRouteImport } from './routes/_apps/music/input'
 import { Route as AppsMusicOutputRouteImport } from './routes/_apps/music/output'
 import { Route as AppsMusicSettingsRouteImport } from './routes/_apps/music/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
 import { Route as AppsFlightsFlightIdEditRouteImport } from './routes/_apps/flights/$flightId_.edit'
+import { Route as AppsMusicInputIndexRouteImport } from './routes/_apps/music/input/index'
+import { Route as AppsMusicInputPlaylistRouteImport } from './routes/_apps/music/input/$playlist'
 import { Route as ApiMusicSpotifyCallbackRouteImport } from './routes/api/music/spotify/callback'
 import { Route as ApiMusicSpotifyConnectRouteImport } from './routes/api/music/spotify/connect'
 
@@ -95,11 +96,6 @@ const AppsMusicIndexRoute = AppsMusicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppsMusicRouteRoute,
 } as any)
-const AppsMusicInputRoute = AppsMusicInputRouteImport.update({
-  id: '/input',
-  path: '/input',
-  getParentRoute: () => AppsMusicRouteRoute,
-} as any)
 const AppsMusicOutputRoute = AppsMusicOutputRouteImport.update({
   id: '/output',
   path: '/output',
@@ -125,6 +121,16 @@ const AppsFlightsFlightIdEditRoute = AppsFlightsFlightIdEditRouteImport.update({
   path: '/$flightId/edit',
   getParentRoute: () => AppsFlightsRouteRoute,
 } as any)
+const AppsMusicInputIndexRoute = AppsMusicInputIndexRouteImport.update({
+  id: '/input/',
+  path: '/input/',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
+const AppsMusicInputPlaylistRoute = AppsMusicInputPlaylistRouteImport.update({
+  id: '/input/$playlist',
+  path: '/input/$playlist',
+  getParentRoute: () => AppsMusicRouteRoute,
+} as any)
 const ApiMusicSpotifyCallbackRoute = ApiMusicSpotifyCallbackRouteImport.update({
   id: '/api/music/spotify/callback',
   path: '/api/music/spotify/callback',
@@ -147,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/music/input': typeof AppsMusicInputRoute
   '/music/output': typeof AppsMusicOutputRoute
   '/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -155,8 +160,10 @@ export interface FileRoutesByFullPath {
   '/flights/': typeof AppsFlightsIndexRoute
   '/music/': typeof AppsMusicIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
+  '/music/input/$playlist': typeof AppsMusicInputPlaylistRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
+  '/music/input/': typeof AppsMusicInputIndexRoute
 }
 export interface FileRoutesByTo {
   '/back-office': typeof AppsBackOfficeRoute
@@ -167,7 +174,6 @@ export interface FileRoutesByTo {
   '/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/flights/import': typeof AppsFlightsImportRoute
   '/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/music/input': typeof AppsMusicInputRoute
   '/music/output': typeof AppsMusicOutputRoute
   '/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -175,8 +181,10 @@ export interface FileRoutesByTo {
   '/flights': typeof AppsFlightsIndexRoute
   '/music': typeof AppsMusicIndexRoute
   '/flights/$flightId/edit': typeof AppsFlightsFlightIdEditRoute
+  '/music/input/$playlist': typeof AppsMusicInputPlaylistRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
+  '/music/input': typeof AppsMusicInputIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -191,7 +199,6 @@ export interface FileRoutesById {
   '/_apps/flights/equipment': typeof AppsFlightsEquipmentRoute
   '/_apps/flights/import': typeof AppsFlightsImportRoute
   '/_apps/flights/logbook': typeof AppsFlightsLogbookRoute
-  '/_apps/music/input': typeof AppsMusicInputRoute
   '/_apps/music/output': typeof AppsMusicOutputRoute
   '/_apps/music/settings': typeof AppsMusicSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -199,8 +206,10 @@ export interface FileRoutesById {
   '/_apps/flights/': typeof AppsFlightsIndexRoute
   '/_apps/music/': typeof AppsMusicIndexRoute
   '/_apps/flights/$flightId_/edit': typeof AppsFlightsFlightIdEditRoute
+  '/_apps/music/input/$playlist': typeof AppsMusicInputPlaylistRoute
   '/api/music/spotify/callback': typeof ApiMusicSpotifyCallbackRoute
   '/api/music/spotify/connect': typeof ApiMusicSpotifyConnectRoute
+  '/_apps/music/input/': typeof AppsMusicInputIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -215,7 +224,6 @@ export interface FileRouteTypes {
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
-    | '/music/input'
     | '/music/output'
     | '/music/settings'
     | '/api/auth/$'
@@ -223,8 +231,10 @@ export interface FileRouteTypes {
     | '/flights/'
     | '/music/'
     | '/flights/$flightId/edit'
+    | '/music/input/$playlist'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
+    | '/music/input/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/back-office'
@@ -235,7 +245,6 @@ export interface FileRouteTypes {
     | '/flights/equipment'
     | '/flights/import'
     | '/flights/logbook'
-    | '/music/input'
     | '/music/output'
     | '/music/settings'
     | '/api/auth/$'
@@ -243,8 +252,10 @@ export interface FileRouteTypes {
     | '/flights'
     | '/music'
     | '/flights/$flightId/edit'
+    | '/music/input/$playlist'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
+    | '/music/input'
   id:
     | '__root__'
     | '/_apps'
@@ -258,7 +269,6 @@ export interface FileRouteTypes {
     | '/_apps/flights/equipment'
     | '/_apps/flights/import'
     | '/_apps/flights/logbook'
-    | '/_apps/music/input'
     | '/_apps/music/output'
     | '/_apps/music/settings'
     | '/api/auth/$'
@@ -266,8 +276,10 @@ export interface FileRouteTypes {
     | '/_apps/flights/'
     | '/_apps/music/'
     | '/_apps/flights/$flightId_/edit'
+    | '/_apps/music/input/$playlist'
     | '/api/music/spotify/callback'
     | '/api/music/spotify/connect'
+    | '/_apps/music/input/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -373,13 +385,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppsMusicIndexRouteImport
       parentRoute: typeof AppsMusicRouteRoute
     }
-    '/_apps/music/input': {
-      id: '/_apps/music/input'
-      path: '/input'
-      fullPath: '/music/input'
-      preLoaderRoute: typeof AppsMusicInputRouteImport
-      parentRoute: typeof AppsMusicRouteRoute
-    }
     '/_apps/music/output': {
       id: '/_apps/music/output'
       path: '/output'
@@ -414,6 +419,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/flights/$flightId/edit'
       preLoaderRoute: typeof AppsFlightsFlightIdEditRouteImport
       parentRoute: typeof AppsFlightsRouteRoute
+    }
+    '/_apps/music/input/': {
+      id: '/_apps/music/input/'
+      path: '/input'
+      fullPath: '/music/input/'
+      preLoaderRoute: typeof AppsMusicInputIndexRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
+    }
+    '/_apps/music/input/$playlist': {
+      id: '/_apps/music/input/$playlist'
+      path: '/input/$playlist'
+      fullPath: '/music/input/$playlist'
+      preLoaderRoute: typeof AppsMusicInputPlaylistRouteImport
+      parentRoute: typeof AppsMusicRouteRoute
     }
     '/api/music/spotify/callback': {
       id: '/api/music/spotify/callback'
@@ -454,17 +473,19 @@ const AppsFlightsRouteRouteWithChildren =
   AppsFlightsRouteRoute._addFileChildren(AppsFlightsRouteRouteChildren)
 
 interface AppsMusicRouteRouteChildren {
-  AppsMusicInputRoute: typeof AppsMusicInputRoute
   AppsMusicOutputRoute: typeof AppsMusicOutputRoute
   AppsMusicSettingsRoute: typeof AppsMusicSettingsRoute
   AppsMusicIndexRoute: typeof AppsMusicIndexRoute
+  AppsMusicInputPlaylistRoute: typeof AppsMusicInputPlaylistRoute
+  AppsMusicInputIndexRoute: typeof AppsMusicInputIndexRoute
 }
 
 const AppsMusicRouteRouteChildren: AppsMusicRouteRouteChildren = {
-  AppsMusicInputRoute: AppsMusicInputRoute,
   AppsMusicOutputRoute: AppsMusicOutputRoute,
   AppsMusicSettingsRoute: AppsMusicSettingsRoute,
   AppsMusicIndexRoute: AppsMusicIndexRoute,
+  AppsMusicInputPlaylistRoute: AppsMusicInputPlaylistRoute,
+  AppsMusicInputIndexRoute: AppsMusicInputIndexRoute,
 }
 
 const AppsMusicRouteRouteWithChildren = AppsMusicRouteRoute._addFileChildren(

@@ -20,9 +20,12 @@ type View =
 export function PlaylistTracks({
   collection,
   name,
+  showName = true,
 }: {
   collection: SourceId
   name: string
+  /** Off when the page title already names the playlist. */
+  showName?: boolean
 }) {
   const [view, setView] = useState<View>({ kind: "loading" })
   const [attempt, setAttempt] = useState(0)
@@ -127,7 +130,9 @@ export function PlaylistTracks({
   return (
     <section aria-label={name + " tracks"} className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-heading text-xl font-medium">{name}</h2>
+        {showName ? (
+          <h2 className="font-heading text-xl font-medium">{name}</h2>
+        ) : null}
         <output aria-live="polite" className="text-sm text-muted-foreground">
           {page.items.length} {page.items.length === 1 ? "track" : "tracks"}{" "}
           loaded
@@ -178,7 +183,15 @@ export function PlaylistTracks({
                     {index + 1}
                   </td>
                   <td className="px-2 py-3">
-                    <TrackPlayButton trackId={track.id} name={track.name} />
+                    <TrackPlayButton
+                      trackId={track.id}
+                      name={track.name}
+                      nextTrackIds={() =>
+                        page.items
+                          .slice(index + 1, index + 100)
+                          .map((next) => next.id)
+                      }
+                    />
                   </td>
                   <td
                     className="px-4 py-3"

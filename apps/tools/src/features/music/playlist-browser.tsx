@@ -1,4 +1,4 @@
-import { HeartIcon, ListMusicIcon } from "lucide-react"
+import { ListMusicIcon } from "lucide-react"
 import type { SourceId } from "@mdoultremont/tools-contracts/music"
 import { Badge } from "@/features/ui/badge"
 import { cn } from "@/features/ui/lib/utils"
@@ -9,7 +9,7 @@ export interface PlaylistEntry {
   readonly name: string
   readonly description: string
   readonly enabled: boolean
-  readonly role: "source" | "destination" | "review"
+  readonly role: "destination" | "review"
 }
 
 export const playlistKey = (collection: SourceId) =>
@@ -34,8 +34,6 @@ export function PlaylistBrowser({
         <ul className="flex flex-col gap-1 rounded-xl border p-2">
           {entries.map((entry) => {
             const key = playlistKey(entry.collection)
-            const Icon =
-              entry.collection.kind === "liked" ? HeartIcon : ListMusicIcon
             return (
               <li key={key}>
                 <button
@@ -47,7 +45,7 @@ export function PlaylistBrowser({
                     entry === current && "bg-muted"
                   )}
                 >
-                  <Icon
+                  <ListMusicIcon
                     aria-hidden="true"
                     className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                   />
@@ -65,11 +63,7 @@ export function PlaylistBrowser({
                       {!entry.enabled ? (
                         <Badge variant="secondary">Paused</Badge>
                       ) : null}
-                      {entry.collection.kind === "liked"
-                        ? "Built-in source"
-                        : entry.role === "source"
-                          ? "Input playlist"
-                          : "Output playlist"}
+                      Output playlist
                     </span>
                   </span>
                 </button>

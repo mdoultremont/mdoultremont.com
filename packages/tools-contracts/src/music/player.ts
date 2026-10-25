@@ -4,6 +4,10 @@ export const PlaybackTokenSchema = Schema.Struct({
   accessToken: Schema.NonEmptyString,
 })
 
+export const TrackIdSchema = Schema.NonEmptyString.check(
+  Schema.isPattern(/^[A-Za-z0-9]+$/u)
+)
+
 export const DeviceIdSchema = Schema.NonEmptyString.check(
   Schema.isMaxLength(1024)
 )
@@ -33,6 +37,7 @@ export const NowPlayingSchema = Schema.Union([
     name: Schema.String,
     artistNames: Schema.Array(Schema.String),
     imageUrl: Schema.NullOr(Schema.String),
+    durationMs: Schema.NullOr(Schema.Number),
   }),
   Schema.Struct({ kind: Schema.Literal("other") }),
 ])
@@ -46,7 +51,13 @@ export const PlaybackSchema = Schema.Struct({
     restricted: Schema.Boolean,
   }),
   item: Schema.NullOr(NowPlayingSchema),
-  allows: Schema.Struct({ pause: Schema.Boolean, resume: Schema.Boolean }),
+  /** Position in the item when Spotify reported playback, if known. */
+  progressMs: Schema.NullOr(Schema.Number),
+  allows: Schema.Struct({
+    pause: Schema.Boolean,
+    resume: Schema.Boolean,
+    next: Schema.Boolean,
+  }),
 })
 export type Playback = typeof PlaybackSchema.Type
 

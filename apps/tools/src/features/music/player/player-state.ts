@@ -9,9 +9,16 @@ export type PlayerCommand =
       readonly kind: "play"
       readonly deviceId: string
       readonly trackId: string
+      readonly nextTrackIds: readonly string[]
     }
   | { readonly kind: "pause"; readonly deviceId: string }
   | { readonly kind: "resume"; readonly deviceId: string }
+  | {
+      readonly kind: "next"
+      readonly deviceId: string
+      /** The track playing when skipping, so confirmation can see it change. */
+      readonly fromTrackId: string | null
+    }
 
 export interface PlayerFailure {
   readonly reason?: string
@@ -29,7 +36,12 @@ export interface PlayerState {
   readonly unavailableBrowserIds: readonly string[]
   readonly server:
     | { readonly status: "loading" }
-    | { readonly status: "loaded"; readonly data: PlayerStatus }
+    | {
+        readonly status: "loaded"
+        readonly data: PlayerStatus
+        /** When this status was observed, to advance playback progress locally. */
+        readonly at: number
+      }
     | { readonly status: "failed" }
   readonly stale: boolean
   readonly chosenDeviceId: string | null
@@ -102,6 +114,12 @@ export function confirms(command: PlayerCommand, status: PlayerStatus) {
   const playback = status.playback
   if (command.kind === "pause") return !playback.playing
   if (command.kind === "resume") return playback.playing
+  if (command.kind === "next")
+    return (
+      playback.item?.kind === "track" &&
+      playback.item.id !== null &&
+      playback.item.id !== command.fromTrackId
+    )
   return (
     playback.playing &&
     playback.item?.kind === "track" &&
@@ -177,7 +195,11 @@ export function playerReducer(
       command.kind === "play"
         ? view.canPlay && view.target?.id === command.deviceId
         : view.currentDeviceId === command.deviceId &&
-          (command.kind === "pause" ? view.canPause : view.canResume)
+          {
+            pause: view.canPause,
+            resume: view.canResume,
+            next: view.canNext,
+          }[command.kind]
     if (!enabled) return state
     return {
       ...state,
@@ -208,7 +230,7 @@ export function playerReducer(
     return reconcile(
       {
         ...state,
-        server: { status: "loaded", data: event.data },
+        server: { status: "loaded", data: event.data, at: event.now },
         stale: false,
         notice: null,
         connectionLost: false,
@@ -288,7 +310,33 @@ export function deriveView(state: PlayerState, now: number) {
       currentControllable &&
       playback?.playing === false &&
       playback.allows.resume,
+    canNext:
+      !blocked &&
+      currentControllable &&
+      playback?.item?.kind === "track" &&
+      playback.allows.next,
     rateLimited: state.pausedUntil > now,
+  }
+}
+
+/** Where the playing track is now, advanced from the last observation while it plays. */
+export function playbackProgress(state: PlayerState, now: number) {
+  if (state.server.status !== "loaded" || state.server.data.status !== "ready")
+    return null
+  const playback = state.server.data.playback
+  const item = playback?.item
+  if (
+    !playback ||
+    item?.kind !== "track" ||
+    item.durationMs === null ||
+    playback.progressMs === null
+  )
+    return null
+  const elapsed = playback.playing ? Math.max(0, now - state.server.at) : 0
+  return {
+    positionMs: Math.min(item.durationMs, playback.progressMs + elapsed),
+    durationMs: item.durationMs,
+    playing: playback.playing,
   }
 }
 

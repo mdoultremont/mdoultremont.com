@@ -1,4 +1,4 @@
-import { CircleAlertIcon } from "lucide-react"
+import { CircleAlertIcon, PlusIcon } from "lucide-react"
 import { useEffect, useId, useState } from "react"
 import { Alert, AlertDescription } from "@/features/ui/alert"
 import { Badge } from "@/features/ui/badge"
@@ -12,40 +12,34 @@ import {
 } from "@/features/ui/card"
 import { Checkbox } from "@/features/ui/checkbox"
 import { Item, ItemActions, ItemContent, ItemTitle } from "@/features/ui/item"
-import { Separator } from "@/features/ui/separator"
 import { Spinner } from "@/features/ui/spinner"
 import { api, errorMessage } from "@/features/api"
 import type {
-  DestinationConfiguration,
   Ingestion,
   IngestionKind,
   IngestionStatus,
   Source,
   SpotifyPlaylist,
 } from "@mdoultremont/tools-contracts/music"
-import { PlaylistCombobox } from "./playlist-combobox"
+import { AddInputDialog } from "./add-input-dialog"
+import { useInputLibrary } from "./input-library"
 
 const pollMilliseconds = 3000
 
 export function IngestionPanel({
   initialStatus,
-  onChange,
 }: {
   readonly initialStatus?: IngestionStatus
-  readonly onChange?: () => void
 }) {
   const controlId = useId()
+  const { revision, reload } = useInputLibrary()
+  const [adding, setAdding] = useState(false)
   const [sources, setSources] = useState<readonly Source[] | null>(
     initialStatus?.sources ?? null
   )
   const [playlists, setPlaylists] = useState<readonly SpotifyPlaylist[]>([])
-  const [destinations, setDestinations] =
-    useState<DestinationConfiguration | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [query, setQuery] = useState("")
-  const [selected, setSelected] = useState<SpotifyPlaylist | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
   const inProgress =
     sources?.some(
       (source) =>
@@ -57,11 +51,10 @@ export function IngestionPanel({
 
   useEffect(() => {
     let active = true
-    Promise.all([api.music.spotify.playlists(), api.music.destinations.get()])
-      .then(([list, config]) => {
-        if (!active) return
-        setPlaylists(list.items)
-        setDestinations(config)
+    api.music.spotify
+      .playlists()
+      .then((list) => {
+        if (active) setPlaylists(list.items)
       })
       .catch((cause: unknown) => {
         if (active)
@@ -75,7 +68,7 @@ export function IngestionPanel({
     return () => {
       active = false
     }
-  }, [])
+  }, [revision])
 
   useEffect(() => {
     let active = true
@@ -108,21 +101,17 @@ export function IngestionPanel({
       active = false
       clearTimeout(timer)
     }
-  }, [runIds, inProgress])
+  }, [runIds, inProgress, revision])
 
   async function mutate(change: () => Promise<unknown>) {
     setBusy(true)
     setError(null)
     try {
       await change()
+      reload()
       try {
-        const [next, config] = await Promise.all([
-          api.music.sources.get(),
-          api.music.destinations.get(),
-        ])
+        const next = await api.music.sources.get()
         setSources(next.sources)
-        setDestinations(config)
-        onChange?.()
       } catch {
         setError(
           "Saved, but the latest sources could not be loaded. Refresh this page to check them."
@@ -137,43 +126,23 @@ export function IngestionPanel({
     }
   }
 
-  async function addPlaylist() {
-    if (!selected) return
-    if (
-      await mutate(() => api.music.sources.add({ playlistId: selected.id }))
-    ) {
-      setSelected(null)
-      setQuery("")
-      setMenuOpen(false)
-    }
-  }
   const names = new Map(
     playlists.map((playlist) => [playlist.id, playlist.name])
   )
-  const excluded = new Set([
-    ...(sources?.flatMap((source) =>
-      source.sourceId.kind === "playlist" ? [source.sourceId.playlistId] : []
-    ) ?? []),
-    ...(destinations?.destinations.map(
-      (destination) => destination.playlistId
-    ) ?? []),
-    ...(destinations?.reviewPlaylistId ? [destinations.reviewPlaylistId] : []),
-  ])
-  const available = playlists.filter((playlist) => !excluded.has(playlist.id))
   const canRead = sources?.some((source) => source.enabled) ?? false
   const start = (kind: IngestionKind) =>
     mutate(() => api.music.ingestion.start({ kind }))
 
   return (
-    <section aria-label="Sources">
+    <section aria-label="Input playlists" id="input-playlists">
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2>Sources</h2>
+            <h2>Input playlists</h2>
           </CardTitle>
           <CardDescription>
-            Choose where tracks come from. Enabled sources are checked every
-            hour and read in full once a day. Sources are never changed.
+            Where tracks come from. Enabled playlists are checked every hour and
+            read in full once a day. They are never changed.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
@@ -271,6 +240,14 @@ export function IngestionPanel({
           ) : null}
           <div className="flex flex-wrap gap-2">
             <Button
+              disabled={busy}
+              onClick={() => setAdding(true)}
+              type="button"
+            >
+              <PlusIcon aria-hidden="true" />
+              Add input playlist
+            </Button>
+            <Button
               disabled={busy || inProgress || !canRead}
               onClick={() => void start("incremental")}
               type="button"
@@ -287,46 +264,9 @@ export function IngestionPanel({
               Read everything again
             </Button>
           </div>
-          <Separator />
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <h3 className="font-heading font-medium">
-                Add a source playlist
-              </h3>
-              <p className="text-muted-foreground">
-                Choose a playlist you own, such as My Shazam Tracks. Destination
-                and review playlists cannot be sources.
-              </p>
-            </div>
-            <PlaylistCombobox
-              playlists={available}
-              value={query}
-              selected={selected}
-              open={menuOpen}
-              disabled={busy || !destinations}
-              onValueChange={(value) => {
-                setQuery(value)
-                setSelected(null)
-                setMenuOpen(true)
-              }}
-              onOpenChange={setMenuOpen}
-              onSelect={(playlist) => {
-                setSelected(playlist)
-                setQuery(playlist.name)
-                setMenuOpen(false)
-              }}
-            />
-            <Button
-              className="w-fit"
-              disabled={busy || !selected}
-              onClick={() => void addPlaylist()}
-              type="button"
-            >
-              Add source
-            </Button>
-          </div>
         </CardContent>
       </Card>
+      <AddInputDialog open={adding} onOpenChange={setAdding} />
     </section>
   )
 }

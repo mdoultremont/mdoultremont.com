@@ -9,9 +9,9 @@ import {
 } from "@tanstack/react-router"
 import { AppShell } from "../../../src/features/apps/shell"
 import { MusicSettings } from "../../../src/features/music/music-settings"
-import { MusicPlayerLayout } from "../../../src/features/music/music-player-layout"
+import { MusicLayout } from "../../../src/features/music/music-layout"
 import { OutputPlaylists } from "../../../src/features/music/output-playlists"
-import { InputPlaylists } from "../../../src/features/music/input-playlists"
+import { InputPlaylistPage } from "../../../src/features/music/input-playlist-page"
 
 const user = {
   id: "fixture-owner",
@@ -21,7 +21,7 @@ const user = {
   providers: ["spotify"],
   apps: ["music"] as const,
 }
-export async function mountMusic(path = "/music/input") {
+export async function mountMusic(path = "/music/input/liked") {
   const root = createRootRoute({ component: Outlet })
   const apps = createRoute({
     getParentRoute: () => root,
@@ -36,30 +36,19 @@ export async function mountMusic(path = "/music/input") {
     getParentRoute: () => apps,
     path: "/music",
     component: () => (
-      <MusicPlayerLayout>
+      <MusicLayout>
         <Outlet />
-      </MusicPlayerLayout>
+      </MusicLayout>
     ),
   })
   const input = createRoute({
     getParentRoute: () => music,
-    path: "/input",
-    validateSearch: (search: Record<string, unknown>) => ({
-      playlist:
-        typeof search.playlist === "string" ? search.playlist : undefined,
-    }),
-    component: Inputs,
+    path: "/input/$playlist",
+    component: function Input() {
+      const { playlist } = input.useParams()
+      return <InputPlaylistPage playlistKey={playlist} />
+    },
   })
-  function Inputs() {
-    const navigate = input.useNavigate()
-    const { playlist } = input.useSearch()
-    return (
-      <InputPlaylists
-        selected={playlist}
-        onSelect={(key) => void navigate({ search: { playlist: key } })}
-      />
-    )
-  }
   const output = createRoute({
     getParentRoute: () => music,
     path: "/output",

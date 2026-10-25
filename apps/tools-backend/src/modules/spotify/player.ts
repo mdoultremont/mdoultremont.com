@@ -28,11 +28,13 @@ const Device = Schema.Struct({
 const Restrictions = {
   pausing: Schema.optional(Schema.Boolean),
   resuming: Schema.optional(Schema.Boolean),
+  skipping_next: Schema.optional(Schema.Boolean),
 }
 const CurrentPlayback = Schema.Struct({
   is_playing: Schema.Boolean,
   device: Device,
   currently_playing_type: Schema.String,
+  progress_ms: Schema.optional(Schema.NullOr(Schema.Number)),
   item: Schema.NullOr(Schema.Unknown),
   actions: Schema.optional(
     Schema.Struct({
@@ -46,6 +48,7 @@ const Track = Schema.Struct({
   name: Schema.String,
   artists: Schema.Array(Schema.Struct({ name: Schema.String })),
   linked_from: Schema.optional(Schema.Unknown),
+  duration_ms: Schema.optional(Schema.Number),
   album: Schema.optional(
     Schema.Struct({
       images: Schema.Array(Schema.Struct({ url: Schema.String })),
@@ -101,6 +104,9 @@ const permitted = (connection: SpotifyConnection) => {
   const granted = new Set(connection.scopes.split(/\s+/u))
   return Api.spotifyPlaybackScopes.every((scope) => granted.has(scope))
 }
+
+const endpoint = (path: "play" | "pause" | "next") =>
+  `https://api.spotify.com/v1/me/player/${path}`
 
 export function makePlayer<E>(dependencies: Dependencies<E>) {
   const { authorized, execute, checkStatus, requireId, originalTrackId } =
@@ -161,6 +167,7 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
           name: track.name,
           artistNames: track.artists.map((artist) => artist.name),
           imageUrl: track.album?.images[0]?.url ?? null,
+          durationMs: track.duration_ms ?? null,
         }
       }
       const actions = value.actions
@@ -172,11 +179,15 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
           restricted: value.device.is_restricted,
         },
         item,
+        progressMs: value.progress_ms ?? null,
         allows: {
           pause:
             actions?.pausing !== true && actions?.disallows?.pausing !== true,
           resume:
             actions?.resuming !== true && actions?.disallows?.resuming !== true,
+          next:
+            actions?.skipping_next !== true &&
+            actions?.disallows?.skipping_next !== true,
         },
       }
     })
@@ -229,33 +240,43 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
         ? run(token)
         : Effect.fail(spotifyError(new PlaybackPermissionMissing()))
     )
-  const put = (
+  const control = (
     token: string,
     device: string,
-    path: "play" | "pause",
-    trackId?: string
-  ) => {
-    let request = HttpClientRequest.put(
-      `https://api.spotify.com/v1/me/player/${path}`
-    ).pipe(
-      HttpClientRequest.bearerToken(token),
-      HttpClientRequest.setUrlParam("device_id", device)
-    )
-    if (trackId !== undefined)
-      request = request.pipe(
-        HttpClientRequest.bodyJsonUnsafe({ uris: [`spotify:track:${trackId}`] })
+    request: HttpClientRequest.HttpClientRequest
+  ) =>
+    send(
+      request.pipe(
+        HttpClientRequest.bearerToken(token),
+        HttpClientRequest.setUrlParam("device_id", device)
       )
-    return send(request).pipe(Effect.asVoid)
-  }
+    ).pipe(Effect.asVoid)
   const play = Effect.fn("Spotify.play")(function* (
     ownerId: string,
     device: string,
-    trackId: string
+    trackIds: readonly [string, ...string[]]
   ) {
-    yield* requireId(trackId, "track")
-    yield* command(ownerId, (token) => put(token, device, "play", trackId))
+    for (const trackId of trackIds) yield* requireId(trackId, "track")
+    yield* command(ownerId, (token) =>
+      control(
+        token,
+        device,
+        HttpClientRequest.put(endpoint("play")).pipe(
+          HttpClientRequest.bodyJsonUnsafe({
+            uris: trackIds.map((trackId) => `spotify:track:${trackId}`),
+          })
+        )
+      )
+    )
   })
-  const changePlayback = (ownerId: string, device: string, playing: boolean) =>
+  const onCurrentDevice = (
+    ownerId: string,
+    device: string,
+    run: (
+      token: string,
+      current: Playback
+    ) => Effect.Effect<void, SpotifyError | E>
+  ) =>
     command(ownerId, (token) =>
       Effect.gen(function* () {
         const current = yield* readPlayback(token)
@@ -263,10 +284,20 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
           return yield* Effect.fail(spotifyError(new DeviceUnavailable()))
         if (current.device.restricted)
           return yield* Effect.fail(spotifyError(new PlaybackRefused()))
+        yield* run(token, current)
+      })
+    )
+  const changePlayback = (ownerId: string, device: string, playing: boolean) =>
+    onCurrentDevice(ownerId, device, (token, current) =>
+      Effect.gen(function* () {
         if (current.playing === playing) return
         if (!(playing ? current.allows.resume : current.allows.pause))
           return yield* Effect.fail(spotifyError(new PlaybackRefused()))
-        yield* put(token, device, playing ? "play" : "pause")
+        yield* control(
+          token,
+          device,
+          HttpClientRequest.put(endpoint(playing ? "play" : "pause"))
+        )
       })
     )
   const pause = Effect.fn("Spotify.pause")((ownerId: string, device: string) =>
@@ -275,6 +306,13 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
   const resume = Effect.fn("Spotify.resume")(
     (ownerId: string, device: string) => changePlayback(ownerId, device, true)
   )
+  const next = Effect.fn("Spotify.next")((ownerId: string, device: string) =>
+    onCurrentDevice(ownerId, device, (token, current) =>
+      current.allows.next
+        ? control(token, device, HttpClientRequest.post(endpoint("next")))
+        : Effect.fail(spotifyError(new PlaybackRefused()))
+    )
+  )
   const playbackToken = Effect.fn("Spotify.playbackToken")((ownerId: string) =>
     authorized(ownerId, (accessToken, connection) =>
       permitted(connection)
@@ -282,5 +320,5 @@ export function makePlayer<E>(dependencies: Dependencies<E>) {
         : Effect.fail(spotifyError(new PlaybackPermissionMissing()))
     )
   )
-  return { playerStatus, playbackToken, play, pause, resume }
+  return { playerStatus, playbackToken, play, pause, resume, next }
 }

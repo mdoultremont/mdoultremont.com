@@ -25,24 +25,27 @@ test("music sections show configured input, output, and review tracks", async ({
     await m.mountMusic()
   }, "/tests/browser/support/mount-music.tsx")
   await expect(
-    page.locator('a[data-sidebar="menu-button"][href="/music/input"]')
+    page.locator('a[data-sidebar="menu-button"][href="/music/input/liked"]')
   ).toHaveAttribute("aria-current", "page")
   await expect(
-    page.getByRole("heading", { name: "Liked Songs", exact: true })
+    page.getByRole("heading", { level: 1, name: "Liked Songs", exact: true })
   ).toBeVisible()
   await expect(
     page
       .getByRole("region", { name: "Liked Songs tracks", exact: true })
       .getByText("Radiohead", { exact: true })
   ).toBeVisible()
-  await expect(page.getByRole("button", { name: /Discoveries/ })).toContainText(
-    "Paused"
+  const discoveries = page.locator(
+    'a[data-sidebar="menu-button"][href="/music/input/inbox"]'
   )
-  await page.getByRole("button", { name: /Discoveries/ }).focus()
+  await expect(
+    page.getByRole("listitem").filter({ has: discoveries })
+  ).toContainText("Paused")
+  await discoveries.focus()
   await page.keyboard.press("Enter")
   await expect(
-    page.getByRole("heading", { name: "Discoveries", exact: true })
-  ).toBeVisible()
+    page.getByRole("heading", { level: 1, name: /Discoveries/ })
+  ).toContainText("Paused")
   await expect(
     page.getByText("2 tracks loaded · 2 Spotify items")
   ).toBeVisible()
@@ -75,6 +78,36 @@ test("music sections show configured input, output, and review tracks", async ({
   ).toHaveCount(0)
 })
 
+test("the page scrolls inside the panel while the sidebar and header stay put", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 600 })
+  await page.evaluate(async (modulePath) => {
+    const m = await import(modulePath)
+    await m.mountMusic()
+  }, "/tests/browser/support/mount-music.tsx")
+  await page
+    .locator('a[data-sidebar="menu-button"][href="/music/settings"]')
+    .click()
+  await expect(
+    page.getByRole("heading", { name: "Classification", exact: true })
+  ).toBeVisible()
+  const scroller = page.locator('[data-slot="app-scroll-area"]')
+  expect(
+    await scroller.evaluate(
+      (element) => element.scrollHeight > element.clientHeight
+    )
+  ).toBe(true)
+  await scroller.evaluate((element) => element.scrollTo(0, 400))
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  await expect(
+    page.getByRole("button", { name: "Toggle Sidebar" })
+  ).toBeInViewport()
+  await expect(
+    page.getByRole("region", { name: "Spotify player", exact: true })
+  ).toBeInViewport()
+})
+
 test("mobile navigation closes after selecting a music section", async ({
   page,
 }) => {
@@ -104,7 +137,7 @@ test("mobile navigation closes after selecting a music section", async ({
   ).toBe(true)
 })
 
-test("source changes refresh the browser without duplicating Liked Songs", async ({
+test("input playlists are added from the sidebar and removed from their page", async ({
   page,
 }) => {
   let sources: Source[] = fixtureSources.map((source) => ({ ...source }))
@@ -136,33 +169,33 @@ test("source changes refresh the browser without duplicating Liked Songs", async
     const module = await import(modulePath)
     await module.mountMusic()
   }, "/tests/browser/support/mount-music.tsx")
-  await page.getByText("Manage input sources", { exact: true }).click()
-  const panel = page.getByRole("region", { name: "Sources", exact: true })
-  await panel
+  await page.getByRole("button", { name: "Add input playlist" }).click()
+  const dialog = page.getByRole("dialog", { name: "Add input playlist" })
+  await dialog
     .getByRole("combobox", { name: "Search Spotify playlists" })
     .fill("Fresh")
   await page.getByRole("option", { name: "Fresh finds" }).click()
-  await panel.getByRole("button", { name: "Add source", exact: true }).click()
-  const chooser = page.getByRole("navigation", { name: "Choose playlist" })
+  await dialog
+    .getByRole("button", { name: "Add playlist", exact: true })
+    .click()
+  await expect(dialog).toHaveCount(0)
   await expect(
-    chooser.getByRole("button", { name: /Fresh finds/ })
+    page.getByRole("heading", { level: 1, name: "Fresh finds" })
   ).toBeVisible()
-  await expect(
-    chooser.getByRole("button", { name: /Liked Songs/ })
-  ).toHaveCount(1)
-  await chooser.getByRole("button", { name: /Fresh finds/ }).click()
-  await expect(
-    page.getByRole("heading", { name: "Fresh finds", exact: true })
-  ).toBeVisible()
-  await panel
-    .getByRole("listitem")
-    .filter({ hasText: "Fresh finds" })
+  const sidebarLinks = page.locator('a[data-sidebar="menu-button"]')
+  await expect(sidebarLinks.filter({ hasText: "Fresh finds" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  )
+  await expect(sidebarLinks.filter({ hasText: "Liked Songs" })).toHaveCount(1)
+  await page.getByRole("button", { name: "Fresh finds actions" }).click()
+  await page.getByRole("menuitem", { name: "Remove input playlist" }).click()
+  await page
+    .getByRole("alertdialog", { name: "Remove Fresh finds?" })
     .getByRole("button", { name: "Remove", exact: true })
     .click()
+  await expect(sidebarLinks.filter({ hasText: "Fresh finds" })).toHaveCount(0)
   await expect(
-    chooser.getByRole("button", { name: /Fresh finds/ })
-  ).toHaveCount(0)
-  await expect(
-    page.getByRole("heading", { name: "Playlist unavailable" })
+    page.getByRole("heading", { level: 1, name: "Liked Songs" })
   ).toBeVisible()
 })

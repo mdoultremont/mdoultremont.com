@@ -1,5 +1,4 @@
 import {
-  ArrowDownToLineIcon,
   ArrowUpFromLineIcon,
   BackpackIcon,
   BookOpenIcon,
@@ -17,12 +16,8 @@ import { ParagliderIcon } from "@/features/flights/icon"
 /** The public portfolio, which lives on its own domain. */
 export const portfolioUrl = "https://mdoultremont.com"
 
+/** Input playlists are listed above these, one link each, by the music layout. */
 export const musicPages = [
-  {
-    to: "/music/input",
-    label: "Input playlists",
-    icon: ArrowDownToLineIcon,
-  },
   {
     to: "/music/output",
     label: "Output playlists",
