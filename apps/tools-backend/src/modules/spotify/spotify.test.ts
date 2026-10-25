@@ -1133,7 +1133,7 @@ function servePlayback(
     const path = new URL(String(url)).pathname
     if (path === "/api/token")
       return json({ access_token: "player-token", expires_in: 3600 })
-    if (init?.method === "PUT") return write()
+    if (init?.method === "PUT" || init?.method === "POST") return write()
     if (path.endsWith("/devices")) return json({ devices })
     if (path.endsWith("/player"))
       return playback instanceof Response ? playback.clone() : json(playback)
@@ -1142,7 +1142,11 @@ function servePlayback(
 }
 
 const playerWrites = (setup: Setup) =>
-  setup.fetcher.mock.calls.filter(([, init]) => init?.method === "PUT")
+  setup.fetcher.mock.calls.filter(
+    ([url, init]) =>
+      String(url).includes("/me/player") &&
+      (init?.method === "PUT" || init?.method === "POST")
+  )
 
 describe("Spotify Connect player", () => {
   it.effect(
@@ -1205,7 +1209,7 @@ describe("Spotify Connect player", () => {
             status: "needs_permission",
           })
           for (const effect of [
-            spotify.play("github-42", "speaker", "trackA"),
+            spotify.play("github-42", "speaker", ["trackA"]),
             spotify.pause("github-42", "speaker"),
             spotify.resume("github-42", "speaker"),
           ]) {
@@ -1346,7 +1350,10 @@ describe("Spotify Connect player", () => {
             ...currentPlayback,
             item,
             currently_playing_type: type,
-            actions: { pausing: true, disallows: { resuming: true } },
+            actions: {
+              pausing: true,
+              disallows: { resuming: true, skipping_next: true },
+            },
           })
           const spotify = yield* Spotify
           const status = yield* spotify.playerStatus("github-42")
@@ -1356,6 +1363,7 @@ describe("Spotify Connect player", () => {
           expect(status.playback?.allows).toEqual({
             pause: false,
             resume: false,
+            next: false,
           })
         })
       )
@@ -1375,11 +1383,11 @@ describe("Spotify Connect player", () => {
           const count = setup.fetcher.mock.calls.length
           expect(
             (yield* failureReason(
-              spotify.play("github-42", playbackDevice.id, "bad/id")
+              spotify.play("github-42", playbackDevice.id, ["bad/id"])
             ))._tag
           ).toBe("InvalidInput")
           expect(setup.fetcher.mock.calls).toHaveLength(count)
-          yield* spotify.play("github-42", playbackDevice.id, "trackA")
+          yield* spotify.play("github-42", playbackDevice.id, ["trackA"])
           expect(playerWrites(setup)).toHaveLength(1)
           expect(
             new URL(requestUrl(setup, -1)).searchParams.get("device_id")
@@ -1419,7 +1427,7 @@ describe("Spotify Connect player", () => {
           )
           const spotify = yield* Spotify
           const error = yield* Effect.flip(
-            spotify.play("github-42", "speaker", "trackA")
+            spotify.play("github-42", "speaker", ["trackA"])
           )
           expect(error.reason._tag).toBe(reason)
           expect(error.retryAfterSeconds).toBe(status === 429 ? 9 : undefined)
@@ -1521,6 +1529,73 @@ describe("Spotify Connect player", () => {
       }
     )
   }
+
+  it.effect("queues the following tracks behind the requested one", () => {
+    const setup = testSetup()
+    return setup.run(
+      Effect.gen(function* () {
+        yield* connect(setup)
+        grantPlayback(setup)
+        servePlayback(setup)
+        const spotify = yield* Spotify
+        expect(
+          (yield* failureReason(
+            spotify.play("github-42", playbackDevice.id, ["trackA", "bad/id"])
+          ))._tag
+        ).toBe("InvalidInput")
+        expect(playerWrites(setup)).toHaveLength(0)
+        yield* spotify.play("github-42", playbackDevice.id, [
+          "trackA",
+          "trackB",
+          "trackC",
+        ])
+        expect(JSON.parse(requestBody(setup, -1))).toEqual({
+          uris: [
+            "spotify:track:trackA",
+            "spotify:track:trackB",
+            "spotify:track:trackC",
+          ],
+        })
+      })
+    )
+  })
+
+  it.effect(
+    "skips to the next track only on the current device when Spotify allows it",
+    () => {
+      const setup = testSetup()
+      return setup.run(
+        Effect.gen(function* () {
+          yield* connect(setup)
+          grantPlayback(setup)
+          servePlayback(setup)
+          const spotify = yield* Spotify
+          expect(
+            (yield* failureReason(spotify.next("github-42", "different")))._tag
+          ).toBe("DeviceUnavailable")
+          servePlayback(setup, {
+            ...currentPlayback,
+            actions: { disallows: { skipping_next: true } },
+          })
+          expect(
+            (yield* failureReason(spotify.next("github-42", playbackDevice.id)))
+              ._tag
+          ).toBe("PlaybackRefused")
+          expect(playerWrites(setup)).toHaveLength(0)
+          servePlayback(setup)
+          yield* spotify.next("github-42", playbackDevice.id)
+          const request = playerWrites(setup)[0]!
+          expect(request[1]?.method).toBe("POST")
+          expect(new URL(String(request[0])).pathname).toBe(
+            "/v1/me/player/next"
+          )
+          expect(
+            new URL(String(request[0])).searchParams.get("device_id")
+          ).toBe(playbackDevice.id)
+        })
+      )
+    }
+  )
 
   it.effect("leaves non-player 404 behavior unchanged", () => {
     const setup = testSetup()

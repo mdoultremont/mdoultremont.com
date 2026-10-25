@@ -15,6 +15,7 @@ import {
 } from "@/features/ui/sidebar"
 import { AppSwitcher } from "./app-switcher"
 import { NavUser } from "./nav-user"
+import { SidebarSlotTarget } from "./sidebar-slots"
 
 /** The apps sidebar: app switcher, the current app's pages, and the account menu. */
 export function AppSidebar({
@@ -36,6 +37,7 @@ export function AppSidebar({
         <AppSwitcher apps={apps} current={current} />
       </SidebarHeader>
       <SidebarContent>
+        <SidebarSlotTarget slot="nav" />
         {current ? (
           <SidebarGroup>
             <SidebarGroupLabel>{current.name}</SidebarGroupLabel>
@@ -76,6 +78,7 @@ export function AppSidebar({
         )}
       </SidebarContent>
       <SidebarFooter>
+        <SidebarSlotTarget slot="footer" />
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

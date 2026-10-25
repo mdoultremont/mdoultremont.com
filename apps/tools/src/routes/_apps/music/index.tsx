@@ -1,5 +1,4 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { musicPages } from "@/features/apps/catalog"
 
 export const Route = createFileRoute("/_apps/music/")({
   beforeLoad: ({ location }) => {
@@ -10,7 +9,7 @@ export const Route = createFileRoute("/_apps/music/")({
       })
     }
     throw redirect({
-      href: `${musicPages[0].to}${location.searchStr}`,
+      href: `/music/input/liked${location.searchStr}`,
       replace: true,
     })
   },

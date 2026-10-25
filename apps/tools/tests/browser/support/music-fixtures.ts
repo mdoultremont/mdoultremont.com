@@ -127,7 +127,7 @@ export const fixturePlayerStatus = {
       artistNames: fixtureTracks[0]!.artistNames,
       imageUrl: artwork,
     },
-    allows: { pause: true, resume: true },
+    allows: { pause: true, resume: true, next: true },
   },
 } satisfies PlayerStatus
 
@@ -136,6 +136,7 @@ export const musicFixtureResponses: Record<
   (input: Record<string, unknown>) => unknown
 > = {
   "player/status": () => fixturePlayerStatus,
+  "player/token": () => ({ accessToken: "fixture-sdk-token" }),
   "player/play": () => ({ status: "accepted" }),
   "player/pause": () => ({ status: "accepted" }),
   "player/resume": () => ({ status: "accepted" }),

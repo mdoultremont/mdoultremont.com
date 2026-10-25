@@ -1,1 +1,6 @@
-export { PlayerProvider, PlayerBar, TrackPlayButton, usePlayer } from "./player"
+export {
+  PlayerProvider,
+  MiniPlayer,
+  TrackPlayButton,
+  usePlayer,
+} from "./player"

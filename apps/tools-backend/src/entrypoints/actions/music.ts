@@ -23,7 +23,10 @@ export const musicHandlers = {
     ),
     play: bind(actions.player.play, Spotify.layer, (input, caller) =>
       Spotify.use((spotify) =>
-        spotify.play(caller.userId, input.deviceId, input.trackId)
+        spotify.play(caller.userId, input.deviceId, [
+          input.trackId,
+          ...(input.nextTrackIds ?? []),
+        ])
       ).pipe(Effect.as({ status: "accepted" } as const))
     ),
     pause: bind(actions.player.pause, Spotify.layer, (input, caller) =>
@@ -34,6 +37,11 @@ export const musicHandlers = {
     resume: bind(actions.player.resume, Spotify.layer, (input, caller) =>
       Spotify.use((spotify) =>
         spotify.resume(caller.userId, input.deviceId)
+      ).pipe(Effect.as({ status: "accepted" } as const))
+    ),
+    next: bind(actions.player.next, Spotify.layer, (input, caller) =>
+      Spotify.use((spotify) =>
+        spotify.next(caller.userId, input.deviceId)
       ).pipe(Effect.as({ status: "accepted" } as const))
     ),
   },

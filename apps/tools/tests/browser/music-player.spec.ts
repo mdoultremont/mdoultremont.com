@@ -92,7 +92,7 @@ test("each duplicate row plays exactly its track on the chosen device", async ({
   expect(fixture.commands).toEqual([
     {
       action: "player/play",
-      input: { deviceId: "fixture-phone", trackId: "track2" },
+      input: { deviceId: "fixture-phone", trackId: "track2", nextTrackIds: [] },
     },
   ])
   await expect(rows.nth(0)).toBeDisabled()
@@ -148,18 +148,16 @@ test("one player preserves the chosen target through input, output, and settings
   await chooser.click()
   await page.getByRole("option", { name: "Phone", exact: true }).click()
   const reads = fixture.statusReads()
-  for (const section of ["output", "settings", "input"]) {
+  for (const [path, heading] of [
+    ["output", "Output playlists"],
+    ["settings", "Settings"],
+    ["input/liked", "Liked Songs"],
+  ]) {
     await page
-      .locator(`a[data-sidebar="menu-button"][href="/music/${section}"]`)
+      .locator(`a[data-sidebar="menu-button"][href="/music/${path}"]`)
       .click()
     await expect(
-      page.getByRole("heading", {
-        name:
-          section === "settings"
-            ? "Settings"
-            : `${section === "input" ? "Input" : "Output"} playlists`,
-        exact: true,
-      })
+      page.getByRole("heading", { level: 1, name: heading, exact: true })
     ).toBeVisible()
     await expect(
       page.getByRole("region", { name: "Spotify player", exact: true })
@@ -174,7 +172,11 @@ test("one player preserves the chosen target through input, output, and settings
     .toEqual([
       {
         action: "player/play",
-        input: { deviceId: "fixture-phone", trackId: "track4" },
+        input: {
+          deviceId: "fixture-phone",
+          trackId: "track4",
+          nextTrackIds: [],
+        },
       },
     ])
 })
@@ -192,9 +194,9 @@ test("missing playback permission leaves browsing available and every row disabl
     .getByRole("button", { name: /^Play / })
   await expect(rows).toHaveCount(4)
   for (const row of await rows.all()) await expect(row).toBeDisabled()
-  await page.getByRole("button", { name: /Discoveries/ }).click()
+  await page.getByRole("link", { name: "Discoveries" }).click()
   await expect(
-    page.getByRole("heading", { name: "Discoveries", exact: true })
+    page.getByRole("heading", { level: 1, name: /Discoveries/ })
   ).toBeVisible()
   expect(fixture.commands).toEqual([])
   expect(fixture.statusReads()).toBe(1)
@@ -271,7 +273,11 @@ test("playlist tracks can take over playback in this browser while another devic
     .toEqual([
       {
         action: "player/play",
-        input: { deviceId: "browser-device", trackId: "track4" },
+        input: {
+          deviceId: "browser-device",
+          trackId: "track4",
+          nextTrackIds: [],
+        },
       },
     ])
   expect(await page.evaluate(() => window.fakeSpotify.activatedInGesture)).toBe(
@@ -302,4 +308,65 @@ test("playlist tracks can take over playback in this browser while another devic
   await expect(
     page.getByRole("button", { name: "Play A Walk", exact: true })
   ).toHaveAttribute("data-playing", "true")
+})
+
+test("a row queues the tracks after it and Next skips on the current device", async ({
+  page,
+}) => {
+  const fixture = await fixtureMusic(page)
+  await mountMusic(page)
+  await page
+    .getByRole("button", { name: "Play Open Eye Signal", exact: true })
+    .click()
+  await expect
+    .poll(() => fixture.commands)
+    .toEqual([
+      {
+        action: "player/play",
+        input: {
+          deviceId: "fixture-speaker",
+          trackId: "track2",
+          nextTrackIds: ["track3", "track4"],
+        },
+      },
+    ])
+  fixture.setStatus({
+    ...fixturePlayerStatus,
+    playback: {
+      ...fixturePlayerStatus.playback,
+      item: {
+        kind: "track",
+        id: "track2",
+        name: "Open Eye Signal",
+        artistNames: ["Jon Hopkins"],
+        imageUrl: null,
+      },
+    },
+  })
+  const player = page.getByRole("region", {
+    name: "Spotify player",
+    exact: true,
+  })
+  await expect(player.getByText("Open Eye Signal")).toBeVisible()
+  await player.getByRole("button", { name: "Next track" }).click()
+  await expect
+    .poll(() => fixture.commands.at(-1))
+    .toEqual({ action: "player/next", input: { deviceId: "fixture-speaker" } })
+  fixture.setStatus({
+    ...fixturePlayerStatus,
+    playback: {
+      ...fixturePlayerStatus.playback,
+      item: {
+        kind: "track",
+        id: "track3",
+        name: "Blue in Green",
+        artistNames: ["Miles Davis"],
+        imageUrl: null,
+      },
+    },
+  })
+  await expect(player.getByText("Blue in Green")).toBeVisible()
+  await expect(
+    page.getByText("Request sent. Waiting for Spotify…")
+  ).toHaveCount(0)
 })

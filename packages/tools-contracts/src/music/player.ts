@@ -4,6 +4,10 @@ export const PlaybackTokenSchema = Schema.Struct({
   accessToken: Schema.NonEmptyString,
 })
 
+export const TrackIdSchema = Schema.NonEmptyString.check(
+  Schema.isPattern(/^[A-Za-z0-9]+$/u)
+)
+
 export const DeviceIdSchema = Schema.NonEmptyString.check(
   Schema.isMaxLength(1024)
 )
@@ -46,7 +50,11 @@ export const PlaybackSchema = Schema.Struct({
     restricted: Schema.Boolean,
   }),
   item: Schema.NullOr(NowPlayingSchema),
-  allows: Schema.Struct({ pause: Schema.Boolean, resume: Schema.Boolean }),
+  allows: Schema.Struct({
+    pause: Schema.Boolean,
+    resume: Schema.Boolean,
+    next: Schema.Boolean,
+  }),
 })
 export type Playback = typeof PlaybackSchema.Type
 

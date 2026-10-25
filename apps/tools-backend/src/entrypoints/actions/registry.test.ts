@@ -66,6 +66,7 @@ const introduced = [
   "music.player.play",
   "music.player.pause",
   "music.player.resume",
+  "music.player.next",
 ] satisfies ActionName[]
 
 const run = () => Effect.succeed({})

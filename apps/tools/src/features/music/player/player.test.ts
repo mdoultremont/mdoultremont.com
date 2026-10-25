@@ -7,7 +7,7 @@ import {
   playerReducer,
   type PlayerState,
 } from "./player-state"
-import { PlayerBar, PlayerProvider, TrackPlayButton } from "./player"
+import { MiniPlayer, PlayerProvider, TrackPlayButton } from "./player"
 
 const ready: PlayerStatus = {
   status: "ready",
@@ -30,7 +30,7 @@ const ready: PlayerStatus = {
       artistNames: ["Artist"],
       imageUrl: null,
     },
-    allows: { pause: true, resume: true },
+    allows: { pause: true, resume: true, next: true },
   },
 }
 const loaded = (data: PlayerStatus = ready) =>
@@ -50,12 +50,13 @@ function render(initialState: PlayerState) {
     play: vi.fn<Client["play"]>(),
     pause: vi.fn<Client["pause"]>(),
     resume: vi.fn<Client["resume"]>(),
+    next: vi.fn<Client["next"]>(),
   }
   const html = renderToStaticMarkup(
     createElement(
       PlayerProvider,
       { initialState, client },
-      createElement(PlayerBar),
+      createElement(MiniPlayer, { variant: "sidebar" }),
       createElement(TrackPlayButton, { trackId: "trackA", name: "Song" })
     )
   )
@@ -115,7 +116,12 @@ describe("Spotify player rendering", () => {
   test("pending requests disable controls and do not claim playback started", () => {
     const pending = playerReducer(loaded(), {
       type: "start",
-      command: { kind: "play", deviceId: "speaker", trackId: "trackA" },
+      command: {
+        kind: "play",
+        deviceId: "speaker",
+        trackId: "trackA",
+        nextTrackIds: [],
+      },
       now: 0,
     })
     const html = render(

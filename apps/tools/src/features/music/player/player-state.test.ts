@@ -33,13 +33,14 @@ const ready: PlayerStatus = {
       artistNames: ["Artist"],
       imageUrl: null,
     },
-    allows: { pause: true, resume: true },
+    allows: { pause: true, resume: true, next: true },
   },
 }
 const play: PlayerCommand = {
   kind: "play",
   deviceId: "current",
   trackId: "trackA",
+  nextTrackIds: [],
 }
 const loaded = (data: PlayerStatus = ready) =>
   playerReducer(initialPlayerState, {
@@ -223,7 +224,10 @@ describe("player state", () => {
         ...ready.playback!,
         device: { ...ready.playback!.device, restricted: true },
       },
-      { ...ready.playback!, allows: { pause: false, resume: false } },
+      {
+        ...ready.playback!,
+        allows: { pause: false, resume: false, next: false },
+      },
     ]) {
       expect(deriveView(loaded({ ...ready, playback }), 0).canResume).toBe(
         false
@@ -385,7 +389,12 @@ describe("browser playback device", () => {
       loaded({ ...ready, playback: null, devices: [browser] })
     )
     state = accepted(
-      start(state, { kind: "play", deviceId: "browser", trackId: "trackA" })
+      start(state, {
+        kind: "play",
+        deviceId: "browser",
+        trackId: "trackA",
+        nextTrackIds: [],
+      })
     )
     state = browserReady(state)
     expect(state.pending?.stage).toBe("confirming")
@@ -424,5 +433,44 @@ describe("browser playback device", () => {
     expect(deriveView(state, 0).devices).toEqual([device])
     state = browserReady(state)
     expect(deriveView(state, 0).target?.id).toBe("browser")
+  })
+
+  test("next is confirmed once a different track plays on the current device", () => {
+    const next: PlayerCommand = {
+      kind: "next",
+      deviceId: "current",
+      fromTrackId: "trackA",
+    }
+    expect(deriveView(loaded(), 0).canNext).toBe(true)
+    expect(
+      deriveView(
+        loaded({
+          ...ready,
+          playback: {
+            ...ready.playback!,
+            allows: { ...ready.playback!.allows, next: false },
+          },
+        }),
+        0
+      ).canNext
+    ).toBe(false)
+    expect(
+      start(loaded(), { ...next, deviceId: "selected" }).pending
+    ).toBeNull()
+    let state = accepted(start(loaded(), next))
+    expect(state.pending?.command).toEqual(next)
+    state = observe(state, playing)
+    expect(state.pending?.stage).toBe("confirming")
+    const skipped: PlayerStatus = {
+      ...playing,
+      playback: {
+        ...playing.playback!,
+        item: { ...(playing.playback!.item as object), id: "trackB" } as never,
+      },
+    }
+    expect(confirms(next, skipped)).toBe(true)
+    state = observe(state, skipped)
+    expect(state.pending).toBeNull()
+    expect(state.unconfirmed).toBe(false)
   })
 })

@@ -62,16 +62,21 @@ export class Spotify extends Context.Service<
     readonly playerStatus: (
       ownerId: string
     ) => Effect.Effect<PlayerStatus, SpotifyError>
+    /** Plays the first track and queues the rest behind it. */
     readonly play: (
       ownerId: string,
       deviceId: string,
-      trackId: string
+      trackIds: readonly [string, ...string[]]
     ) => Effect.Effect<void, SpotifyError>
     readonly pause: (
       ownerId: string,
       deviceId: string
     ) => Effect.Effect<void, SpotifyError>
     readonly resume: (
+      ownerId: string,
+      deviceId: string
+    ) => Effect.Effect<void, SpotifyError>
+    readonly next: (
       ownerId: string,
       deviceId: string
     ) => Effect.Effect<void, SpotifyError>

@@ -9,9 +9,16 @@ export type PlayerCommand =
       readonly kind: "play"
       readonly deviceId: string
       readonly trackId: string
+      readonly nextTrackIds: readonly string[]
     }
   | { readonly kind: "pause"; readonly deviceId: string }
   | { readonly kind: "resume"; readonly deviceId: string }
+  | {
+      readonly kind: "next"
+      readonly deviceId: string
+      /** The track playing when skipping, so confirmation can see it change. */
+      readonly fromTrackId: string | null
+    }
 
 export interface PlayerFailure {
   readonly reason?: string
@@ -102,6 +109,12 @@ export function confirms(command: PlayerCommand, status: PlayerStatus) {
   const playback = status.playback
   if (command.kind === "pause") return !playback.playing
   if (command.kind === "resume") return playback.playing
+  if (command.kind === "next")
+    return (
+      playback.item?.kind === "track" &&
+      playback.item.id !== null &&
+      playback.item.id !== command.fromTrackId
+    )
   return (
     playback.playing &&
     playback.item?.kind === "track" &&
@@ -177,7 +190,11 @@ export function playerReducer(
       command.kind === "play"
         ? view.canPlay && view.target?.id === command.deviceId
         : view.currentDeviceId === command.deviceId &&
-          (command.kind === "pause" ? view.canPause : view.canResume)
+          {
+            pause: view.canPause,
+            resume: view.canResume,
+            next: view.canNext,
+          }[command.kind]
     if (!enabled) return state
     return {
       ...state,
@@ -288,6 +305,11 @@ export function deriveView(state: PlayerState, now: number) {
       currentControllable &&
       playback?.playing === false &&
       playback.allows.resume,
+    canNext:
+      !blocked &&
+      currentControllable &&
+      playback?.item?.kind === "track" &&
+      playback.allows.next,
     rateLimited: state.pausedUntil > now,
   }
 }

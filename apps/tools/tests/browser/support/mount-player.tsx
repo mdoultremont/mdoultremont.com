@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client"
 import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
 import {
-  PlayerBar,
+  MiniPlayer,
   PlayerProvider,
   TrackPlayButton,
 } from "../../../src/features/music/player"
@@ -20,7 +20,7 @@ export interface PlayerFixture {
         readonly deviceId: string
         readonly trackId: string
       }
-    | { readonly kind: "pause" | "resume"; readonly deviceId: string }
+    | { readonly kind: "pause" | "resume" | "next"; readonly deviceId: string }
   >
   readonly setStatus: (status: PlayerStatus) => void
   readonly deferNextStatus: () => void
@@ -66,7 +66,7 @@ const fixtureStatus: PlayerStatus = {
       artistNames: ["Fixture Artist"],
       imageUrl: null,
     },
-    allows: { pause: true, resume: true },
+    allows: { pause: true, resume: true, next: true },
   },
 }
 
@@ -127,6 +127,11 @@ export function mountPlayer(options: PlayerFixtureOptions = {}) {
       if (options.commandError) throw options.commandError
       return { status: "accepted" as const }
     },
+    async next(input: { deviceId: string }) {
+      calls.push({ kind: "next", ...input })
+      if (options.commandError) throw options.commandError
+      return { status: "accepted" as const }
+    },
   }
 
   const element = document.createElement("main")
@@ -135,7 +140,7 @@ export function mountPlayer(options: PlayerFixtureOptions = {}) {
   root = createRoot(element)
   root.render(
     <PlayerProvider client={client}>
-      <PlayerBar />
+      <MiniPlayer variant="sidebar" />
       <TrackPlayButton trackId="fixture-track" name="Fixture Song" />
     </PlayerProvider>
   )

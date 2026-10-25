@@ -23,6 +23,7 @@ import {
   DeviceIdSchema,
   PlayerStatusSchema,
   PlaybackTokenSchema,
+  TrackIdSchema,
 } from "./player"
 
 const action = actionsFor("music")
@@ -103,13 +104,14 @@ export const musicActions = {
     }),
     play: action({
       description:
-        "Requests exactly one track on the specified Spotify Connect device. Requires Spotify Premium. Accepted does not mean playing; read status to confirm. Does not retry playback.",
+        "Requests one track on the specified Spotify Connect device, followed by up to 99 queued tracks so skipping continues through them. Requires Spotify Premium. Accepted does not mean playing; read status to confirm. Does not retry playback.",
       effect: "write",
       http: { method: "PUT", path: "/music/player/play" },
       input: Schema.Struct({
         deviceId: DeviceIdSchema,
-        trackId: Schema.NonEmptyString.check(
-          Schema.isPattern(/^[A-Za-z0-9]+$/u)
+        trackId: TrackIdSchema,
+        nextTrackIds: Schema.optional(
+          Schema.Array(TrackIdSchema).check(Schema.isMaxLength(99))
         ),
       }),
       output: CommandAcceptedSchema,
@@ -127,6 +129,14 @@ export const musicActions = {
         "Resumes only the currently observed Spotify Connect device. Requires Spotify Premium. Accepted does not mean playing; read status to confirm. Never transfers playback.",
       effect: "write",
       http: { method: "PUT", path: "/music/player/resume" },
+      input: Schema.Struct({ deviceId: DeviceIdSchema }),
+      output: CommandAcceptedSchema,
+    }),
+    next: action({
+      description:
+        "Skips to the next track on the currently observed Spotify Connect device. Requires Spotify Premium. Accepted does not mean skipped; read status to confirm. Never transfers playback.",
+      effect: "write",
+      http: { method: "POST", path: "/music/player/next" },
       input: Schema.Struct({ deviceId: DeviceIdSchema }),
       output: CommandAcceptedSchema,
     }),

@@ -128,19 +128,23 @@ for (const width of [1280, 390]) {
         writes.push({ action, input })
       await route.fulfill({ json: { json: actions[action]!(input) } })
     })
-    await page.goto("/music/input")
+    await page.goto("/music/settings")
     await page.waitForLoadState("networkidle")
     await page.evaluate(async (modulePath) => {
       const module = await import(modulePath)
       module.mountSourcesPanel()
     }, "/tests/browser/support/mount-sources.tsx")
-    const panel = page.getByRole("region", { name: "Sources" })
+    const panel = page.getByRole("region", { name: "Input playlists" })
     const liked = panel.getByRole("listitem").filter({ hasText: "Liked Songs" })
     await expect(
       liked.getByRole("checkbox", { name: "Use Liked Songs as a source" })
     ).toBeChecked()
     await expect(liked.getByRole("button", { name: "Remove" })).toHaveCount(0)
-    const picker = panel.getByRole("combobox", {
+    await panel
+      .getByRole("button", { name: "Add input playlist", exact: true })
+      .click()
+    const dialog = page.getByRole("dialog", { name: "Add input playlist" })
+    const picker = dialog.getByRole("combobox", {
       name: "Search Spotify playlists",
     })
     await picker.fill("Jazz")
@@ -154,7 +158,10 @@ for (const width of [1280, 390]) {
     ).toHaveCount(0)
     await picker.fill("Shazam")
     await page.getByRole("option", { name: "My Shazam Tracks" }).click()
-    await panel.getByRole("button", { name: "Add source", exact: true }).click()
+    await dialog
+      .getByRole("button", { name: "Add playlist", exact: true })
+      .click()
+    await expect(dialog).toHaveCount(0)
     const shazam = panel
       .getByRole("listitem")
       .filter({ hasText: "My Shazam Tracks" })

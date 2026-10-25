@@ -3,12 +3,21 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useReducer,
   useRef,
   useState,
   type ReactNode,
 } from "react"
-import { AudioLinesIcon, PauseIcon, PlayIcon } from "lucide-react"
+import {
+  AudioLinesIcon,
+  Music2Icon,
+  PauseIcon,
+  PlayIcon,
+  RefreshCwIcon,
+  SkipForwardIcon,
+  SpeakerIcon,
+} from "lucide-react"
 import { Option, Schema } from "effect"
 import {
   ActionErrorDataSchema,
@@ -20,6 +29,7 @@ import type {
 } from "@mdoultremont/tools-contracts/music"
 import { api, errorMessage } from "@/features/api"
 import { Button } from "@/features/ui/button"
+import { cn } from "@/features/ui/lib/utils"
 import {
   Select,
   SelectContent,
@@ -47,9 +57,11 @@ type PlayerClient = {
   readonly play: (input: {
     deviceId: string
     trackId: string
+    nextTrackIds?: readonly string[]
   }) => Promise<CommandAccepted>
   readonly pause: (input: { deviceId: string }) => Promise<CommandAccepted>
   readonly resume: (input: { deviceId: string }) => Promise<CommandAccepted>
+  readonly next: (input: { deviceId: string }) => Promise<CommandAccepted>
 }
 
 function playerFailure(cause: unknown): PlayerFailure {
@@ -218,6 +230,7 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
             ? client.play({
                 deviceId: request.deviceId,
                 trackId: request.trackId,
+                nextTrackIds: request.nextTrackIds,
               })
             : client[request.kind]({ deviceId: request.deviceId })
         ),
@@ -243,9 +256,18 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     chooseDevice: (deviceId: string | null) =>
       sendEvent({ type: "choose", deviceId }),
     refresh,
-    playTrack: (trackId: string) => {
+    /** Plays `trackId`, then `nextTrackIds` (at most 99 are queued). */
+    playTrack: (trackId: string, nextTrackIds: readonly string[] = []) => {
       const target = deriveView(stateRef.current, Date.now()).target
-      if (target) void command({ kind: "play", trackId, deviceId: target.id })
+      if (target)
+        void command({
+          kind: "play",
+          trackId,
+          nextTrackIds: nextTrackIds
+            .filter((id) => /^[A-Za-z0-9]+$/u.test(id))
+            .slice(0, 99),
+          deviceId: target.id,
+        })
     },
     pause: () => {
       const deviceId = deriveView(stateRef.current, Date.now()).currentDeviceId
@@ -254,6 +276,16 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     resume: () => {
       const deviceId = deriveView(stateRef.current, Date.now()).currentDeviceId
       if (deviceId) void command({ kind: "resume", deviceId })
+    },
+    next: () => {
+      const current = deriveView(stateRef.current, Date.now())
+      const item = current.playback?.item
+      if (current.currentDeviceId)
+        void command({
+          kind: "next",
+          deviceId: current.currentDeviceId,
+          fromTrackId: item?.kind === "track" ? item.id : null,
+        })
     },
   }
 }
@@ -286,31 +318,30 @@ export function usePlayer() {
   return player
 }
 
-export function PlayerBar() {
-  const { state, view, chooseDevice, refresh, pause, resume } = usePlayer()
+/**
+ * The compact player. `sidebar` stacks it to fit the sidebar footer; `bar`
+ * lays it out in one row for the bottom of the page.
+ */
+export function MiniPlayer({
+  variant,
+}: {
+  readonly variant: "sidebar" | "bar"
+}) {
+  const { state, view, chooseDevice, refresh, pause, resume, next } =
+    usePlayer()
+  const labelId = useId()
   const item = view.playback?.item
   const busy = state.pending !== null
+  const stacked = variant === "sidebar"
   return (
     <section
       aria-label="Spotify player"
-      className="flex min-w-0 flex-col gap-3 rounded-xl border bg-muted/20 p-4"
+      className={cn(
+        "flex min-w-0 gap-x-3 gap-y-2 rounded-lg border bg-background p-2.5 text-sm text-foreground shadow-xs",
+        stacked ? "flex-col" : "flex-row flex-wrap items-center"
+      )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-medium">Spotify player</h2>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={
-            busy ||
-            view.rateLimited ||
-            view.status === "connection_lost" ||
-            view.status === "needs_permission"
-          }
-          onClick={refresh}
-        >
-          Refresh playback
-        </Button>
-      </div>
+      <h2 className="sr-only">Spotify player</h2>
       {view.status === "loading" ? (
         <p className="flex items-center gap-2 text-muted-foreground">
           <Spinner aria-hidden="true" />
@@ -318,10 +349,11 @@ export function PlayerBar() {
         </p>
       ) : null}
       {view.status === "needs_permission" ? (
-        <p>
-          Connect Spotify again to allow playback control.{" "}
+        <p className="text-muted-foreground">
+          Connect Spotify again to allow playback control. Playback requires
+          Spotify Premium.{" "}
           <a
-            className="underline underline-offset-4"
+            className="text-foreground underline underline-offset-4"
             href="/api/music/spotify/connect"
           >
             Allow playback
@@ -329,10 +361,10 @@ export function PlayerBar() {
         </p>
       ) : null}
       {view.status === "connection_lost" ? (
-        <p>
+        <p className="text-muted-foreground">
           Connect Spotify to control playback.{" "}
           <a
-            className="underline underline-offset-4"
+            className="text-foreground underline underline-offset-4"
             href="/api/music/spotify/connect"
           >
             Connect Spotify
@@ -340,16 +372,28 @@ export function PlayerBar() {
         </p>
       ) : null}
       {view.status === "ready" ? (
-        <div className="grid min-w-0 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)]">
-          <div className="flex min-w-0 items-center gap-3">
-            {item?.kind === "track" && item.imageUrl ? (
-              <img
-                src={item.imageUrl}
-                alt=""
-                className="size-12 shrink-0 rounded-md object-cover"
-              />
-            ) : null}
-            <div className="min-w-0 flex-1">
+        <>
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-2.5",
+              !stacked && "flex-1 basis-48"
+            )}
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+              {item?.kind === "track" && item.imageUrl ? (
+                <img
+                  src={item.imageUrl}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <Music2Icon
+                  aria-hidden="true"
+                  className="size-4 text-muted-foreground"
+                />
+              )}
+            </div>
+            <div className="min-w-0 flex-1 leading-tight">
               <p className="truncate font-medium">
                 {item?.kind === "track"
                   ? item.name
@@ -358,13 +402,13 @@ export function PlayerBar() {
                     : "Nothing playing"}
               </p>
               {item?.kind === "track" ? (
-                <p className="truncate text-sm text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground">
                   {item.artistNames.join(", ")}
                 </p>
               ) : null}
               {view.playback ? (
                 <p
-                  className="truncate text-sm text-muted-foreground"
+                  className="truncate text-xs text-muted-foreground"
                   title={view.playback.device.name}
                 >
                   {view.playback.playing ? "Playing" : "Paused"} on{" "}
@@ -372,30 +416,14 @@ export function PlayerBar() {
                 </p>
               ) : null}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={
-                view.playback?.playing ? "Pause playback" : "Resume playback"
-              }
-              disabled={
-                view.playback?.playing ? !view.canPause : !view.canResume
-              }
-              onClick={view.playback?.playing ? pause : resume}
-            >
-              {view.playback?.playing ? (
-                <PauseIcon aria-hidden="true" />
-              ) : (
-                <PlayIcon aria-hidden="true" />
-              )}
-            </Button>
           </div>
-          <div className="flex min-w-0 flex-col gap-2">
-            <span
-              id="player-device-label"
-              className="text-sm text-muted-foreground"
-            >
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-1",
+              stacked ? "w-full flex-wrap" : "shrink-0"
+            )}
+          >
+            <span id={labelId} className="sr-only">
               Play tracks on
             </span>
             <Select
@@ -404,10 +432,18 @@ export function PlayerBar() {
               disabled={busy || state.stale}
             >
               <SelectTrigger
-                aria-labelledby="player-device-label"
-                className="w-full min-w-0"
+                aria-labelledby={labelId}
+                size="sm"
+                className={cn(
+                  "min-w-0 border-transparent bg-transparent shadow-none hover:bg-muted",
+                  stacked ? "order-last mt-1 w-full" : "w-40"
+                )}
               >
-                <SelectValue className="min-w-0">
+                <SpeakerIcon
+                  aria-hidden="true"
+                  className="text-muted-foreground"
+                />
+                <SelectValue className="min-w-0 flex-1 text-left">
                   <span className="truncate">
                     {view.target?.name ?? "Choose a device"}
                   </span>
@@ -437,73 +473,123 @@ export function PlayerBar() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className={stacked ? "order-1 ml-auto" : undefined}
+              aria-label="Refresh playback"
+              title="Refresh playback"
+              disabled={busy || view.rateLimited}
+              onClick={refresh}
+            >
+              <RefreshCwIcon aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon-sm"
+              aria-label={
+                view.playback?.playing ? "Pause playback" : "Resume playback"
+              }
+              disabled={
+                view.playback?.playing ? !view.canPause : !view.canResume
+              }
+              onClick={view.playback?.playing ? pause : resume}
+            >
+              {view.playback?.playing ? (
+                <PauseIcon aria-hidden="true" />
+              ) : (
+                <PlayIcon aria-hidden="true" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Next track"
+              title="Next track"
+              disabled={!view.canNext}
+              onClick={next}
+            >
+              <SkipForwardIcon aria-hidden="true" />
+            </Button>
           </div>
-          {view.devices.length === 0 ? (
-            <p className="text-sm text-muted-foreground sm:col-span-2">
-              No devices found. Open Spotify on a device, then refresh playback.
-            </p>
-          ) : view.devices.every((device) => !device.controllable) ? (
-            <p className="text-sm text-muted-foreground sm:col-span-2">
-              These devices cannot be controlled. Open Spotify on another
-              device, then refresh playback.
-            </p>
-          ) : view.missingChoice ? (
-            <p className="text-sm text-muted-foreground sm:col-span-2">
-              The selected device is unavailable. Choose a device to play
-              tracks.
-            </p>
-          ) : null}
-        </div>
+        </>
       ) : null}
-      {view.status === "ready" && state.browser.status !== "ready" ? (
-        <output className="text-sm text-muted-foreground">
-          {state.browser.status === "connecting"
-            ? "Connecting this browser to Spotify…"
-            : state.browser.message}
-        </output>
-      ) : null}
-      <output aria-live="polite" className="block text-sm empty:hidden">
-        {busy ? (
-          <span className="flex items-center gap-2">
-            <Spinner aria-hidden="true" />
-            {state.pending?.stage === "sending"
-              ? "Sending request…"
-              : "Request sent. Waiting for Spotify…"}
-          </span>
-        ) : null}
-        {state.unconfirmed ? (
-          <span className="block">
-            Request sent. Spotify hasn&apos;t confirmed the change.
-          </span>
-        ) : null}
-        {state.stale ? (
-          <span className="block">
-            Playback is out of date. Refresh before controlling Spotify.
-          </span>
-        ) : null}
-        {state.notice ? <span className="block">{state.notice}</span> : null}
-        {view.rateLimited ? (
-          <span className="block">
-            Spotify has asked us to wait. Playback will refresh after the rate
-            limit expires.
-          </span>
-        ) : null}
-      </output>
-      <p className="text-xs text-muted-foreground">
-        Playback requires Spotify Premium. Play here with This browser, or
-        choose another Spotify device. Spotify app access may also be limited to
-        approved users.
-      </p>
+      <PlayerMessages className={stacked ? undefined : "basis-full"} />
     </section>
+  )
+}
+
+function PlayerMessages({ className }: { readonly className?: string }) {
+  const { state, view } = usePlayer()
+  const busy = state.pending !== null
+  const ready = view.status === "ready"
+  const deviceHint = !ready
+    ? null
+    : view.devices.length === 0
+      ? "No devices found. Open Spotify on a device, then refresh playback."
+      : view.devices.every((device) => !device.controllable)
+        ? "These devices cannot be controlled. Open Spotify on another device, then refresh playback."
+        : view.missingChoice
+          ? "The selected device is unavailable. Choose a device to play tracks."
+          : null
+  const browserHint = !ready
+    ? null
+    : state.browser.status === "connecting"
+      ? "Connecting this browser to Spotify…"
+      : state.browser.status === "unavailable"
+        ? state.browser.message
+        : null
+  return (
+    <output
+      aria-live="polite"
+      className={cn(
+        "block text-xs text-muted-foreground empty:hidden",
+        className
+      )}
+    >
+      {deviceHint ? <span className="block">{deviceHint}</span> : null}
+      {browserHint ? <span className="block">{browserHint}</span> : null}
+      {busy ? (
+        <span className="flex items-center gap-2">
+          <Spinner aria-hidden="true" />
+          {state.pending?.stage === "sending"
+            ? "Sending request…"
+            : "Request sent. Waiting for Spotify…"}
+        </span>
+      ) : null}
+      {state.unconfirmed ? (
+        <span className="block">
+          Request sent. Spotify hasn&apos;t confirmed the change.
+        </span>
+      ) : null}
+      {state.stale ? (
+        <span className="block">
+          Playback is out of date. Refresh before controlling Spotify.
+        </span>
+      ) : null}
+      {state.notice ? <span className="block">{state.notice}</span> : null}
+      {view.rateLimited ? (
+        <span className="block">
+          Spotify has asked us to wait. Playback will refresh after the rate
+          limit expires.
+        </span>
+      ) : null}
+    </output>
   )
 }
 
 export function TrackPlayButton({
   trackId,
   name,
+  nextTrackIds,
 }: {
   readonly trackId: string
   readonly name: string
+  /** The tracks that follow in the list, queued so Next continues through them. */
+  readonly nextTrackIds?: () => readonly string[]
 }) {
   const { state, view, playTrack } = usePlayer()
   const item = view.playback?.item
@@ -527,7 +613,7 @@ export function TrackPlayButton({
           : "Choose an available device and refresh playback to play"
       }
       disabled={!view.canPlay}
-      onClick={() => playTrack(trackId)}
+      onClick={() => playTrack(trackId, nextTrackIds?.())}
       data-playing={playing || undefined}
     >
       {playing ? (

@@ -35,7 +35,7 @@ const fixtureReady = {
       artistNames: ["Fixture Artist"],
       imageUrl: null,
     },
-    allows: { pause: true, resume: true },
+    allows: { pause: true, resume: true, next: true },
   },
 }
 
@@ -87,7 +87,12 @@ test("an accepted play waits for observed playback and a double click sends one 
     page.getByRole("button", { name: "Play Fixture Song" })
   ).toBeDisabled()
   expect((await calls(page)).filter(({ kind }) => kind === "play")).toEqual([
-    { kind: "play", deviceId: "fixture-speaker", trackId: "fixture-track" },
+    {
+      kind: "play",
+      deviceId: "fixture-speaker",
+      trackId: "fixture-track",
+      nextTrackIds: [],
+    },
   ])
   await page.evaluate((status) => window.playerFixture.setStatus(status), {
     ...fixtureReady,
@@ -340,7 +345,12 @@ test("the browser becomes the idle target and activation does not confirm playba
     true
   )
   expect((await calls(page)).filter(({ kind }) => kind === "play")).toEqual([
-    { kind: "play", deviceId: "browser-device", trackId: "fixture-track" },
+    {
+      kind: "play",
+      deviceId: "browser-device",
+      trackId: "fixture-track",
+      nextTrackIds: [],
+    },
   ])
   await expect(page.getByText("Nothing playing", { exact: true })).toBeVisible()
   await page.evaluate(() => window.fakeSpotify.requestToken())
