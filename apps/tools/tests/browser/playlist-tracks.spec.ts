@@ -67,6 +67,9 @@ test("preserves duplicates, loads past an empty page, and retries a failed page 
   await expect(page.getByText("Miles Davis", { exact: true })).toHaveCount(2)
   await expect(page.getByText("5:37", { exact: true })).toHaveCount(2)
   await expect(
+    page.locator('time[datetime="2026-10-01T10:00:00Z"]')
+  ).toHaveCount(2)
+  await expect(
     page.getByText("2 tracks loaded · 3 Spotify items")
   ).toBeVisible()
   await expect(

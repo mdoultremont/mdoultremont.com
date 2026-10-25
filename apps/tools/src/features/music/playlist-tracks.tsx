@@ -167,7 +167,7 @@ export function PlaylistTracks({
             <caption className="sr-only">
               Tracks in {name}, in Spotify order
             </caption>
-            <thead className="sticky top-16 z-10 bg-background text-left text-xs text-muted-foreground shadow-[inset_0_-1px_0_var(--color-border)] md:top-0">
+            <thead className="sticky top-16 z-10 bg-muted text-left text-xs text-muted-foreground shadow-[inset_0_-1px_0_var(--color-border)] md:top-0">
               <tr>
                 <th
                   scope="col"
@@ -183,10 +183,10 @@ export function PlaylistTracks({
                 </th>
                 <th
                   scope="col"
-                  className="w-20 px-4 py-3 text-right font-medium"
+                  className="w-28 px-4 py-3 text-right font-medium"
                 >
                   <Clock3Icon aria-hidden="true" className="ml-auto size-4" />
-                  <span className="sr-only">Duration</span>
+                  <span className="sr-only">Duration and date added</span>
                 </th>
               </tr>
             </thead>
@@ -242,7 +242,8 @@ export function PlaylistTracks({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right text-muted-foreground tabular-nums">
-                    {duration(track.durationMs)}
+                    <p>{duration(track.durationMs)}</p>
+                    <AddedAt value={track.addedAt} />
                   </td>
                 </tr>
               ))}
@@ -294,6 +295,23 @@ function duration(milliseconds: number | null) {
   if (milliseconds === null) return "-"
   const seconds = Math.floor(milliseconds / 1000)
   return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0")
+}
+
+const addedAtFormat = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+})
+
+function AddedAt({ value }: { value: string }) {
+  const time = Date.parse(value)
+  // Spotify omits the date on entries from old playlists; the backend sends the epoch.
+  if (!(time > 0)) return null
+  return (
+    <time dateTime={value} className="block text-xs">
+      {addedAtFormat.format(time)}
+    </time>
+  )
 }
 
 function needsConnection(cause: unknown) {
