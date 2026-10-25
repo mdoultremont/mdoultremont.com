@@ -231,7 +231,8 @@ function DeviceMenu({
             title={`Play tracks on ${view.target?.name ?? "no device"}`}
             className={cn(
               "min-w-0",
-              elsewhere && "max-w-36",
+              elsewhere &&
+                "max-w-36 bg-spotify text-black hover:bg-spotify-hover hover:text-black dark:hover:bg-spotify-hover aria-expanded:bg-spotify-hover aria-expanded:text-black",
               view.target === null && "text-muted-foreground",
               className
             )}
