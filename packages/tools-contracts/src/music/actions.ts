@@ -22,6 +22,7 @@ import {
   CommandAcceptedSchema,
   DeviceIdSchema,
   PlayerStatusSchema,
+  PlaybackTokenSchema,
 } from "./player"
 
 const action = actionsFor("music")
@@ -83,6 +84,15 @@ const PlaylistTracksInput = Schema.Struct({
  */
 export const musicActions = {
   player: {
+    token: action({
+      description:
+        "Returns a short-lived Spotify access token for the Web Playback SDK. Requires this site's browser session and playback permission. Unavailable to delegated clients. Never returns a refresh token.",
+      effect: "read",
+      sessionOnly: true,
+      http: { method: "POST", path: "/music/player/token" },
+      input: NoInput,
+      output: PlaybackTokenSchema,
+    }),
     status: action({
       description:
         "Reads Spotify Connect devices and observed playback. Playback control requires Spotify Premium and playback permission. An accepted command is not proof of playing; read status to confirm.",

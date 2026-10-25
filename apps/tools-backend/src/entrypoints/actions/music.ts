@@ -15,6 +15,9 @@ const actions = catalog.music
 
 export const musicHandlers = {
   player: {
+    token: bind(actions.player.token, Spotify.layer, (_, caller) =>
+      Spotify.use((spotify) => spotify.playbackToken(caller.userId))
+    ),
     status: bind(actions.player.status, Spotify.layer, (_, caller) =>
       Spotify.use((spotify) => spotify.playerStatus(caller.userId))
     ),

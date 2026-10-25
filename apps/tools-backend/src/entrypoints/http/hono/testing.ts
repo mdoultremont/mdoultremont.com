@@ -54,7 +54,7 @@ export function makeHarness(options: Omit<ApiOptions, "platform"> = {}) {
     fallback,
     /** Calls as `userId` with access to `apps`, signed in with the session cookie. */
     signIn: (apps: ReadonlyArray<App>, userId = "owner") => {
-      state.caller = { userId, apps, origin }
+      state.caller = { userId, apps, origin, sessionAuthenticated: true }
     },
     signOut: () => {
       state.caller = null

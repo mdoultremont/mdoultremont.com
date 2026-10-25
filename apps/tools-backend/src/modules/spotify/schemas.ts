@@ -9,6 +9,9 @@ export const spotifyScopes = [
 ] as const
 
 export const spotifyPlaybackScopes = [
+  "streaming",
+  "user-read-email",
+  "user-read-private",
   "user-read-playback-state",
   "user-modify-playback-state",
 ] as const
