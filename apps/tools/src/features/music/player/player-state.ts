@@ -420,6 +420,7 @@ export function playbackProgress(state: PlayerState, now: number) {
   )
     return null
   return {
+    track: item.id ?? item.name,
     positionMs: positionAt(playback, at, now) ?? 0,
     durationMs: item.durationMs,
     playing: playback.playing,
