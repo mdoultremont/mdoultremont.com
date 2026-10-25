@@ -39,7 +39,10 @@ import {
   type PlayerState,
 } from "./player-state"
 
+import { useBrowserPlayer } from "./browser-player"
+
 type PlayerClient = {
+  readonly token: () => Promise<{ readonly accessToken: string }>
   readonly status: () => Promise<PlayerStatus>
   readonly play: (input: {
     deviceId: string
@@ -183,6 +186,16 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     }
   }, [client, sendEvent])
 
+  const refresh = useCallback(() => scheduleRef.current(true), [])
+  const view = deriveView(state, now)
+  const token = useCallback(() => client.token(), [client])
+  const browserPlayer = useBrowserPlayer(
+    view.status === "ready",
+    token,
+    sendEvent,
+    refresh
+  )
+
   async function command(request: PlayerCommand) {
     if (document.visibilityState === "hidden") return
     const previous = stateRef.current
@@ -193,13 +206,21 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
     const generation = lifecycle.current
     scheduleRef.current()
     try {
+      const activation =
+        current.browser.status === "ready" &&
+        current.browser.deviceId === request.deviceId &&
+        request.kind !== "pause"
+          ? browserPlayer.current?.activateElement()
+          : undefined
       await withTimeout(
-        request.kind === "play"
-          ? client.play({
-              deviceId: request.deviceId,
-              trackId: request.trackId,
-            })
-          : client[request.kind]({ deviceId: request.deviceId }),
+        Promise.resolve(activation).then(() =>
+          request.kind === "play"
+            ? client.play({
+                deviceId: request.deviceId,
+                trackId: request.trackId,
+              })
+            : client[request.kind]({ deviceId: request.deviceId })
+        ),
         commandTimeoutMilliseconds
       )
       if (generation === lifecycle.current)
@@ -216,13 +237,12 @@ function usePlayerController(client: PlayerClient, initialState: PlayerState) {
       if (generation === lifecycle.current) scheduleRef.current()
     }
   }
-  const view = deriveView(state, now)
   return {
     state,
     view,
     chooseDevice: (deviceId: string | null) =>
       sendEvent({ type: "choose", deviceId }),
-    refresh: () => scheduleRef.current(true),
+    refresh,
     playTrack: (trackId: string) => {
       const target = deriveView(stateRef.current, Date.now()).target
       if (target) void command({ kind: "play", trackId, deviceId: target.id })
@@ -379,7 +399,7 @@ export function PlayerBar() {
               Play tracks on
             </span>
             <Select
-              value={view.target?.id ?? null}
+              value={state.chosenDeviceId ?? view.target?.id ?? null}
               onValueChange={chooseDevice}
               disabled={busy || state.stale}
             >
@@ -394,6 +414,11 @@ export function PlayerBar() {
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
+                {view.missingChoice ? (
+                  <SelectItem value={state.chosenDeviceId} disabled>
+                    Selected device (unavailable)
+                  </SelectItem>
+                ) : null}
                 {view.devices.map((device, index) => (
                   <SelectItem
                     key={
@@ -430,6 +455,13 @@ export function PlayerBar() {
           ) : null}
         </div>
       ) : null}
+      {view.status === "ready" && state.browser.status !== "ready" ? (
+        <output className="text-sm text-muted-foreground">
+          {state.browser.status === "connecting"
+            ? "Connecting this browser to Spotify…"
+            : state.browser.message}
+        </output>
+      ) : null}
       <output aria-live="polite" className="block text-sm empty:hidden">
         {busy ? (
           <span className="flex items-center gap-2">
@@ -458,8 +490,9 @@ export function PlayerBar() {
         ) : null}
       </output>
       <p className="text-xs text-muted-foreground">
-        Playback control requires Spotify Premium and an available Spotify
-        device. Spotify app access may also be limited to approved users.
+        Playback requires Spotify Premium. Play here with This browser, or
+        choose another Spotify device. Spotify app access may also be limited to
+        approved users.
       </p>
     </section>
   )

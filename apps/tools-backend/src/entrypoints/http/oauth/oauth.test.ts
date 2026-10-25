@@ -122,6 +122,12 @@ describe("OAuth authorization for tools clients", () => {
         const caller = callerOf(
           yield* call({ bearer: tokens.access }, { method: "POST" })
         )
+        assert.strictEqual(
+          callerOf(
+            yield* call({ bearer: tokens.access, cookie: signedIn.cookie })
+          ).sessionAuthenticated,
+          undefined
+        )
         assert.deepStrictEqual(caller, {
           userId,
           apps: ["music", "backOffice", "flights"],
@@ -587,6 +593,7 @@ describe("session callers", () => {
           t.d1.sqlite.prepare("SELECT id FROM auth_users").get()?.id
         )
         assert.deepStrictEqual(callerOf(yield* call({ cookie })), {
+          sessionAuthenticated: true,
           userId,
           apps: ["music", "backOffice", "flights"],
           origin,

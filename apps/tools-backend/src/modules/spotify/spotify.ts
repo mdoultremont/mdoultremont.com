@@ -56,6 +56,9 @@ const playlistAddLimit = 100
 export class Spotify extends Context.Service<
   Spotify,
   {
+    readonly playbackToken: (
+      ownerId: string
+    ) => Effect.Effect<{ readonly accessToken: string }, SpotifyError>
     readonly playerStatus: (
       ownerId: string
     ) => Effect.Effect<PlayerStatus, SpotifyError>

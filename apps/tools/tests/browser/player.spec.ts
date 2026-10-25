@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test"
 import type { PlayerFixtureOptions } from "./support/mount-player"
 
+import { fakeSpotify } from "./support/fake-spotify"
+
 const fixtureReady = {
   status: "ready" as const,
   devices: [
@@ -38,6 +40,7 @@ const fixtureReady = {
 }
 
 async function mountPlayer(page: Page, options: PlayerFixtureOptions = {}) {
+  await fakeSpotify(page)
   const fixtureModulePath = "/tests/browser/support/mount-player.tsx"
   await page.goto("/__player_browser_fixture__")
   await page.waitForLoadState("networkidle")
@@ -301,3 +304,101 @@ test("unmounting ignores a late status response", async ({ page }) => {
     page.locator('[data-fixture="injected-player-client"]')
   ).toHaveCount(0)
 })
+
+test("the browser becomes the idle target and activation does not confirm playback", async ({
+  page,
+}) => {
+  await mountPlayer(page, {
+    status: { status: "ready", devices: [], playback: null },
+  })
+  await expect
+    .poll(() => page.evaluate(() => window.fakeSpotify?.connected))
+    .toBe(true)
+  await page.evaluate(() => {
+    window.playerFixture.setStatus({
+      status: "ready",
+      playback: null,
+      devices: [
+        {
+          controllable: true,
+          id: "browser-device",
+          name: "Tools browser player",
+          type: "Computer",
+          active: false,
+        },
+      ],
+    })
+    window.fakeSpotify.emit("ready", { device_id: "browser-device" })
+  })
+  const chooser = page.getByRole("combobox", { name: "Play tracks on" })
+  await expect(chooser).toContainText("This browser")
+  await page.getByRole("button", { name: "Play Fixture Song" }).click()
+  await expect(
+    page.getByText("Request sent. Waiting for Spotify…")
+  ).toBeVisible()
+  expect(await page.evaluate(() => window.fakeSpotify.activatedInGesture)).toBe(
+    true
+  )
+  expect((await calls(page)).filter(({ kind }) => kind === "play")).toEqual([
+    { kind: "play", deviceId: "browser-device", trackId: "fixture-track" },
+  ])
+  await expect(page.getByText("Nothing playing", { exact: true })).toBeVisible()
+  await page.evaluate(() => window.fakeSpotify.requestToken())
+  await expect
+    .poll(() => page.evaluate(() => window.fakeSpotify.tokens.length))
+    .toBe(2)
+  expect(await page.evaluate(() => window.fakeSpotify.tokens)).toEqual([
+    "fixture-sdk-token",
+    "fixture-sdk-token",
+  ])
+  await page.evaluate(() => window.playerFixture.unmount())
+  expect(await page.evaluate(() => window.fakeSpotify.disconnected)).toBe(true)
+})
+
+for (const [event, message] of [
+  ["initialization_error", "This browser cannot initialize Spotify audio."],
+  ["authentication_error", "Spotify could not authorize this browser."],
+  ["account_error", "Browser playback requires Spotify Premium."],
+  ["playback_error", "Spotify could not play audio in this browser."],
+  ["not_ready", "This browser is offline."],
+] as const) {
+  test(`${event} removes the selected browser without falling back to a speaker`, async ({
+    page,
+  }) => {
+    await mountPlayer(page)
+    await expect
+      .poll(() => page.evaluate(() => window.fakeSpotify?.connected))
+      .toBe(true)
+    await page.evaluate((status) => {
+      window.playerFixture.setStatus({
+        ...status,
+        devices: [
+          ...status.devices,
+          {
+            controllable: true,
+            id: "browser-device",
+            name: "Tools browser player",
+            type: "Computer",
+            active: false,
+          },
+        ],
+      })
+      window.fakeSpotify.emit("ready", { device_id: "browser-device" })
+    }, fixtureReady)
+    await page.getByRole("combobox", { name: "Play tracks on" }).click()
+    await page
+      .getByRole("option", { name: "This browser", exact: true })
+      .click()
+    await page.evaluate((name) => window.fakeSpotify.emit(name), event)
+    await expect(page.getByText(message, { exact: false })).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: "Play Fixture Song" })
+    ).toBeDisabled()
+    await expect(
+      page.getByText("The selected device is unavailable.", { exact: false })
+    ).toBeVisible()
+    expect((await calls(page)).filter(({ kind }) => kind !== "status")).toEqual(
+      []
+    )
+  })
+}

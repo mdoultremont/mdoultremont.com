@@ -97,7 +97,10 @@ export const authenticateRequest = Effect.fn("authenticateRequest")(
     if (Option.isNone(session)) return challenge(site)
     if (!readOnlyMethods.has(request.method) && requestOrigin !== site.origin)
       return refusal("FORBIDDEN", "Request verification failed")
-    return caller(session.value.userId, session.value.apps)
+    return {
+      ...caller(session.value.userId, session.value.apps),
+      sessionAuthenticated: true,
+    }
   },
   Effect.catchTags({
     BetterAuthError: (error) =>

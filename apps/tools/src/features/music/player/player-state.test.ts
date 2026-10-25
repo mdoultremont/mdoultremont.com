@@ -348,3 +348,81 @@ describe("player state", () => {
     }
   })
 })
+
+const browserReady = (state: PlayerState) =>
+  playerReducer(state, {
+    type: "browser",
+    device: { status: "ready", deviceId: "browser" },
+  })
+
+describe("browser playback device", () => {
+  const browser = {
+    ...device,
+    id: "browser",
+    name: "Tools browser player",
+    active: false,
+  }
+
+  test("prefers the active device and defaults to this browser only after Spotify lists it", () => {
+    let state = browserReady(loaded({ ...ready, devices: [device, browser] }))
+    expect(deriveView(state, 0).target?.id).toBe("current")
+    state = observe(state, {
+      ...ready,
+      playback: null,
+      devices: [{ ...device, active: false }, browser],
+    })
+    expect(deriveView(state, 0).target).toMatchObject({
+      id: "browser",
+      name: "This browser",
+    })
+    expect(deriveView(state, 0).playback).toBeNull()
+    state = observe(state, { ...ready, playback: null, devices: [] })
+    expect(deriveView(state, 0).canPlay).toBe(false)
+  })
+
+  test("browser readiness and SDK errors never confirm an accepted track request", () => {
+    let state = browserReady(
+      loaded({ ...ready, playback: null, devices: [browser] })
+    )
+    state = accepted(
+      start(state, { kind: "play", deviceId: "browser", trackId: "trackA" })
+    )
+    state = browserReady(state)
+    expect(state.pending?.stage).toBe("confirming")
+    expect(deriveView(state, 0).playback).toBeNull()
+    state = observe(state, {
+      ...playing,
+      playback: {
+        ...playing.playback!,
+        device: {
+          id: "browser",
+          name: "Tools browser player",
+          restricted: false,
+        },
+      },
+      devices: [browser],
+    })
+    expect(state.pending).toBeNull()
+    expect(deriveView(state, 0).playback?.playing).toBe(true)
+  })
+
+  test("unavailable browser devices remain unavailable through stale server lists and preserve an explicit choice", () => {
+    let state = playerReducer(
+      browserReady(loaded({ ...ready, devices: [device, browser] })),
+      { type: "choose", deviceId: "browser" }
+    )
+    state = playerReducer(state, {
+      type: "browser",
+      device: { status: "unavailable", message: "Offline" },
+    })
+    state = observe(state, { ...ready, devices: [device, browser] })
+    expect(deriveView(state, 0)).toMatchObject({
+      target: null,
+      missingChoice: true,
+      canPlay: false,
+    })
+    expect(deriveView(state, 0).devices).toEqual([device])
+    state = browserReady(state)
+    expect(deriveView(state, 0).target?.id).toBe("browser")
+  })
+})

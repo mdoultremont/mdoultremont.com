@@ -45,6 +45,7 @@ type Client = NonNullable<ComponentProps<typeof PlayerProvider>["client"]>
 
 function render(initialState: PlayerState) {
   const client = {
+    token: vi.fn<Client["token"]>(),
     status: vi.fn<Client["status"]>(),
     play: vi.fn<Client["play"]>(),
     pause: vi.fn<Client["pause"]>(),

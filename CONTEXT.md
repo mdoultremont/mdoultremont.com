@@ -65,8 +65,9 @@ always be recovered.
 
 **Action**:
 One operation of an app, such as importing a flight or saving destinations.
-The site's pages, the CLI and agents all perform the same actions, and every
-call checks the user's app access.
+The site's pages, the CLI and agents use one action catalog, and every call
+checks the user's app access. The playback token action requires a browser
+session because Spotify tokens carry broader permissions.
 _Avoid_: Endpoint, procedure, tool (an MCP tool is how an agent sees an action)
 
 **Action contract**:
@@ -93,13 +94,16 @@ The user whose Spotify sources the music app sorts into destination playlists.
 Any user with music access is the owner of their own music data.
 
 **Player**:
-The Spotify Connect controller. It requests playback on an existing Spotify
+The Spotify Connect controller and browser player. The Web Playback SDK makes
+the current tab a playback device. The Player requests playback on a Spotify
 playback device and reports what Spotify has confirmed. Accepting a request
 does not confirm that playback changed.
 
 **Playback device**:
 A device Spotify reports for the owner's current playback or as available to
-play tracks. Choosing a device only sets the target for the next track request.
+play tracks. The current tab appears as "This browser" once its SDK device is
+ready and Spotify lists it. It is the default target when no device is active.
+Choosing a device only sets the target for the next track request.
 Pause and resume act only on the current playback device.
 
 ### Pipeline

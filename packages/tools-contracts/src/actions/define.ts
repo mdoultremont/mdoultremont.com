@@ -85,6 +85,7 @@ export interface ActionSpec<
   readonly input: I
   readonly output: O
   readonly file?: FileInput
+  readonly sessionOnly?: boolean
 }
 
 export type AnyActionSpec = ActionSpec
@@ -123,6 +124,7 @@ export const actionsFor =
     } & CheckedPath<P, I>
     readonly input: I
     readonly output: O
+    readonly sessionOnly?: boolean
     readonly file?: FileInput<StringField<I>>
   }): ActionSpec<A, I, O> => ({
     _tag: "Action",
@@ -133,6 +135,7 @@ export const actionsFor =
     input: spec.input,
     output: spec.output,
     ...(spec.file ? { file: spec.file } : {}),
+    ...(spec.sessionOnly ? { sessionOnly: true } : {}),
   })
 
 export const isActionSpec = (
