@@ -10,10 +10,7 @@ import {
 import { AppShell } from "../../../src/features/apps/shell"
 import { MusicSettings } from "../../../src/features/music/music-settings"
 import { MusicPlayerLayout } from "../../../src/features/music/music-player-layout"
-import {
-  PlaylistPage,
-  loadOutputPlaylists,
-} from "../../../src/features/music/playlist-page"
+import { OutputPlaylists } from "../../../src/features/music/output-playlists"
 import { InputPlaylists } from "../../../src/features/music/input-playlists"
 
 const user = {
@@ -76,10 +73,7 @@ export async function mountMusic(path = "/music/input") {
     const navigate = output.useNavigate()
     const { playlist } = output.useSearch()
     return (
-      <PlaylistPage
-        title="Output playlists"
-        description="Browse the tracks in your destinations and review playlist."
-        load={loadOutputPlaylists}
+      <OutputPlaylists
         selected={playlist}
         onSelect={(key) => void navigate({ search: { playlist: key } })}
       />

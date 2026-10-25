@@ -2,6 +2,7 @@ import { Effect, Layer } from "effect"
 import { MusicClassification } from "#backend/actions/music/classification"
 import { MusicDelivery } from "#backend/actions/music/delivery"
 import { Destinations } from "#backend/actions/music/destinations"
+import { DestinationSuggestions } from "#backend/actions/music/suggestions"
 import { MusicEnrichment } from "#backend/actions/music/enrichment"
 import { MusicIngestion } from "#backend/actions/music/ingestion"
 import { Sources } from "#backend/actions/music/sources"
@@ -84,6 +85,14 @@ export const musicHandlers = {
     ),
   },
   destinations: {
+    suggest: bind(
+      actions.destinations.suggest,
+      DestinationSuggestions.layer,
+      (_, caller) =>
+        DestinationSuggestions.use((suggestions) =>
+          suggestions.suggest(caller.userId)
+        )
+    ),
     get: bind(actions.destinations.get, Destinations.layer, (_, caller) =>
       Destinations.use((destinations) => destinations.read(caller.userId))
     ),

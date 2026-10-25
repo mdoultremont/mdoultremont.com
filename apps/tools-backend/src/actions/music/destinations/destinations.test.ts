@@ -324,6 +324,29 @@ describe("destination configuration", () => {
   )
 
   it.effect(
+    "rejects an explicitly enabled destination without a description before creating a playlist",
+    () => {
+      const { run, spotify } = setup()
+      return run(
+        Effect.gen(function* () {
+          const destinations = yield* Destinations
+          expect(
+            yield* Effect.flip(
+              destinations.create({
+                ownerId: "owner",
+                name: "Jazz",
+                description: "  ",
+                enabled: true,
+              })
+            )
+          ).toMatchObject({ _tag: "DestinationInputError" })
+          expect(spotify.createPrivatePlaylist).not.toHaveBeenCalled()
+        })
+      )
+    }
+  )
+
+  it.effect(
     "Ready needs a review playlist and a described, enabled destination",
     () => {
       const { run } = setup()

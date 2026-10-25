@@ -15,6 +15,21 @@ export const SpotifyConnectionStatusSchema = Schema.Union([
 ])
 export type SpotifyConnectionStatus = typeof SpotifyConnectionStatusSchema.Type
 
+export const DestinationSuggestionSchema = Schema.Struct({
+  name: Schema.String,
+  description: Schema.String,
+  estimatedTrackCount: Schema.Number,
+})
+export type DestinationSuggestion = typeof DestinationSuggestionSchema.Type
+
+export const DestinationSuggestionsSchema = Schema.Struct({
+  status: Schema.Literals(["ready", "empty_pool", "no_recording_data"]),
+  eligibleTracks: Schema.Number,
+  analyzedTracks: Schema.Number,
+  suggestions: Schema.Array(DestinationSuggestionSchema),
+})
+export type DestinationSuggestions = typeof DestinationSuggestionsSchema.Type
+
 export const SpotifyPlaylistSchema = Schema.Struct({
   id: Schema.String,
   name: Schema.String,

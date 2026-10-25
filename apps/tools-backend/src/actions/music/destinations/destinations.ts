@@ -55,6 +55,7 @@ export class Destinations extends Context.Service<
       readonly ownerId: string
       readonly name: string
       readonly description: string
+      readonly enabled?: boolean
     }) => Effect.Effect<
       { readonly playlist: OwnedPlaylist; readonly destination: Destination },
       | DestinationInputError
@@ -131,9 +132,11 @@ export class Destinations extends Context.Service<
         readonly ownerId: string
         readonly name: string
         readonly description: string
+        readonly enabled?: boolean
       }) {
         const name = yield* validName(input.name)
-        const description = yield* validDescription(input.description, false)
+        const enabled = input.enabled ?? Boolean(input.description.trim())
+        const description = yield* validDescription(input.description, enabled)
         const playlist = yield* usable(
           spotify.createPrivatePlaylist(input.ownerId, name)
         )
@@ -141,8 +144,7 @@ export class Destinations extends Context.Service<
         const destination: Destination = {
           playlistId: playlist.id,
           description,
-          // A playlist created without a description stays off until it has one.
-          enabled: Boolean(description),
+          enabled,
           createdAt: now,
           updatedAt: now,
         }

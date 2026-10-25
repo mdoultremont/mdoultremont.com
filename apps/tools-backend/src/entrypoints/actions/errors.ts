@@ -5,6 +5,8 @@ import type { FlightsError } from "#backend/actions/flights/flights"
 import type { ClassificationPersistenceError } from "#backend/actions/music/classification"
 import type { DeliveryPersistenceError } from "#backend/actions/music/delivery"
 import type { DestinationsError } from "#backend/actions/music/destinations"
+import type { SuggestionPersistenceError } from "#backend/actions/music/suggestions"
+import type { WorkersAiError } from "#backend/modules/workers-ai"
 import type { EnrichmentPersistenceError } from "#backend/actions/music/enrichment"
 import type { IngestionPersistenceError } from "#backend/actions/music/ingestion"
 import type {
@@ -36,6 +38,8 @@ export type BusinessError =
   | SourcesError
   | FlightsError
   | DestinationsError
+  | SuggestionPersistenceError
+  | WorkersAiError
   | IngestionPersistenceError
   | EnrichmentPersistenceError
   | ClassificationPersistenceError
@@ -110,6 +114,7 @@ export const toActionError = (
     case "IngestionPersistenceError":
     case "EnrichmentPersistenceError":
     case "ClassificationPersistenceError":
+    case "SuggestionPersistenceError":
     case "DeliveryPersistenceError":
     case "UserDirectoryPersistenceError":
       return Effect.logError(error.message, error.cause).pipe(
@@ -137,6 +142,21 @@ export const toActionError = (
     case "JobQueueError":
       return Effect.logError(error.message, error.cause).pipe(
         Effect.andThen(fail("SERVICE_UNAVAILABLE", error.message))
+      )
+    case "WorkersAiError":
+      return Effect.logError(error.message, error.cause).pipe(
+        Effect.andThen(
+          fail(
+            error.reason === "RateLimited"
+              ? "TOO_MANY_REQUESTS"
+              : error.retryable
+                ? "SERVICE_UNAVAILABLE"
+                : "BAD_GATEWAY",
+            error.retryable
+              ? "Playlist suggestions could not be generated. Try again later."
+              : "The model could not generate usable playlist suggestions."
+          )
+        )
       )
     case "EmailError":
       return Effect.logError(

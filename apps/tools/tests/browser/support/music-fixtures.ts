@@ -1,5 +1,13 @@
 import type { PlayerStatus } from "@mdoultremont/tools-contracts/music"
 
+const fixtureDestination = {
+  playlistId: "jazz",
+  description: "Acoustic jazz for quiet evenings",
+  enabled: true,
+  createdAt: 1,
+  updatedAt: 1,
+}
+
 const artwork =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -160,15 +168,7 @@ export const musicFixtureResponses: Record<
       input.playlistId === "review" ? 0 : input.playlistId === "jazz" ? 1 : 2,
   }),
   "destinations/get": () => ({
-    destinations: [
-      {
-        playlistId: "jazz",
-        description: "Acoustic jazz for quiet evenings",
-        enabled: true,
-        createdAt: 1,
-        updatedAt: 1,
-      },
-    ],
+    destinations: [fixtureDestination],
     reviewPlaylistId: "review",
     ready: false,
   }),
@@ -199,4 +199,54 @@ export const musicFixtureResponses: Record<
     refused: 0,
     lastDeliveredAt: null,
   }),
+}
+
+export function destinationSuggestionFixtures() {
+  const configuration = {
+    destinations: [{ ...fixtureDestination }],
+    reviewPlaylistId: "review",
+    ready: false,
+  }
+  const playlists = [...fixturePlaylists]
+  return {
+    ...musicFixtureResponses,
+    "destinations/get": () => configuration,
+    "spotify/playlists": () => ({ items: playlists }),
+    "destinations/suggest": () => ({
+      status: "ready",
+      eligibleTracks: 123,
+      analyzedTracks: 80,
+      suggestions: [
+        {
+          name: "Relaxed listening",
+          description: "Relaxed tracks with a calm mood.",
+          estimatedTrackCount: 32,
+        },
+        {
+          name: "Electronic",
+          description: "Tracks with an electronic sound.",
+          estimatedTrackCount: 18,
+        },
+      ],
+    }),
+    "destinations/create": (input: Record<string, unknown>) => {
+      const name = String(input.name)
+      const destination = {
+        playlistId: "suggested",
+        description: String(input.description),
+        enabled: Boolean(input.enabled),
+        createdAt: 1,
+        updatedAt: 1,
+      }
+      configuration.destinations.push(destination)
+      playlists.push({
+        id: "suggested",
+        name,
+        ownerId: "owner",
+        public: false,
+        collaborative: false,
+      })
+      return { playlist: { id: "suggested", name }, destination }
+    },
+  }
 }

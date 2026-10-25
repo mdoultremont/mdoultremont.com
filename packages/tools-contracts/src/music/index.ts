@@ -6,6 +6,8 @@ export type {
   DeliveryStatus,
   Destination,
   DestinationConfiguration,
+  DestinationSuggestion,
+  DestinationSuggestions,
   EnrichmentStatus,
   Ingestion,
   IngestionKind,

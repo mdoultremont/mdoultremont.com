@@ -60,6 +60,7 @@ const legacy = {
 } satisfies Record<string, ActionName>
 
 const introduced = [
+  "music.destinations.suggest",
   "music.player.token",
   "music.player.status",
   "music.player.play",

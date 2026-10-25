@@ -185,6 +185,16 @@ A separate Spotify playlist configured to receive tracks with no accepted
 destination.
 _Avoid_: Approval queue
 
+**Destination suggestion**:
+A proposed output playlist based only on grouped recording data from collected
+tracks present in enabled sources, the input pool. A generative model writes its
+name and app-owned classification description. Its estimated track count comes
+from SQL for the selected recording-data group or combination. Existing
+destination names and descriptions are used only to exclude covered ideas.
+Suggestions are generated on demand and not saved. Accepting one creates a
+private Spotify playlist and a disabled destination. The owner must enable it
+before it can receive tracks.
+
 **Ready**:
 The owner's statement that destinations are configured and classification may
 start. Ingestion and enrichment do not wait for it.
