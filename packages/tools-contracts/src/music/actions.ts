@@ -335,7 +335,7 @@ export const musicActions = {
   enrichment: {
     status: action({
       description:
-        "How many collected tracks have MusicBrainz and AcousticBrainz recording data, and how many lookups are pending or unresolved.",
+        "How many collected tracks have MusicBrainz, AcousticBrainz, and tag recording data, coverage per tag source (Last.fm, Discogs, ListenBrainz), and how many lookups are pending or unresolved.",
       effect: "read",
       http: { method: "GET", path: "/music/enrichment" },
       input: NoInput,
@@ -343,7 +343,7 @@ export const musicActions = {
     }),
     retry: action({
       description:
-        "Queues new lookups for tracks whose ISRC was not found, ambiguous or failed.",
+        "Queues new lookups for tracks MusicBrainz did not find, found ambiguous, or failed on, trying title and artist when the ISRC is unknown, and asks tag sources again where they found nothing or failed.",
       effect: "write",
       http: { method: "POST", path: "/music/enrichment/retry" },
       input: NoInput,

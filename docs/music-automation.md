@@ -11,7 +11,7 @@ Four steps, each re-runnable on its own:
 | Step           | Reads                                    | Writes                                  | Runs when                                                          |
 | -------------- | ---------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
 | Ingestion      | enabled Spotify sources                  | collected tracks and source memberships | Spotify connects; source added or enabled; hourly; "Check for new" |
-| Enrichment     | MusicBrainz, AcousticBrainz (by ISRC)    | recording data                          | an ingestion page adds source entries; hourly while pending        |
+| Enrichment     | MusicBrainz, AcousticBrainz, tag sources | recording data                          | an ingestion page adds source entries; hourly while pending        |
 | Classification | recording data + destination description | decisions                               | the owner sets **Ready**; after enrichment; "Reclassify"           |
 | Delivery       | decisions                                | Spotify playlists                       | **Write now**; after classification if automatic delivery          |
 
@@ -26,10 +26,19 @@ Four steps, each re-runnable on its own:
   memberships as removed from that source. Each enabled source runs hourly,
   with a full read daily. One ingestion runs at a time per source.
 - **Enrichment.** Recording data is stored per ISRC, so re-ingesting never
-  repeats a lookup. An ISRC with several MusicBrainz recordings is stored as
-  ambiguous rather than guessed. AcousticBrainz only knows recordings analysed
-  before 2022; newer ones get MusicBrainz data only. "Look up unresolved tracks
-  again" retries not-found, ambiguous, and failed ISRCs.
+  repeats a lookup. An ISRC MusicBrainz does not know is searched by title and
+  artist. An ISRC naming several recordings takes the one matching the track's
+  title and artist, or the first when all name the same song; otherwise it is
+  stored as ambiguous rather than guessed. AcousticBrainz only knows
+  recordings analysed before 2022. Last.fm, Discogs, and ListenBrainz then add
+  tags; see [tag sources](spotify-classifier-input-policy.md#tag-sources).
+  Last.fm and Discogs are skipped until their secret is set, and recordings
+  found earlier are asked once a source is configured. "Look up unresolved
+  tracks again" retries not-found, ambiguous, and failed ISRCs, and tag
+  sources that found nothing or failed. A track sent to review for lack of
+  recording data is classified again once a retry finds its recording. Other
+  decisions are not redone when tags arrive later, such as after setting a
+  tag source's secret; press "Reclassify" to use them.
 - **Classification.** Clef, Cloudflare's decision model, answers one yes/no
   question per enabled destination through the Workers AI binding.
   Destinations at 0.5 or more are accepted; otherwise the track goes to
@@ -70,7 +79,8 @@ step with pending work.
 Worker variables and secrets: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
 `OWNER_ACCOUNTS`, `EMAIL_FROM`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`,
 `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`,
-`SPOTIFY_TOKEN_ENCRYPTION_KEY`. See `apps/tools/README.md` for
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`, and optionally `LASTFM_API_KEY` and
+`DISCOGS_TOKEN`. See `apps/tools/README.md` for
 how to obtain each. A missing variable returns 503 from the routes that need it.
 
 Bindings: D1 `DB` (`mdoultremont-data`), queue `JOBS`, Workers AI `AI`, and the hourly
@@ -84,7 +94,7 @@ pnpm --filter @mdoultremont/tools db:migrate:local
 Disconnecting Spotify deletes the connection and, through foreign keys, every
 source, source membership, collected track, decision, delivery record,
 destination, and setting of the owner.
-Recording data is kept, since it is shared CC0 data keyed by ISRC.
+Recording data is kept, since it is shared data keyed by ISRC.
 
 ## Validation
 

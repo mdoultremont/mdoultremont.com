@@ -109,12 +109,21 @@ function setup() {
       )
       .get(trackId)
 
+  const forget = (isrc: string) =>
+    d1.sqlite.prepare("DELETE FROM music_recordings WHERE isrc = ?").run(isrc)
+  const tag = (isrc: string, tags: unknown) =>
+    d1.sqlite
+      .prepare("UPDATE music_recordings SET tags = ? WHERE isrc = ?")
+      .run(JSON.stringify(tags), isrc)
+
   return {
     sent,
     noul,
     scores,
     like,
     recording,
+    forget,
+    tag,
     decision,
     setConfiguration: (value: DestinationConfiguration) => {
       configuration = value
@@ -157,6 +166,27 @@ describe("music classification", () => {
       )
     }
   )
+
+  it.effect("sends tags with their source and scope to Clef", () => {
+    const t = setup()
+    t.like("USAAA2600001")
+    t.recording("USAAA2600001", "found")
+    const tags = [
+      { source: "lastfm", scope: "recording", name: "cool jazz", weight: 1 },
+      { source: "discogs", scope: "release", name: "modal", weight: 1 },
+    ]
+    t.tag("USAAA2600001", tags)
+    return t.run(
+      Effect.gen(function* () {
+        const classification = yield* MusicClassification
+        yield* classification.processNext("owner")
+        expect(t.noul.mock.calls[0]![0].state).toMatchObject({
+          recording: { title: "Blue in Green", artistCredit: "Miles Davis" },
+          tags,
+        })
+      })
+    )
+  })
 
   it.effect("sends a track to review when no destination reaches 0.5", () => {
     const t = setup()
@@ -203,6 +233,35 @@ describe("music classification", () => {
             withoutRecordingData: 2,
             waitingForEnrichment: 1,
             pending: 0,
+          })
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "classifies a review track again once a retry finds its recording",
+    () => {
+      const t = setup()
+      const track = t.like("USAAA2600001")
+      t.recording("USAAA2600001", "not_found")
+      t.scores.set("Blue in Green", { "Late-night jazz": 0.9 })
+      return t.run(
+        Effect.gen(function* () {
+          const classification = yield* MusicClassification
+          yield* classification.processNext("owner")
+          expect(t.decision(track)).toMatchObject({
+            reason: "no_recording_data",
+          })
+          t.forget("USAAA2600001")
+          t.recording("USAAA2600001", "found")
+          yield* classification.processNext("owner")
+          expect(t.decision(track)).toMatchObject({
+            destination_ids: '["jazz"]',
+            reason: "classified",
+          })
+          assert.deepStrictEqual(yield* classification.processNext("owner"), {
+            decided: 0,
           })
         })
       )
