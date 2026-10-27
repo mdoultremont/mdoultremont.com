@@ -24,11 +24,21 @@ export interface PendingTrack {
   } | null
 }
 
-const undecided = (ownerId: string) =>
+/**
+ * Collected tracks without a decision, or sent to review for lack of
+ * recording data that a later lookup has since found.
+ */
+const toDecide = (ownerId: string) =>
   and(
     eq(musicTracks.ownerId, ownerId),
     eligibleTrack(musicTracks.ownerId, musicTracks.trackId),
-    isNull(musicDecisions.trackId)
+    or(
+      isNull(musicDecisions.trackId),
+      and(
+        eq(musicDecisions.reason, "no_recording_data"),
+        eq(musicRecordings.status, "found")
+      )
+    )
   )
 const decisionJoin = and(
   eq(musicDecisions.ownerId, musicTracks.ownerId),
@@ -40,8 +50,9 @@ export class ClassificationStore extends Context.Service<
   ClassificationStore,
   {
     /**
-     * Collected tracks without a decision whose enrichment is settled: either
-     * recording data was looked up, or there is no ISRC to look up.
+     * Collected tracks to decide (see `toDecide`) whose enrichment is
+     * settled: either recording data was looked up, or there is no ISRC to
+     * look up.
      * Only recording data is returned, never Spotify fields.
      */
     readonly pending: (
@@ -113,7 +124,7 @@ export class ClassificationStore extends Context.Service<
               )
               .where(
                 and(
-                  undecided(ownerId),
+                  toDecide(ownerId),
                   or(
                     isNull(musicTracks.isrc),
                     sql`${musicRecordings.isrc} IS NOT NULL`
@@ -185,7 +196,7 @@ export class ClassificationStore extends Context.Service<
                 musicRecordings,
                 eq(musicRecordings.isrc, musicTracks.isrc)
               )
-              .where(undecided(ownerId))
+              .where(toDecide(ownerId))
             const decidedCount = decided?.decided ?? 0
             const toReview = Number(decided?.toReview ?? 0)
             return {

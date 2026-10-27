@@ -35,7 +35,10 @@ Four steps, each re-runnable on its own:
   Last.fm and Discogs are skipped until their secret is set, and recordings
   found earlier are asked once a source is configured. "Look up unresolved
   tracks again" retries not-found, ambiguous, and failed ISRCs, and tag
-  sources that found nothing or failed.
+  sources that found nothing or failed. A track sent to review for lack of
+  recording data is classified again once a retry finds its recording. Other
+  decisions are not redone when tags arrive later, such as after setting a
+  tag source's secret; press "Reclassify" to use them.
 - **Classification.** Clef, Cloudflare's decision model, answers one yes/no
   question per enabled destination through the Workers AI binding.
   Destinations at 0.5 or more are accepted; otherwise the track goes to

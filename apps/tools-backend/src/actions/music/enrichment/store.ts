@@ -143,9 +143,9 @@ export class EnrichmentStore extends Context.Service<
                 const track = { title: row.name, artists: row.artistNames }
                 const found =
                   row.status === "found" &&
-                  row.recordingId &&
-                  row.title &&
-                  row.artistCredit
+                  row.recordingId !== null &&
+                  row.title !== null &&
+                  row.artistCredit !== null
                 return [
                   {
                     isrc: row.isrc,

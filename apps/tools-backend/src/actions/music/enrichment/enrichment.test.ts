@@ -24,6 +24,7 @@ const recording = (id: string): MusicBrainzRecording => ({
   artistCredit: "Artist",
   primaryArtist: "Artist",
   durationMs: 1000,
+  disambiguation: "",
 })
 
 const analysis = {
@@ -514,6 +515,63 @@ describe("music enrichment", () => {
       )
     }
   )
+
+  it.effect("searches without featured artists and skips live versions", () => {
+    const t = setup()
+    t.like("USAAA2600001", true, {
+      name: "Latch (feat. Sam Smith)",
+      artists: ["Disclosure", "Sam Smith"],
+    })
+    t.like("USAAA2600002", true, {
+      name: "Only Live",
+      artists: ["Disclosure"],
+    })
+    t.searchRecordings.mockImplementation(({ title }) =>
+      Effect.succeed(
+        title === "Latch"
+          ? [
+              {
+                ...recording("mb-live"),
+                title: "Latch",
+                artistCredit: "Disclosure feat. Sam Smith",
+                disambiguation: "live, 2014",
+                score: 100,
+              },
+              {
+                ...recording("mb-studio"),
+                title: "Latch",
+                artistCredit: "Disclosure feat. Sam Smith",
+                score: 98,
+              },
+            ]
+          : [
+              {
+                ...recording("mb-only-live"),
+                title: "Only Live",
+                artistCredit: "Disclosure",
+                disambiguation: "live",
+                score: 100,
+              },
+            ]
+      )
+    )
+    return t.run(
+      Effect.gen(function* () {
+        const enrichment = yield* MusicEnrichment
+        yield* enrichment.processNext("owner")
+        expect(t.searchRecordings).toHaveBeenCalledWith({
+          title: "Latch",
+          artist: "Disclosure",
+        })
+        expect(t.recordingRow("USAAA2600001")).toMatchObject({
+          recording_id: "mb-studio",
+        })
+        expect(t.recordingRow("USAAA2600002")).toMatchObject({
+          status: "ambiguous",
+        })
+      })
+    )
+  })
 
   it.effect("leaves a search with only near matches not found", () => {
     const t = setup()

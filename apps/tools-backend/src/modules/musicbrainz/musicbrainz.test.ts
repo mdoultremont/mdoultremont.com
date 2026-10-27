@@ -52,6 +52,7 @@ describe("MusicBrainz", () => {
             artistCredit: "Simon & Garfunkel",
             primaryArtist: "Simon",
             durationMs: 308000,
+            disambiguation: "",
           },
         ])
         const url = new URL(String(t.fetcher.mock.calls[0]![0]))
@@ -151,6 +152,7 @@ describe("MusicBrainz", () => {
             artistCredit: "Disclosure feat. Sam Smith",
             primaryArtist: "Disclosure",
             durationMs: null,
+            disambiguation: "",
             score: 100,
           },
         ])

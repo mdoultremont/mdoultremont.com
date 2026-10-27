@@ -7,6 +7,7 @@ import {
   creditNames,
   sameTitle,
   titleKey,
+  withoutFeatures,
 } from "#backend/modules/music-matching"
 
 /**
@@ -75,21 +76,24 @@ export function matchIsrcRecordings(
 /**
  * Chooses among search results for a track whose ISRC MusicBrainz does not
  * know. Only high-scoring results with the exact title, mix name included,
- * and a credited artist from the track count.
+ * and a credited artist from the track count. Versions MusicBrainz tells apart
+ * only by a disambiguation, such as a live or demo recording, are left out;
+ * if only such versions match, the track could be any of them.
  */
 export function matchSearchResults(
   results: readonly MusicBrainzSearchResult[],
   hint: TrackHint
 ): RecordingMatch {
-  return single(
-    narrow(
-      results.filter((result) => result.score >= minimumSearchScore),
-      hint
-    )
+  const matching = narrow(
+    results.filter((result) => result.score >= minimumSearchScore),
+    hint
   )
+  const plain = matching.filter((result) => result.disambiguation === "")
+  if (plain.length === 0 && matching.length > 0) return { kind: "ambiguous" }
+  return single(plain)
 }
 
-/** The track title without the version note Spotify appends after " - ". */
+/** The title to search for: no version note after " - ", no featured artists. */
 export function searchTitle(title: string) {
-  return title.split(" - ")[0]!.trim()
+  return withoutFeatures(title.split(" - ")[0]!)
 }

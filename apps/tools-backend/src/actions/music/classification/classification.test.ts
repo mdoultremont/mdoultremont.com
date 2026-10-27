@@ -109,6 +109,8 @@ function setup() {
       )
       .get(trackId)
 
+  const forget = (isrc: string) =>
+    d1.sqlite.prepare("DELETE FROM music_recordings WHERE isrc = ?").run(isrc)
   const tag = (isrc: string, tags: unknown) =>
     d1.sqlite
       .prepare("UPDATE music_recordings SET tags = ? WHERE isrc = ?")
@@ -120,6 +122,7 @@ function setup() {
     scores,
     like,
     recording,
+    forget,
     tag,
     decision,
     setConfiguration: (value: DestinationConfiguration) => {
@@ -230,6 +233,35 @@ describe("music classification", () => {
             withoutRecordingData: 2,
             waitingForEnrichment: 1,
             pending: 0,
+          })
+        })
+      )
+    }
+  )
+
+  it.effect(
+    "classifies a review track again once a retry finds its recording",
+    () => {
+      const t = setup()
+      const track = t.like("USAAA2600001")
+      t.recording("USAAA2600001", "not_found")
+      t.scores.set("Blue in Green", { "Late-night jazz": 0.9 })
+      return t.run(
+        Effect.gen(function* () {
+          const classification = yield* MusicClassification
+          yield* classification.processNext("owner")
+          expect(t.decision(track)).toMatchObject({
+            reason: "no_recording_data",
+          })
+          t.forget("USAAA2600001")
+          t.recording("USAAA2600001", "found")
+          yield* classification.processNext("owner")
+          expect(t.decision(track)).toMatchObject({
+            destination_ids: '["jazz"]',
+            reason: "classified",
+          })
+          assert.deepStrictEqual(yield* classification.processNext("owner"), {
+            decided: 0,
           })
         })
       )

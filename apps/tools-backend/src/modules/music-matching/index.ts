@@ -1,1 +1,7 @@
-export { artistKey, creditNames, sameTitle, titleKey } from "./music-matching"
+export {
+  artistKey,
+  creditNames,
+  sameTitle,
+  titleKey,
+  withoutFeatures,
+} from "./music-matching"

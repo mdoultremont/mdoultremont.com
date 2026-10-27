@@ -24,6 +24,8 @@ export interface MusicBrainzRecording {
   /** The first credited artist, e.g. "Simon & Garfunkel" or "Disclosure" in "Disclosure feat. Sam Smith". */
   readonly primaryArtist: string
   readonly durationMs: number | null
+  /** What tells this recording apart from others of the same song, e.g. "live, 1981-09-19"; empty when nothing does. */
+  readonly disambiguation: string
 }
 
 /** A search result with MusicBrainz's relevance score, 0 to 100. */
@@ -54,6 +56,7 @@ const Recording = Schema.Struct({
     )
   ),
   title: Schema.String,
+  disambiguation: Schema.optional(Schema.String),
   length: Schema.optional(Schema.NullOr(Schema.Finite)),
   "artist-credit": Schema.optional(
     Schema.Array(
@@ -85,6 +88,7 @@ const toRecording = (
       .join(""),
     primaryArtist: credits[0]?.name ?? "",
     durationMs: recording.length ?? null,
+    disambiguation: recording.disambiguation ?? "",
   }
 }
 
