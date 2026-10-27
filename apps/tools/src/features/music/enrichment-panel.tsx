@@ -237,10 +237,10 @@ function Coverage({ status }: { readonly status: EnrichmentStatus }) {
             <TableHead className="text-right font-normal text-muted-foreground">
               Nothing found
             </TableHead>
-            <TableHead className="text-right font-normal text-muted-foreground">
+            <TableHead className="hidden text-right font-normal text-muted-foreground sm:table-cell">
               Failed
             </TableHead>
-            <TableHead className="pr-3 text-right font-normal text-muted-foreground">
+            <TableHead className="hidden pr-3 text-right font-normal text-muted-foreground sm:table-cell">
               Waiting
             </TableHead>
           </TableRow>
@@ -254,8 +254,10 @@ function Coverage({ status }: { readonly status: EnrichmentStatus }) {
             <TableCell className="text-right">
               {status.enriched - status.withAnalysis}
             </TableCell>
-            <TableCell className="text-right">–</TableCell>
-            <TableCell className="pr-3 text-right">–</TableCell>
+            <TableCell className="hidden text-right sm:table-cell">–</TableCell>
+            <TableCell className="hidden pr-3 text-right sm:table-cell">
+              –
+            </TableCell>
           </TableRow>
           {status.sources.map((source) => (
             <TableRow key={source.source}>
@@ -270,8 +272,10 @@ function Coverage({ status }: { readonly status: EnrichmentStatus }) {
                   <TableCell className="text-right">
                     {source.notFound}
                   </TableCell>
-                  <TableCell className="text-right">{source.failed}</TableCell>
-                  <TableCell className="pr-3 text-right">
+                  <TableCell className="hidden text-right sm:table-cell">
+                    {source.failed}
+                  </TableCell>
+                  <TableCell className="hidden pr-3 text-right sm:table-cell">
                     {source.pending}
                   </TableCell>
                 </>
@@ -293,8 +297,8 @@ function Coverage({ status }: { readonly status: EnrichmentStatus }) {
             <TableCell className="text-right">
               {status.enriched - status.withTags}
             </TableCell>
-            <TableCell />
-            <TableCell className="pr-3" />
+            <TableCell className="hidden sm:table-cell" />
+            <TableCell className="hidden pr-3 sm:table-cell" />
           </TableRow>
         </TableBody>
       </Table>
