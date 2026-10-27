@@ -135,8 +135,10 @@ export class MusicClassification extends Context.Service<
             classifiedAt,
           })
 
-        // The classifier state holds CC0 recording data only. Spotify fields
-        // must never reach Clef (Spotify Developer Terms).
+        // The classifier state holds recording data only: MusicBrainz and
+        // AcousticBrainz fields, and tags from Last.fm, Discogs, and
+        // ListenBrainz with their source and scope. Spotify fields must never
+        // reach Clef (Spotify Developer Terms).
         const state = {
           recording: {
             title: track.recording.title,
@@ -144,6 +146,7 @@ export class MusicClassification extends Context.Service<
             durationMs: track.recording.durationMs,
           },
           acoustic: track.recording.acoustic,
+          tags: track.recording.tags,
         }
         // Clef refusing this one input must not block every later track; an
         // outage still stops the batch so the queue retries it.

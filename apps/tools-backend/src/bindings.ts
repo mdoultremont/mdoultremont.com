@@ -14,6 +14,8 @@ export interface ToolsBindings {
   SPOTIFY_CLIENT_SECRET: string
   SPOTIFY_REDIRECT_URI: string
   SPOTIFY_TOKEN_ENCRYPTION_KEY: string
+  LASTFM_API_KEY?: string
+  DISCOGS_TOKEN?: string
 }
 
 declare global {

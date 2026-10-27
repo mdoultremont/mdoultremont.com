@@ -21,6 +21,8 @@ export type {
   Source,
   SpotifyConnectionStatus,
   SpotifyPlaylist,
+  TagSource,
+  TagSourceCoverage,
 } from "./schemas"
 
 export {

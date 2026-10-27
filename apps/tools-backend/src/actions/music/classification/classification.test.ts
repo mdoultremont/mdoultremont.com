@@ -109,12 +109,18 @@ function setup() {
       )
       .get(trackId)
 
+  const tag = (isrc: string, tags: unknown) =>
+    d1.sqlite
+      .prepare("UPDATE music_recordings SET tags = ? WHERE isrc = ?")
+      .run(JSON.stringify(tags), isrc)
+
   return {
     sent,
     noul,
     scores,
     like,
     recording,
+    tag,
     decision,
     setConfiguration: (value: DestinationConfiguration) => {
       configuration = value
@@ -157,6 +163,27 @@ describe("music classification", () => {
       )
     }
   )
+
+  it.effect("sends tags with their source and scope to Clef", () => {
+    const t = setup()
+    t.like("USAAA2600001")
+    t.recording("USAAA2600001", "found")
+    const tags = [
+      { source: "lastfm", scope: "recording", name: "cool jazz", weight: 1 },
+      { source: "discogs", scope: "release", name: "modal", weight: 1 },
+    ]
+    t.tag("USAAA2600001", tags)
+    return t.run(
+      Effect.gen(function* () {
+        const classification = yield* MusicClassification
+        yield* classification.processNext("owner")
+        expect(t.noul.mock.calls[0]![0].state).toMatchObject({
+          recording: { title: "Blue in Green", artistCredit: "Miles Davis" },
+          tags,
+        })
+      })
+    )
+  })
 
   it.effect("sends a track to review when no destination reaches 0.5", () => {
     const t = setup()

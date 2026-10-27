@@ -21,7 +21,14 @@ export interface MusicBrainzRecording {
   readonly title: string
   /** Credited artists joined the way MusicBrainz displays them, e.g. "Simon & Garfunkel". */
   readonly artistCredit: string
+  /** The first credited artist, e.g. "Simon & Garfunkel" or "Disclosure" in "Disclosure feat. Sam Smith". */
+  readonly primaryArtist: string
   readonly durationMs: number | null
+}
+
+/** A search result with MusicBrainz's relevance score, 0 to 100. */
+export interface MusicBrainzSearchResult extends MusicBrainzRecording {
+  readonly score: number
 }
 
 export class MusicBrainzError extends Data.TaggedError("MusicBrainzError")<{
@@ -40,27 +47,50 @@ export class MusicBrainzError extends Data.TaggedError("MusicBrainzError")<{
   }
 }
 
-const IsrcLookup = Schema.Struct({
-  recordings: Schema.Array(
-    Schema.Struct({
-      id: Schema.String.check(
-        Schema.isPattern(
-          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu
-        )
-      ),
-      title: Schema.String,
-      length: Schema.optional(Schema.NullOr(Schema.Finite)),
-      "artist-credit": Schema.optional(
-        Schema.Array(
-          Schema.Struct({
-            name: Schema.String,
-            joinphrase: Schema.optional(Schema.String),
-          })
-        )
-      ),
-    })
+const Recording = Schema.Struct({
+  id: Schema.String.check(
+    Schema.isPattern(
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu
+    )
+  ),
+  title: Schema.String,
+  length: Schema.optional(Schema.NullOr(Schema.Finite)),
+  "artist-credit": Schema.optional(
+    Schema.Array(
+      Schema.Struct({
+        name: Schema.String,
+        joinphrase: Schema.optional(Schema.String),
+      })
+    )
   ),
 })
+
+const IsrcLookup = Schema.Struct({ recordings: Schema.Array(Recording) })
+
+const RecordingSearch = Schema.Struct({
+  recordings: Schema.Array(
+    Schema.Struct({ ...Recording.fields, score: Schema.Finite })
+  ),
+})
+
+const toRecording = (
+  recording: typeof Recording.Type
+): MusicBrainzRecording => {
+  const credits = recording["artist-credit"] ?? []
+  return {
+    id: recording.id,
+    title: recording.title,
+    artistCredit: credits
+      .map((credit) => credit.name + (credit.joinphrase ?? ""))
+      .join(""),
+    primaryArtist: credits[0]?.name ?? "",
+    durationMs: recording.length ?? null,
+  }
+}
+
+/** Quotes a value for a Lucene phrase query. */
+const phrase = (value: string) =>
+  `"${value.replaceAll(/["\\]/gu, (character) => `\\${character}`)}"`
 
 const isrcPattern = /^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$/u
 
@@ -75,6 +105,11 @@ export class MusicBrainz extends Context.Service<
     readonly recordingsByIsrc: (
       isrc: string
     ) => Effect.Effect<readonly MusicBrainzRecording[], MusicBrainzError>
+    /** Recordings whose title and artist match the phrases, best first. */
+    readonly searchRecordings: (query: {
+      readonly title: string
+      readonly artist: string
+    }) => Effect.Effect<readonly MusicBrainzSearchResult[], MusicBrainzError>
   }
 >()("server/modules/MusicBrainz") {
   static readonly layerWith = (options: {
@@ -102,51 +137,71 @@ export class MusicBrainz extends Context.Service<
             })
           )
 
+        const get = (path: string, params: Record<string, string>) =>
+          spaced(
+            HttpClientRequest.get(`https://musicbrainz.org/${path}`).pipe(
+              HttpClientRequest.setUrlParams({ fmt: "json", ...params }),
+              HttpClientRequest.setHeader(
+                "User-Agent",
+                "mdoultremont-music/0.1 (https://mdoultremont.com)"
+              ),
+              http.execute,
+              Effect.mapError(
+                (cause) =>
+                  new MusicBrainzError({ reason: "Unavailable", cause })
+              )
+            )
+          )
+
+        const decode = <S extends Schema.Top>(
+          response: HttpClientResponse.HttpClientResponse,
+          schema: S
+        ) =>
+          failOnStatus(response).pipe(
+            Effect.andThen(response.json),
+            Effect.flatMap(Schema.decodeUnknownEffect(schema)),
+            Effect.mapError((cause) =>
+              cause instanceof MusicBrainzError
+                ? cause
+                : new MusicBrainzError({ reason: "InvalidResponse", cause })
+            )
+          ) as Effect.Effect<S["Type"], MusicBrainzError>
+
         const recordingsByIsrc = Effect.fn("MusicBrainz.recordingsByIsrc")(
           function* (isrc: string) {
             isrc = isrc.toUpperCase().replaceAll("-", "")
             if (!isrcPattern.test(isrc)) return []
-            const response = yield* spaced(
-              HttpClientRequest.get(
-                `https://musicbrainz.org/ws/2/isrc/${isrc}`
-              ).pipe(
-                HttpClientRequest.setUrlParams({
-                  fmt: "json",
-                  inc: "artist-credits",
-                }),
-                HttpClientRequest.setHeader(
-                  "User-Agent",
-                  "mdoultremont-music/0.1 (https://mdoultremont.com)"
-                ),
-                http.execute,
-                Effect.mapError(
-                  (cause) =>
-                    new MusicBrainzError({ reason: "Unavailable", cause })
-                )
-              )
-            )
+            const response = yield* get(`ws/2/isrc/${isrc}`, {
+              inc: "artist-credits",
+            })
             // 404: unknown ISRC. 400: MusicBrainz rejected it as invalid.
             if (response.status === 404 || response.status === 400) return []
-            yield* failOnStatus(response)
-            const body = yield* response.json.pipe(
-              Effect.flatMap(Schema.decodeUnknownEffect(IsrcLookup)),
-              Effect.mapError(
-                (cause) =>
-                  new MusicBrainzError({ reason: "InvalidResponse", cause })
-              )
-            )
-            return body.recordings.map((recording): MusicBrainzRecording => ({
-              id: recording.id,
-              title: recording.title,
-              artistCredit: (recording["artist-credit"] ?? [])
-                .map((credit) => credit.name + (credit.joinphrase ?? ""))
-                .join(""),
-              durationMs: recording.length ?? null,
-            }))
+            const body = yield* decode(response, IsrcLookup)
+            return body.recordings.map(toRecording)
           }
         )
 
-        return MusicBrainz.of({ recordingsByIsrc })
+        const searchRecordings = Effect.fn("MusicBrainz.searchRecordings")(
+          function* (query: {
+            readonly title: string
+            readonly artist: string
+          }) {
+            if (!query.title.trim() || !query.artist.trim()) return []
+            const response = yield* get("ws/2/recording", {
+              query: `recording:${phrase(query.title)} AND artist:${phrase(query.artist)}`,
+              limit: "25",
+            })
+            const body = yield* decode(response, RecordingSearch)
+            return body.recordings.map(
+              (recording): MusicBrainzSearchResult => ({
+                ...toRecording(recording),
+                score: recording.score,
+              })
+            )
+          }
+        )
+
+        return MusicBrainz.of({ recordingsByIsrc, searchRecordings })
       })
     ).pipe(Layer.provide(FetchHttpClient.layer))
 

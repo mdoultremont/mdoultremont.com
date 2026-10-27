@@ -50,6 +50,7 @@ describe("MusicBrainz", () => {
             id: mbid,
             title: "The Boxer",
             artistCredit: "Simon & Garfunkel",
+            primaryArtist: "Simon",
             durationMs: 308000,
           },
         ])
@@ -115,6 +116,50 @@ describe("MusicBrainz", () => {
         yield* TestClock.adjust(100)
         yield* Fiber.join(second)
         expect(t.fetcher).toHaveBeenCalledTimes(2)
+      })
+    )
+  })
+
+  it.effect("searches recordings by quoted title and artist", () => {
+    const t = setup()
+    t.fetcher.mockResolvedValue(
+      json({
+        recordings: [
+          {
+            id: mbid,
+            score: 100,
+            title: "Latch",
+            "artist-credit": [
+              { name: "Disclosure", joinphrase: " feat. " },
+              { name: "Sam Smith" },
+            ],
+          },
+        ],
+      })
+    )
+    return t.run(
+      Effect.gen(function* () {
+        const musicBrainz = yield* MusicBrainz
+        const results = yield* musicBrainz.searchRecordings({
+          title: 'Say "Hi"',
+          artist: "Disclosure",
+        })
+        assert.deepStrictEqual(results, [
+          {
+            id: mbid,
+            title: "Latch",
+            artistCredit: "Disclosure feat. Sam Smith",
+            primaryArtist: "Disclosure",
+            durationMs: null,
+            score: 100,
+          },
+        ])
+        const url = new URL(String(t.fetcher.mock.calls[0]![0]))
+        assert.strictEqual(url.pathname, "/ws/2/recording")
+        assert.strictEqual(
+          url.searchParams.get("query"),
+          'recording:"Say \\"Hi\\"" AND artist:"Disclosure"'
+        )
       })
     )
   })

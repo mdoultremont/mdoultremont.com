@@ -527,10 +527,25 @@ export const musicIngestions = sqliteTable(
   ]
 )
 
+export const tagSources = ["lastfm", "discogs", "listenbrainz"] as const
+export type TagSource = (typeof tagSources)[number]
+
+/** One tag from a provider, with what it describes and its weight in 0..1 relative to that provider's top tag. */
+export interface RecordingTag {
+  readonly source: TagSource
+  readonly scope: "recording" | "release" | "artist"
+  readonly name: string
+  readonly weight: number
+}
+
+const lookupStatus = (name: string) =>
+  text(name, { enum: ["found", "not_found", "failed"] })
+
 /**
  * Recording data per ISRC, shared by every liked track with that ISRC so it
- * is fetched once. Only CC0 MusicBrainz core fields and AcousticBrainz
- * analysis are stored.
+ * is fetched once: MusicBrainz core fields, the AcousticBrainz analysis, and
+ * tags from Last.fm, Discogs, and ListenBrainz. A `null` tag-source status
+ * means that source has not been asked yet.
  */
 export const musicRecordings = sqliteTable(
   "music_recordings",
@@ -539,10 +554,18 @@ export const musicRecordings = sqliteTable(
     status: text("status", {
       enum: ["found", "not_found", "ambiguous", "failed"],
     }).notNull(),
+    /** How the recording was matched; `null` rows predate the search fallback and matched by ISRC. */
+    match: text("match", { enum: ["isrc", "search"] }),
     recordingId: text("recording_id"),
     title: text("title"),
     artistCredit: text("artist_credit"),
+    /** First credited artist, used for artist-level lookups. */
+    primaryArtist: text("primary_artist"),
     durationMs: integer("duration_ms"),
+    tags: text("tags", { mode: "json" }).$type<readonly RecordingTag[]>(),
+    lastfmStatus: lookupStatus("lastfm_status"),
+    discogsStatus: lookupStatus("discogs_status"),
+    listenbrainzStatus: lookupStatus("listenbrainz_status"),
     acoustic: text("acoustic", { mode: "json" }).$type<{
       readonly bpm: number | null
       readonly danceability: number | null

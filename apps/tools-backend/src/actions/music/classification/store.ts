@@ -6,6 +6,7 @@ import {
   musicDecisions,
   musicTracks,
   musicRecordings,
+  type RecordingTag,
 } from "#backend/modules/database"
 import { ClassificationPersistenceError, type DecisionSummary } from "./errors"
 
@@ -19,6 +20,7 @@ export interface PendingTrack {
     readonly artistCredit: string
     readonly durationMs: number | null
     readonly acoustic: typeof musicRecordings.$inferSelect.acoustic
+    readonly tags: readonly RecordingTag[]
   } | null
 }
 
@@ -101,6 +103,7 @@ export class ClassificationStore extends Context.Service<
                 artistCredit: musicRecordings.artistCredit,
                 durationMs: musicRecordings.durationMs,
                 acoustic: musicRecordings.acoustic,
+                tags: musicRecordings.tags,
               })
               .from(musicTracks)
               .leftJoin(musicDecisions, decisionJoin)
@@ -130,6 +133,7 @@ export class ClassificationStore extends Context.Service<
                         artistCredit: row.artistCredit,
                         durationMs: row.durationMs,
                         acoustic: row.acoustic,
+                        tags: row.tags ?? [],
                       }
                     : null,
               }))
