@@ -3,13 +3,22 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { SiteShell } from "@/features/site/site-shell"
 import { flights, lifeEvents, personalCopy, places } from "@/content/personal"
+import { pageHead } from "@/features/seo/page-head"
 import type { Flight } from "@/content/personal"
 
 export const Route = createFileRoute("/personal")({
   component: PersonalPage,
-  head: () => ({
-    meta: [{ name: "robots", content: "noindex, nofollow" }],
-  }),
+  head: () =>
+    pageHead({
+      title: "Personal · Matthieu d'Oultremont",
+      description: personalCopy.hero.introduction,
+      path: "/personal",
+      noindex: true,
+      ogImage: {
+        eyebrow: personalCopy.hero.eyebrow,
+        title: personalCopy.hero.title,
+      },
+    }),
 })
 
 type PersonalTimelineItem = {

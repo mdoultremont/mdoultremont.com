@@ -8,6 +8,7 @@ import { photographs, photographyCopy } from "@/content/photography"
 import type { Photograph } from "@/content/photography"
 import { profile } from "@/content/shared"
 import { CopyEmailButton } from "@/features/site/copy-email-button"
+import { pageHead } from "@/features/seo/page-head"
 import { ResponsiveImage } from "@/features/images/responsive-image"
 import photographyMetadata from "virtual:photography-images"
 import profileMetadata from "virtual:profile-images"
@@ -16,6 +17,16 @@ const galleryFallback =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='%23e8e6e0'/%3E%3C/svg%3E"
 
 export const Route = createFileRoute("/photography")({
+  head: () =>
+    pageHead({
+      title: "Photography · Matthieu d'Oultremont",
+      description: photographyCopy.hero.introduction,
+      path: "/photography",
+      ogImage: {
+        eyebrow: photographyCopy.hero.eyebrow,
+        title: photographyCopy.hero.title,
+      },
+    }),
   component: PhotographyPage,
 })
 

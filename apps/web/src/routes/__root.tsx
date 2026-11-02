@@ -11,22 +11,6 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       },
-      {
-        title: "Matthieu d'Oultremont · Software developer",
-      },
-      {
-        name: "description",
-        content:
-          "Software developer, photographer and paraglider pilot based in Brussels. Matthieu d'Oultremont is available for his next role.",
-      },
-      {
-        property: "og:title",
-        content: "Matthieu d'Oultremont · Software developer",
-      },
-      {
-        property: "og:description",
-        content: "Software, photographs, and the view from above.",
-      },
     ],
     links: [
       {
