@@ -3,10 +3,24 @@ import { CopyEmailButton } from "@/features/site/copy-email-button"
 import { SiteShell } from "@/features/site/site-shell"
 import { experiences, professionalCopy } from "@/content/professional"
 import { profile } from "@/content/shared"
+import { pageHead } from "@/features/seo/page-head"
 import { ResponsiveImage } from "@/features/images/responsive-image"
 import metadata from "virtual:profile-images"
 
-export const Route = createFileRoute("/")({ component: ProfessionalPage })
+export const Route = createFileRoute("/")({
+  head: () =>
+    pageHead({
+      title: "Matthieu d'Oultremont · Software developer",
+      description:
+        "Software developer, photographer and paraglider pilot based in Brussels. Matthieu d'Oultremont is available for his next role.",
+      path: "/",
+      ogImage: {
+        eyebrow: professionalCopy.hero.eyebrow,
+        title: profile.name,
+      },
+    }),
+  component: ProfessionalPage,
+})
 
 const companyLogos: Record<string, string> = {
   Atlassian: "atlassian.svg",

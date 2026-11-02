@@ -6,15 +6,17 @@ import { CopyEmailButton } from "@/features/site/copy-email-button"
 import { experiences, professionalCopy } from "@/content/professional"
 import { profile } from "@/content/shared"
 import { ResponsiveImage } from "@/features/images/responsive-image"
+import { pageHead } from "@/features/seo/page-head"
 import metadata from "virtual:profile-images"
 
 export const Route = createFileRoute("/iterations")({
-  head: () => ({
-    meta: [
-      { title: "Design iterations · Matthieu" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () =>
+    pageHead({
+      title: "Design iterations · Matthieu",
+      description: "Design explorations for the portfolio.",
+      path: "/iterations",
+      noindex: true,
+    }),
   component: IterationsPage,
 })
 
