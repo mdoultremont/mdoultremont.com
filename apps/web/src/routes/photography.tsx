@@ -50,9 +50,11 @@ function PhotographyPage() {
       <SiteShell>
         <main id="main-content">
           <section className="border-b border-line">
-            <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-0 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] grid-cols-[1fr_144px] sm:grid-cols-[1fr_180px] lg:grid-cols-[1fr_320px] lg:items-stretch lg:gap-8">
-              <div className="col-span-2 px-4 pt-10 pb-6 sm:col-span-1 sm:px-6 sm:py-12 lg:py-16 lg:pl-8 lg:pr-0">
-                <p className="sr-only">{photographyCopy.hero.eyebrow}</p>
+            <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-0 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] grid-cols-1 sm:grid-cols-[1fr_180px] lg:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)] lg:items-stretch lg:gap-8">
+              <div className="px-4 py-10 sm:px-6 sm:py-12 lg:py-16 lg:pl-8 lg:pr-0">
+                <p className="mb-4 text-[0.7rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                  {photographyCopy.hero.eyebrow}
+                </p>
                 <h1 className="max-w-[13ch] text-[clamp(3rem,6.5vw,6rem)] leading-[1] font-medium tracking-[-0.04em] text-balance">
                   {photographyCopy.hero.title}
                   <span className="text-brand">.</span>
@@ -67,15 +69,15 @@ function PhotographyPage() {
                   >
                     See the collection
                   </a>
-                  <CopyEmailButton className="inline-flex min-h-11 cursor-pointer items-center border-b border-current text-sm font-semibold transition-colors hover:text-brand-dark">
+                  <CopyEmailButton className="inline-flex min-h-11 cursor-pointer items-center underline underline-offset-[0.35em] text-sm font-semibold transition-colors hover:text-brand-dark">
                     Get in touch
                   </CopyEmailButton>
                 </div>
               </div>
-              <div className="relative col-start-2 h-36 overflow-hidden sm:col-start-auto sm:h-auto sm:self-stretch">
+              <div className="relative hidden overflow-hidden sm:block sm:self-stretch">
                 <ResponsiveImage
                   className="absolute bottom-0 block h-full w-full object-contain object-bottom"
-                  sizes="(min-width: 1024px) 320px, (min-width: 640px) 180px, 144px"
+                  sizes="(min-width: 1536px) 600px, (min-width: 1024px) 40vw, 180px"
                   src={profile.photographyPortrait}
                   image={profileMetadata[profile.photographyPortrait]}
                   alt="Matthieu holding an instant camera"

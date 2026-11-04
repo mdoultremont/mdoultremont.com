@@ -1,72 +1,70 @@
 # Portfolio refinement evidence
 
-The goal is a more polished personal portfolio, with a stable implementation for independent design review. This report does not assign an objective design score. The parent review owns further findings and the final pull request.
+This pass improves the portfolio's hierarchy, responsive composition, and keyboard navigation while preserving its content and personal identity. It includes three implementation iterations and independent review. Visual quality is a design judgment, not an objective score.
 
-## Scope and design decisions
+## Scope and iterations
 
-The baseline is `ba1ae85`. Only the portfolio and its verification material changed. Production content, record order, CMS schema, private tools, and `.codex/config.toml` are unchanged. The existing warm paper, charcoal, red punctuation, personal portraits, and animated face remain the visual identity.
+Baseline `ba1ae85` includes the startup configuration fix. That fix, production JSON, CMS configuration, and private tools are unchanged. The warm paper, charcoal, red punctuation, personal portraits, and animated face remain.
 
-Initial inspection found that the photography portrait and oversized introduction delayed the actual collection, especially on mobile. The career history presented four equal boxed panels, with repeated gradients and grain competing with the text. Navigation text was small and the shared shell lacked a skip link. The gallery's image `sizes` breakpoint also disagreed with its two-column layout breakpoint.
+1. `f5652bf` replaces equal career cards with chronological rows, reduces hero grain, relaxes display tracking, enlarges navigation labels, and adds skip navigation.
+2. `7ea6ad1` prioritizes the photography collection, compacts its introduction, corrects responsive image sizes, and adds browser verification.
+3. Independent review found an invisible focus ring on primary buttons. The final revision fixes light/dark focus contrast, adds the missing experimental-page skip target and sticky-header clearance, strengthens verification, and removes the custom text-selection rule. It restores the photography eyebrow, enlarges the desktop portrait, removes its separate mobile row, corrects the contact underline, and tightens tablet career alignment.
 
-The first implementation uses ruled chronological rows for career records, reduces hero grain, slightly relaxes display tracking, enlarges navigation labels, adds visible focus outlines and a skip link, and gives the photography introduction a smaller supporting portrait. It preserves the existing collection and modal. Image sizes now describe the actual portrait and gallery widths. The personal experimental page receives only the skip-link target because it shares the shell. No experimental page is linked from public navigation.
+The existing profile, experience array, and photograph array remain the data shapes. No dependency, abstraction, or new state model was added.
 
-The second iteration follows inspection of the production screenshots. It makes the collection link the primary photography action and increases the mobile camera portrait from 96 to 144 CSS pixels. This retains a personal touch without returning to the original full-width portrait. It also adds rerunnable browser verification.
+[Review findings](review-findings.md) records every finding and disposition. [Decisions](decisions.tsv) preserves the ordered trail. **The first eight log timestamps were reconstructed and are unreliable.** An appended correction supersedes them; do not treat them as measured event times. The last three even postdate their containing commit. Commit history is the reliable chronology.
 
-The data shapes remain the existing validated profile, experience array, and photograph array. No new state model, dependency, or component abstraction is needed. Work proceeded serially in this shared checkout; build and static checks could run independently. The critical dependency was capturing the unchanged UI before any source edit.
+## Before and after
 
-## Captures
+| Measurement                                                   |      Baseline | Final revision |
+| ------------------------------------------------------------- | ------------: | -------------: |
+| Complete collection photographs in initial 390 × 844 viewport |             0 |              1 |
+| Navigation font size                                          |          12px |           14px |
+| All emitted client JavaScript                                 | 566,500 bytes |  566,757 bytes |
+| All emitted CSS                                               |  49,661 bytes |   49,986 bytes |
 
-All PNG files are outside git under `/tmp/portfolio-improvement-c028a893/`.
+The image count is observed in the matching photography captures. Font size is the rendered CSS rule. Asset counts come from production output and include experimental-route chunks, not just the initial page request. The increases are 257 JS bytes and 325 CSS bytes. [Before](before-assets.json) and [after](after-assets.json) contain individual raw/gzip file counts. There is no loading-speed or Lighthouse claim.
 
-- `before-home-desktop.png`, `before-home-mobile.png`
-- `before-photography-desktop.png`, `before-photography-mobile.png`
-- `before-collection-desktop.png`
-- `after-home-desktop.png`, `after-home-mobile.png`
-- `after-photography-desktop.png`, `after-photography-mobile.png`
-- `after-experience-desktop.png`, `after-experience-mobile.png`
-- `after-collection-desktop.png`, `after-collection-mobile.png`
+Measurements use macOS, Node 22.23.2 and pnpm 11.22.0. Byte counts are deterministic file lengths; timing trials would not establish anything about them. Local Worker image transformation can fall back to original assets, so local network timings would not represent production.
 
-The unchanged screenshots were captured using T3 preview before editing. The requested viewports were 1440 × 900 and 390 × 844 CSS pixels. T3 exported desktop images scaled to 1280 × 800 and mobile images at 780 × 1688. The after captures use Playwright at the same CSS viewports, with device scale factor 1. Compare composition, not raw image pixels. T3 snapshot repeatedly failed with `Preview automation snapshot timed out after 15000ms` after the first build; this is why the capture tool changed. Both use Chromium and the local production preview.
+## Screenshots
 
-An early file named `before-experience-desktop.png` captured a stale frame during smooth scrolling. It is **not valid experience baseline evidence**. The baseline collection screenshot was recaptured after scrolling settled. There is no valid before mobile collection or before experience screenshot. Do not present those as covered. All listed final after images were inspected; the invalid baseline remains outside git for audit transparency.
+The PR attaches the durable visual evidence. Capture names below identify the source artifacts; PNGs are deliberately outside git.
 
-## Reproduction
+| State                            | Before                                    | After                                          |
+| -------------------------------- | ----------------------------------------- | ---------------------------------------------- |
+| Home desktop/mobile              | `before-home-{desktop,mobile}.png`        | `after-home-{desktop,mobile}.png`              |
+| Photography desktop/mobile       | `before-photography-{desktop,mobile}.png` | `after-photography-{desktop,mobile}.png`       |
+| Collection desktop               | `before-collection-desktop.png`           | `after-collection-desktop.png`                 |
+| Experience desktop/mobile/tablet | No valid baseline                         | `after-experience-{desktop,mobile,tablet}.png` |
+| Collection mobile                | Not captured                              | `after-collection-mobile.png`                  |
+| Focus on collection/gallery      | Review identified the original defect     | `after-focus-{collection,gallery}.png`         |
 
-From repository root:
+Capture viewports are 1440 × 900 and 390 × 844 CSS pixels, with final tablet checks at 768 × 1024. T3 captured the unchanged baseline, exporting desktop at 1280 × 800 and mobile at 780 × 1688. After two repeated `Preview automation snapshot timed out after 15000ms` failures, Playwright captured the final Chromium pages at the same CSS viewports and DPR 1. Compare composition, not raster pixels.
+
+The early `before-experience-desktop.png` is invalid because it caught an unsettled scroll frame. It is excluded from comparisons. There is no before mobile collection image. Original and intermediate captures are retained locally for audit; only valid evidence belongs in the PR.
+
+## Reproduce
+
+From repository root, build before starting the production preview. Restart the preview after rebuilding, since a running Worker can retain stale asset references.
 
 ```sh
 pnpm build
 pnpm --filter @mdoultremont/portfolio preview --port 4183
-node docs/portfolio-improvement/measure.mjs apps/web/dist/client/assets
+node apps/web/scripts/measure-portfolio.mjs apps/web/dist/client/assets
 node apps/web/scripts/verify-portfolio.mjs http://localhost:4183
-node apps/web/scripts/capture-portfolio.mjs /tmp/portfolio-improvement-c028a893
+node apps/web/scripts/capture-portfolio.mjs /tmp/portfolio-captures http://localhost:4183
 pnpm check
 ```
 
-The capture script uses port 4183. The browser script takes a base URL. Playwright and Chromium were already installed. No dependencies were added. The first preview attempt started before the baseline build finished and failed because the generated Wrangler config did not yet exist. Restarting after the build succeeded.
+The browser check covers both public routes at 320, 390, 768, 1024, and 1440px. It checks HTTP 200, one h1, document overflow, local fragments, real clipboard contents, navigation URL, desktop gallery keyboard controls, 320px gallery controls, and reduced-motion scrolling.
 
-Environment is macOS, Node v22.23.2, pnpm 11.22.0, 12 logical cores. Initial load averages were 4.40, 5.06, 4.76. Measurements use the production Vite output, not dev server responses. The baseline and final asset inventories include raw and gzip byte counts for each emitted client JS and CSS file. Gzip is computed locally with Node zlib. This is not a deployed transfer measurement.
+The revised check asserts skip destinations, header clearance, and keyboard continuation on all four shell routes. It checks ink focus outlines on light surfaces and paper outlines on toast/gallery controls. Assertions wait for CSS color transitions to settle. [Browser results](browser-checks.json) record the browser version, timestamp and served stylesheet hashes so the artifact can be matched to the measured build.
 
 ## Verification and limits
 
-The browser harness checks both public routes at widths 320, 390, 768, 1024, and 1440. It asserts HTTP 200, a single h1, no document overflow, and valid local fragment links. It also tests keyboard skip navigation, actual clipboard contents after copying email, navigation between pages, desktop gallery ArrowRight and Escape, narrow gallery next and close controls, and reduced-motion scroll behavior. It records browser exceptions. These are focused functional checks, not a full accessibility certification.
+Root `pnpm check` and `pnpm build` passed for the final revision. The revised browser script also passed all ten public route/width combinations and the additional interaction checks. Reviewers independently reproduced the original focus defect and confirmed existing clipboard, gallery and skip behavior.
 
-The design detector returned an empty findings array. It is not evidence of a visual quality score. Root check and build outcomes, emitted asset totals, and final raw artifacts are recorded below at handoff. No Lighthouse score, loading speedup, or timing improvement is claimed. No repeated timing trials were run because this pass makes no timing decision. Emitted bytes are deterministic artifact counts and need no timing statistics.
+A first revision check encountered stale preview asset references after rebuilding. Restarting the preview corrected the environment. An immediate outline-color assertion then sampled a CSS transition; waiting for its settled color corrected the check. These failed attempts are not counted as successful verification.
 
-Text contrast uses the existing palette. The paper/ink and paper/muted pairs are unchanged; the red dot is decorative. The new focus outline inherits each control's foreground color. A screen-reader audit, all modal failure states, external LinkedIn availability, Safari, and real mobile hardware remain unverified. Image transformation and network behavior on Cloudflare can differ from the local Worker. The local server returns original image assets when transformation is unavailable.
-
-## Review brief
-
-Review from the baseline through HEAD. Inspect photography at the top and at the collection, professional history at desktop and mobile, and the footer contact interaction. Challenge whether the smaller camera portrait feels intentional, whether the chronological rows improve scanning, and whether the page preserves Matthieu's identity. Review functional regressions separately from aesthetic preferences. Re-run the browser harness against the production server. Check the committed decision log against the artifacts above. The original startup configuration fix must remain intact.
-
-## Final results
-
-- `pnpm check` passed at root, including formatting, lint, typechecks, and workspace tests. Log: `/tmp/portfolio-improvement-c028a893/final-check.log`.
-- `pnpm build` passed at root. Log: `/tmp/portfolio-improvement-c028a893/final-build.log`. The unchanged root build also passed; its log is `before-build.log` in the same directory.
-- `node apps/web/scripts/verify-portfolio.mjs` passed against the final production preview. All ten route/width combinations passed. No browser exceptions were recorded. The committed `browser-checks.json` contains the raw results and browser version.
-- `node apps/web/scripts/capture-portfolio.mjs /tmp/portfolio-improvement-c028a893` completed successfully after the final build.
-- `git diff --check` passed. The design detector returned `[]` before the final action-order and portrait-size refinement. It was not rerun for a cosmetic-only change.
-- All emitted client JavaScript totals 566,500 bytes before and 566,675 bytes after. CSS totals 49,661 bytes before and 50,259 bytes after. These totals include chunks for experimental routes, not just initial public-route requests. They demonstrate the size of the change, not a performance improvement. File-by-file raw and gzip inventories are committed as `before-assets.json` and `after-assets.json`.
-- The production preview remains at `http://localhost:4183`, listening process PID 97969, terminal session 76524. T3 tabs opened by this implementation pass were closed.
-
-The first signed implementation commit is `f5652bf`. The second commit contains the visual refinement, browser scripts, and final evidence. Both commits contain SSH signatures; local signature verification lacks an allowed-signers file. No signing fallback was needed. No push or pull request was made.
+These are focused functional checks, not an accessibility certification. Document width cannot rule out clipping inside an ancestor. Reduced-motion coverage verifies scrolling, not every animation. The first gallery image is checked for successful loading; controls/counters do not cover all image/network failures. Safari, screen readers, real mobile hardware, LinkedIn availability, and deployed Cloudflare image transformations remain unverified. No deployment or merge is included.

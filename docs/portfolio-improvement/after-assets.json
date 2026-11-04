@@ -3,34 +3,34 @@
   "scope": "All emitted client JS/CSS assets, not initial transfer or timing",
   "rows": [
     {
-      "file": "_virtual_profile-images-CLLwshBr.js",
+      "file": "_virtual_profile-images-f8tOZ2Ig.js",
       "bytes": 1327,
-      "gzipBytes": 756
+      "gzipBytes": 753
     },
     {
-      "file": "index-DaYb7DWd.js",
+      "file": "index-CcqOerAX.js",
       "bytes": 245241,
-      "gzipBytes": 76589
+      "gzipBytes": 76588
     },
     {
-      "file": "iterations-BBCcQudl.js",
-      "bytes": 21754,
-      "gzipBytes": 7526
+      "file": "iterations-CoBCBuA9.js",
+      "bytes": 21772,
+      "gzipBytes": 7534
     },
     {
-      "file": "personal-SZtNDEu8.js",
+      "file": "personal-BZQI68OU.js",
       "bytes": 10805,
-      "gzipBytes": 4428
+      "gzipBytes": 4425
     },
     {
-      "file": "photography-kAv83st3.js",
-      "bytes": 69005,
-      "gzipBytes": 21928
+      "file": "photography-C_k5OVY9.js",
+      "bytes": 69040,
+      "gzipBytes": 21942
     },
     {
-      "file": "routes-C7FoWJXG.js",
-      "bytes": 6390,
-      "gzipBytes": 2355
+      "file": "routes-D6lt04i9.js",
+      "bytes": 6391,
+      "gzipBytes": 2356
     },
     {
       "file": "shared-CUw9zrMz.js",
@@ -38,28 +38,28 @@
       "gzipBytes": 50988
     },
     {
-      "file": "site-shell-AZYXzhkF.js",
-      "bytes": 48847,
-      "gzipBytes": 17629
-    },
-    {
       "file": "site-shell-CkJcnqk_.css",
       "bytes": 247,
       "gzipBytes": 177
     },
     {
-      "file": "styles-BPYHwiYo.css",
-      "bytes": 50012,
-      "gzipBytes": 9988
+      "file": "site-shell-VRuvFysg.js",
+      "bytes": 48875,
+      "gzipBytes": 17641
     },
     {
-      "file": "useBaseUiId-CsTCAzG_.js",
+      "file": "styles-CRNW9MeK.css",
+      "bytes": 49739,
+      "gzipBytes": 9951
+    },
+    {
+      "file": "useBaseUiId-DAX9kOrb.js",
       "bytes": 91,
       "gzipBytes": 108
     }
   ],
   "totals": {
-    "js": 566675,
-    "css": 50259
+    "js": 566757,
+    "css": 49986
   }
 }

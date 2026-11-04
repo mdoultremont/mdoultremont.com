@@ -1,5 +1,72 @@
 {
+  "generatedAt": "2026-11-04T20:23:57.430Z",
+  "stylesheets": [
+    "/assets/styles-CRNW9MeK.css",
+    "/assets/site-shell-CkJcnqk_.css"
+  ],
   "browser": "151.0.7922.34",
+  "focusChecks": [
+    {
+      "route": "/",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "See my experience",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "hello@mdoultremont.com",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "LinkedIn",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "See the collection",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "hello@mdoultremont.com",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "LinkedIn",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    }
+  ],
   "results": [
     {
       "route": "/",
@@ -74,7 +141,8 @@
   ],
   "errors": [],
   "checks": [
-    "skip link",
+    "skip destination, header clearance and keyboard continuation on all shell routes",
+    "ink focus rings on light surfaces and paper rings on toast and gallery",
     "copy email with clipboard assertion",
     "navigation",
     "gallery keyboard next and escape",

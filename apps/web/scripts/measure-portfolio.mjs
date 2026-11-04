@@ -5,7 +5,7 @@ const files = await readdir(dir)
 const rows = await Promise.all(
   files
     .filter((f) => /\.(js|css)$/.test(f))
-    .sort()
+    .toSorted()
     .map(async (file) => {
       const b = await readFile(`${dir}/${file}`)
       return { file, bytes: b.length, gzipBytes: gzipSync(b).length }

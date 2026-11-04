@@ -107,7 +107,7 @@ function ProfessionalPage() {
             <div className="px-4 sm:px-6 lg:px-8">
               {experiences.map((experience) => (
                 <article
-                  className="grid gap-4 border-t border-white/20 py-7 sm:grid-cols-[1fr_1fr] sm:gap-x-8 lg:grid-cols-[1fr_1.2fr_2fr] lg:items-start lg:py-9"
+                  className="grid gap-4 border-t border-white/20 py-7 sm:grid-cols-[auto_1fr] sm:gap-x-8 lg:grid-cols-[1fr_1.2fr_2fr] lg:items-start lg:py-9"
                   key={experience.company}
                 >
                   <div className="flex min-h-9 items-center gap-4">

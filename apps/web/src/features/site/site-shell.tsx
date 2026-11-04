@@ -125,7 +125,7 @@ function ToastList() {
           <Toast.Title className="m-0 text-sm font-semibold" />
           <Toast.Description className="mt-1 text-xs text-white/60" />
         </div>
-        <Toast.Close className="cursor-pointer rounded-full border border-[#555] px-3 py-1.5 text-xs text-paper hover:bg-white/10">
+        <Toast.Close className="cursor-pointer rounded-full border border-[#555] px-3 py-1.5 text-xs text-paper hover:bg-white/10 focus-visible:outline-paper">
           Close
         </Toast.Close>
       </Toast.Content>
