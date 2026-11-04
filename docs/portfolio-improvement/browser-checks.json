@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T20:23:57.430Z",
+  "generatedAt": "2026-11-04T22:15:49.673Z",
   "stylesheets": [
     "/assets/styles-CRNW9MeK.css",
     "/assets/site-shell-CkJcnqk_.css"
@@ -147,6 +147,7 @@
     "navigation",
     "gallery keyboard next and escape",
     "320px gallery next and close",
+    "failed image retry focus and successful recovery",
     "reduced motion scroll behavior"
   ]
 }

@@ -139,6 +139,22 @@ assert.equal(
   ),
   "auto"
 )
+await page.route("**/images/media/photography/**", (route) => route.abort())
+await page.getByRole("button", { name: /^View photograph 5(?:$|:)/ }).click()
+const retry = page.getByRole("button", { name: "Try again", exact: true })
+await retry.waitFor()
+await page.keyboard.press("Tab")
+await retry.focus()
+await expect(retry).toHaveCSS("outline-color", "rgb(248, 247, 244)")
+await page.unroute("**/images/media/photography/**")
+await retry.click()
+await expect(page.getByRole("dialog").locator("img")).toBeVisible()
+await page.waitForFunction(() => {
+  const image = document.querySelector('[role="dialog"] img')
+  return image?.complete && image.naturalWidth > 0
+})
+await page.keyboard.press("Escape")
+await page.getByRole("dialog").waitFor({ state: "hidden" })
 assert.deepEqual(errors, [])
 console.log(
   JSON.stringify(
@@ -158,6 +174,7 @@ console.log(
         "navigation",
         "gallery keyboard next and escape",
         "320px gallery next and close",
+        "failed image retry focus and successful recovery",
         "reduced motion scroll behavior",
       ],
     },

@@ -317,7 +317,7 @@ function ModalPhotograph({ photo }: { photo: Photograph }) {
         >
           <p>Photograph unavailable.</p>
           <button
-            className="rounded-full border border-paper/50 px-4 py-2 font-semibold hover:bg-white/10"
+            className="rounded-full border border-paper/50 px-4 py-2 font-semibold hover:bg-white/10 focus-visible:outline-paper"
             type="button"
             onClick={() => {
               setImageState("loading")

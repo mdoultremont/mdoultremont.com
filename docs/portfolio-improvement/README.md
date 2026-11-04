@@ -1,6 +1,6 @@
 # Portfolio refinement evidence
 
-This pass improves the portfolio's hierarchy, responsive composition, and keyboard navigation while preserving its content and personal identity. It includes three implementation iterations and independent review. Visual quality is a design judgment, not an objective score.
+This pass improves the portfolio's hierarchy, responsive composition, and keyboard navigation while preserving its content and personal identity. It includes four implementation iterations and independent review. Visual quality is a design judgment, not an objective score.
 
 ## Scope and iterations
 
@@ -10,9 +10,11 @@ Baseline `ba1ae85` includes the startup configuration fix. That fix, production 
 2. `7ea6ad1` prioritizes the photography collection, compacts its introduction, corrects responsive image sizes, and adds browser verification.
 3. Independent review found an invisible focus ring on primary buttons. The final revision fixes light/dark focus contrast, adds the missing experimental-page skip target and sticky-header clearance, strengthens verification, and removes the custom text-selection rule. It restores the photography eyebrow, enlarges the desktop portrait, removes its separate mobile row, corrects the contact underline, and tightens tablet career alignment.
 
+4. The focused recheck found one remaining dark-surface control, the gallery retry button. It now uses a paper outline. A forced image failure verifies that focus ring and recovery after retry.
+
 The existing profile, experience array, and photograph array remain the data shapes. No dependency, abstraction, or new state model was added.
 
-[Review findings](review-findings.md) records every finding and disposition. [Decisions](decisions.tsv) preserves the ordered trail. **The first eight log timestamps were reconstructed and are unreliable.** An appended correction supersedes them; do not treat them as measured event times. The last three even postdate their containing commit. Commit history is the reliable chronology.
+[Review findings](review-findings.md) records every finding and disposition. [Decisions](decisions.tsv) preserves the ordered trail. **The first eight log timestamps were reconstructed and are unreliable.** An appended correction supersedes them; do not treat them as measured event times. Rows 6–8 even postdate their containing commit. Commit history is the reliable chronology.
 
 ## Before and after
 
@@ -20,10 +22,10 @@ The existing profile, experience array, and photograph array remain the data sha
 | ------------------------------------------------------------- | ------------: | -------------: |
 | Complete collection photographs in initial 390 × 844 viewport |             0 |              1 |
 | Navigation font size                                          |          12px |           14px |
-| All emitted client JavaScript                                 | 566,500 bytes |  566,757 bytes |
+| All emitted client JavaScript                                 | 566,500 bytes |  566,785 bytes |
 | All emitted CSS                                               |  49,661 bytes |   49,986 bytes |
 
-The image count is observed in the matching photography captures. Font size is the rendered CSS rule. Asset counts come from production output and include experimental-route chunks, not just the initial page request. The increases are 257 JS bytes and 325 CSS bytes. [Before](before-assets.json) and [after](after-assets.json) contain individual raw/gzip file counts. There is no loading-speed or Lighthouse claim.
+The image count is observed in the matching photography captures. Font size is the rendered CSS rule. Asset counts come from production output and include experimental-route chunks, not just the initial page request. The increases are 285 JS bytes and 325 CSS bytes. [Before](before-assets.json) and [after](after-assets.json) contain individual raw/gzip file counts. There is no loading-speed or Lighthouse claim.
 
 Measurements use macOS, Node 22.23.2 and pnpm 11.22.0. Byte counts are deterministic file lengths; timing trials would not establish anything about them. Local Worker image transformation can fall back to original assets, so local network timings would not represent production.
 
@@ -59,7 +61,7 @@ pnpm check
 
 The browser check covers both public routes at 320, 390, 768, 1024, and 1440px. It checks HTTP 200, one h1, document overflow, local fragments, real clipboard contents, navigation URL, desktop gallery keyboard controls, 320px gallery controls, and reduced-motion scrolling.
 
-The revised check asserts skip destinations, header clearance, and keyboard continuation on all four shell routes. It checks ink focus outlines on light surfaces and paper outlines on toast/gallery controls. Assertions wait for CSS color transitions to settle. [Browser results](browser-checks.json) record the browser version, timestamp and served stylesheet hashes so the artifact can be matched to the measured build.
+The revised check asserts skip destinations, header clearance, and keyboard continuation on all four shell routes. It checks ink focus outlines on sampled light-surface actions and paper outlines on toast/gallery controls. A forced image failure checks the retry focus ring and successful recovery. Assertions wait for CSS color transitions to settle. [Browser results](browser-checks.json) record the browser version, timestamp and served stylesheet hashes so the artifact can be matched to the measured build.
 
 ## Verification and limits
 
@@ -67,4 +69,4 @@ Root `pnpm check` and `pnpm build` passed for the final revision. The revised br
 
 A first revision check encountered stale preview asset references after rebuilding. Restarting the preview corrected the environment. An immediate outline-color assertion then sampled a CSS transition; waiting for its settled color corrected the check. These failed attempts are not counted as successful verification.
 
-These are focused functional checks, not an accessibility certification. Document width cannot rule out clipping inside an ancestor. Reduced-motion coverage verifies scrolling, not every animation. The first gallery image is checked for successful loading; controls/counters do not cover all image/network failures. Safari, screen readers, real mobile hardware, LinkedIn availability, and deployed Cloudflare image transformations remain unverified. No deployment or merge is included.
+These are focused functional checks, not an accessibility certification. Document width cannot rule out clipping inside an ancestor. Reduced-motion coverage verifies scrolling, not every animation. The first gallery image is checked for successful loading; controls/counters do not cover all image/network failures. Safari, screen readers, real mobile hardware, LinkedIn availability, and deployed Cloudflare image transformations remain unverified. No deployment or merge is included. A final local rebuild initially ran out of disk space; only generated build output was removed, then the build and checks passed after space was available.

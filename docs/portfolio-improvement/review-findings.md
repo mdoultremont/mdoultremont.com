@@ -23,3 +23,17 @@ The first round had no disagreement on a blocking defect. Portrait size and tabl
 The browser check uses Chromium. Document overflow does not prove that no ancestor clips content. Reduced-motion coverage checks scroll behavior, not every animation. Gallery checks cover controls and counters; they are not exhaustive image/network failure tests. Safari, screen readers, real mobile hardware, and deployed image transformations remain unverified.
 
 The invalid experience baseline and missing mobile collection baseline must not appear as before/after comparisons. Final screenshot attachments belong in the PR; PNGs stay outside git.
+
+## Focused recheck
+
+The focused second round reviewed `57bf765`, reran the browser script, matched served stylesheet hashes and emitted byte counts, and verified the corrected audit trail. It confirmed the original repairs but found one additional error-state regression.
+
+| Finding | Decision           | Resolution                                                                                                                                                                          |
+| ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RR-01   | Accepted, blocking | Add a paper focus outline to the gallery retry button. Force image failure in the browser check, assert the retry outline, restore requests, and verify that retry loads the image. |
+| RR-O1   | Accepted tradeoff  | Tablet company names can differ by about 4px because each date/logo column fits its content. Keep the simpler per-record grid.                                                      |
+| RR-O2   | Deferred           | The hidden mobile camera portrait may still load. This pass makes no image-transfer or speed claim.                                                                                 |
+| RR-O3   | Clarified          | Focus-color checks cover sampled light-surface actions; header links and every thumbnail are not exhaustively asserted.                                                             |
+| RR-O4   | Accepted           | Identify reconstructed timestamp rows 6–8 explicitly.                                                                                                                               |
+
+The lead verified the one-line retry repair and recovery assertion after rebuilding. No additional full review was needed. Final screenshots include the retry error state. The audit review found no remaining evidence-integrity issue after the timestamp correction.

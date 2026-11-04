@@ -8,29 +8,29 @@
       "gzipBytes": 753
     },
     {
-      "file": "index-CcqOerAX.js",
+      "file": "index-FqIJXwWP.js",
       "bytes": 245241,
-      "gzipBytes": 76588
+      "gzipBytes": 76587
     },
     {
-      "file": "iterations-CoBCBuA9.js",
+      "file": "iterations-6vDs_buJ.js",
       "bytes": 21772,
-      "gzipBytes": 7534
+      "gzipBytes": 7535
     },
     {
-      "file": "personal-BZQI68OU.js",
+      "file": "personal-D0eVWIxw.js",
       "bytes": 10805,
-      "gzipBytes": 4425
+      "gzipBytes": 4427
     },
     {
-      "file": "photography-C_k5OVY9.js",
-      "bytes": 69040,
-      "gzipBytes": 21942
+      "file": "photography-rXU2nxZ-.js",
+      "bytes": 69068,
+      "gzipBytes": 21945
     },
     {
-      "file": "routes-D6lt04i9.js",
+      "file": "routes-CwPWshQw.js",
       "bytes": 6391,
-      "gzipBytes": 2356
+      "gzipBytes": 2357
     },
     {
       "file": "shared-CUw9zrMz.js",
@@ -59,7 +59,7 @@
     }
   ],
   "totals": {
-    "js": 566757,
+    "js": 566785,
     "css": 49986
   }
 }
