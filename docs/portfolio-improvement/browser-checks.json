@@ -1,0 +1,84 @@
+{
+  "browser": "151.0.7922.34",
+  "results": [
+    {
+      "route": "/",
+      "width": 320,
+      "scrollWidth": 320,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 320,
+      "scrollWidth": 320,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 768,
+      "scrollWidth": 768,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 768,
+      "scrollWidth": 768,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "h1": 1,
+      "brokenAnchors": 0
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "skip link",
+    "copy email with clipboard assertion",
+    "navigation",
+    "gallery keyboard next and escape",
+    "320px gallery next and close",
+    "reduced motion scroll behavior"
+  ]
+}
