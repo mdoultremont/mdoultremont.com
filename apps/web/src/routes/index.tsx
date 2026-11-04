@@ -32,10 +32,10 @@ const companyLogos: Record<string, string> = {
 function ProfessionalPage() {
   return (
     <SiteShell contactTitle={professionalCopy.contact.title}>
-      <main>
+      <main id="main-content">
         <section className="border-b border-line">
-          <div className="relative isolate mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] overflow-hidden border-x border-line [background:radial-gradient(ellipse_at_90%_20%,#a2badc55,transparent_65%),radial-gradient(ellipse_at_30%_115%,#e7a98c66,transparent_75%),#f8f7f4] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[url('/media/brand/hero-grain.svg')] before:opacity-12 before:mix-blend-multiply sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-12">
-            <div className="px-4 pt-12 pb-8 sm:px-6 lg:col-span-6 lg:px-8 lg:py-20">
+          <div className="relative isolate mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] overflow-hidden border-x border-line [background:radial-gradient(ellipse_at_90%_20%,#a2badc55,transparent_65%),radial-gradient(ellipse_at_30%_115%,#e7a98c66,transparent_75%),#f8f7f4] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[url('/media/brand/hero-grain.svg')] before:opacity-[0.035] before:mix-blend-multiply sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-12">
+            <div className="px-4 pt-12 pb-8 sm:px-6 lg:col-span-6 lg:px-8 lg:py-16">
               {profile.available && (
                 <span className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[#d8d7d3] bg-linear-to-b from-white to-[#eeede9] px-3.5 py-2 text-[0.8rem] text-[#625f59] shadow-[inset_0_1px_1px_#fff,inset_0_-1px_1px_#00000008,0_2px_3px_#00000006]">
                   <span
@@ -48,7 +48,7 @@ function ProfessionalPage() {
               <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted-foreground">
                 {professionalCopy.hero.eyebrow}
               </p>
-              <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.055em]">
+              <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.04em]">
                 {profile.firstName}
                 <span className="text-brand">.</span>
               </h1>
@@ -70,6 +70,8 @@ function ProfessionalPage() {
             <div className="grid min-w-0 justify-items-center overflow-hidden items-end lg:col-span-6">
               <ResponsiveImage
                 className="block h-auto max-h-[360px] max-w-full object-contain object-bottom lg:h-[90%] lg:max-h-[600px]"
+                sizes="(min-width: 1024px) 46vw, 90vw"
+                fetchPriority="high"
                 src={profile.professionalPortrait}
                 image={metadata[profile.professionalPortrait]}
                 alt="Matthieu d'Oultremont"
@@ -102,13 +104,13 @@ function ProfessionalPage() {
                 {professionalCopy.experience.introduction}
               </p>
             </div>
-            <div className="-mx-px grid pr-px pb-px sm:grid-cols-2 xl:grid-cols-4">
+            <div className="px-4 sm:px-6 lg:px-8">
               {experiences.map((experience) => (
                 <article
-                  className="relative isolate -mr-px -mb-px bg-[linear-gradient(to_bottom_left,#34373b_0%,#25282c_42%,#17191d_90%)] px-4 pt-7 pb-8 before:pointer-events-none before:absolute before:inset-0 before:border before:border-white/12 after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:bg-[url('/media/brand/grain.svg')] after:opacity-12 after:mix-blend-soft-light sm:px-6 xl:px-8"
+                  className="grid gap-4 border-t border-white/20 py-7 sm:grid-cols-[1fr_1fr] sm:gap-x-8 lg:grid-cols-[1fr_1.2fr_2fr] lg:items-start lg:py-9"
                   key={experience.company}
                 >
-                  <div className="flex min-h-9 items-center justify-between gap-4">
+                  <div className="flex min-h-9 items-center gap-4">
                     <p className="text-[0.8rem] text-[#b9bcc2]">
                       {experience.period}
                     </p>
@@ -122,10 +124,10 @@ function ProfessionalPage() {
                       />
                     )}
                   </div>
-                  <h3 className="mt-6 text-[clamp(1.75rem,2.5vw,2.75rem)] leading-[1.1] font-medium tracking-[-0.04em] text-balance">
+                  <h3 className="text-[clamp(1.75rem,2.5vw,2.75rem)] leading-[1.1] font-medium tracking-[-0.04em] text-balance">
                     {experience.company}
                   </h3>
-                  <p className="mt-6 max-w-[36ch] text-[0.95rem] leading-[1.6] text-[#dddeda]">
+                  <p className="max-w-[48ch] text-[1rem] sm:col-span-2 lg:col-span-1 leading-[1.6] text-[#dddeda]">
                     {experience.summary}
                   </p>
                 </article>

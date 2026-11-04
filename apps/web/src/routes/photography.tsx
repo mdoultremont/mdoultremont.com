@@ -48,21 +48,19 @@ function PhotographyPage() {
       onOpenChange={(open) => !open && setSelectedIndex(null)}
     >
       <SiteShell>
-        <main>
+        <main id="main-content">
           <section className="border-b border-line">
-            <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-12 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-2 lg:items-stretch lg:gap-8">
-              <div className="px-4 py-12 sm:px-6 sm:py-16 lg:py-24 lg:pl-8 lg:pr-0">
-                <p className="text-[0.7rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">
-                  {photographyCopy.hero.eyebrow}
-                </p>
-                <h1 className="mt-4 max-w-[9ch] text-[clamp(4rem,9vw,9rem)] leading-[0.9] font-medium tracking-[-0.065em]">
+            <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] gap-0 border-x border-line sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] grid-cols-[1fr_96px] sm:grid-cols-[1fr_180px] lg:grid-cols-[1fr_320px] lg:items-stretch lg:gap-8">
+              <div className="col-span-2 px-4 pt-10 pb-6 sm:col-span-1 sm:px-6 sm:py-12 lg:py-16 lg:pl-8 lg:pr-0">
+                <p className="sr-only">{photographyCopy.hero.eyebrow}</p>
+                <h1 className="max-w-[13ch] text-[clamp(3rem,6.5vw,6rem)] leading-[1] font-medium tracking-[-0.04em] text-balance">
                   {photographyCopy.hero.title}
                   <span className="text-brand">.</span>
                 </h1>
-                <p className="mt-8 max-w-xl text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted-foreground">
+                <p className="mt-6 max-w-[44ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-[1.55] text-muted-foreground">
                   {photographyCopy.hero.introduction}
                 </p>
-                <div className="mt-10 flex flex-wrap items-center gap-5">
+                <div className="mt-6 flex flex-wrap items-center gap-5">
                   <CopyEmailButton className="inline-flex min-h-11 items-center justify-center rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-[#333]">
                     Get in touch
                   </CopyEmailButton>
@@ -74,9 +72,10 @@ function PhotographyPage() {
                   </a>
                 </div>
               </div>
-              <div className="relative self-stretch lg:overflow-hidden">
+              <div className="relative col-start-2 h-28 overflow-hidden sm:col-start-auto sm:h-auto sm:self-stretch">
                 <ResponsiveImage
-                  className="mx-auto block w-full max-w-sm object-contain object-bottom lg:absolute lg:bottom-0 lg:left-1/2 lg:h-full lg:w-auto lg:max-w-full lg:-translate-x-1/2"
+                  className="absolute bottom-0 block h-full w-full object-contain object-bottom"
+                  sizes="(min-width: 1024px) 320px, (min-width: 640px) 180px, 96px"
                   src={profile.photographyPortrait}
                   image={profileMetadata[profile.photographyPortrait]}
                   alt="Matthieu holding an instant camera"
@@ -85,11 +84,11 @@ function PhotographyPage() {
             </div>
           </section>
           <section
-            className="border-b border-line"
+            className="scroll-mt-20 border-b border-line"
             aria-label="Photography collection"
             id="collection"
           >
-            <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] columns-1 gap-6 border-x border-line px-4 py-16 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-20 md:columns-2 lg:w-[calc(100%-6rem)] lg:columns-3 lg:px-8 lg:py-24">
+            <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] columns-1 gap-6 border-x border-line px-4 py-8 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-10 md:columns-2 lg:w-[calc(100%-6rem)] lg:columns-3 lg:px-8 lg:py-12">
               {photographs.map((photo, index) => (
                 <button
                   className="mb-8 inline-block w-full cursor-zoom-in break-inside-avoid bg-transparent text-left"
@@ -103,7 +102,7 @@ function PhotographyPage() {
                     src={photo.src}
                     image={photographyMetadata[photo.src]}
                     widthRole="gallery"
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
+                    sizes="(min-width: 1024px) 30vw, (min-width: 768px) 50vw, 100vw"
                     alt={photographAlt(photo)}
                     loading="lazy"
                     decoding="async"

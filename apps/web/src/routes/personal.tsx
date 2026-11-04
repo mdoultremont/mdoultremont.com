@@ -39,7 +39,7 @@ function PersonalPage() {
 
   return (
     <SiteShell>
-      <main>
+      <main id="main-content">
         <section className="border-b border-line">
           <div className="mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] items-end gap-10 border-x border-line px-4 py-16 sm:w-[calc(100%-4rem)] sm:px-6 sm:py-20 lg:w-[calc(100%-6rem)] lg:grid-cols-[1fr_minmax(17rem,0.5fr)] lg:gap-24 lg:px-8 lg:py-24">
             <div>

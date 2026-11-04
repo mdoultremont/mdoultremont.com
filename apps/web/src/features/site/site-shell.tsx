@@ -20,8 +20,11 @@ export function SiteShell({
   return (
     <Toast.Provider timeout={3200}>
       <div className="overflow-clip bg-paper text-ink">
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
         <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur-xl">
-          <div className="mx-auto grid min-h-20 w-[calc(100%-2rem)] max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center gap-4 border-x border-line px-4 sm:w-[calc(100%-4rem)] sm:px-6 lg:w-[calc(100%-6rem)] lg:px-8">
+          <div className="mx-auto grid min-h-20 w-[calc(100%-2rem)] max-w-[1440px] grid-cols-[auto_1fr] sm:grid-cols-[1fr_auto_1fr] items-center gap-4 border-x border-line px-4 sm:w-[calc(100%-4rem)] sm:px-6 lg:w-[calc(100%-6rem)] lg:px-8">
             <Link
               className="inline-flex size-11 items-center justify-center rounded-xl"
               to="/"
@@ -39,7 +42,7 @@ export function SiteShell({
             >
               {navigation.map((item) => (
                 <Link
-                  className="group relative inline-flex min-h-11 items-center justify-center px-3 py-2 text-xs font-medium text-muted-foreground hover:text-ink"
+                  className="group relative inline-flex min-h-11 items-center justify-center px-3 py-2 text-sm font-medium text-muted-foreground hover:text-ink"
                   key={item.to}
                   to={item.to}
                   viewTransition

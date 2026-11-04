@@ -1,0 +1,5 @@
+ts	phase	decision	why	evidence	result
+2026-11-04T20:08:00Z	baseline	Preserve content records and the paper/charcoal/red identity	The existing portfolio is personal and truthful	apps/web/content	No content or CMS changes planned
+2026-11-04T20:08:01Z	measurement	Count emitted production assets without timing claims	Local Worker image responses and shared machine load do not represent deployed performance	/tmp/portfolio-improvement-c028a893/before-assets.json	Baseline saved
+2026-11-04T20:08:02Z	design	Reduce photography introduction height and portrait prominence	The photographs are below the first mobile viewport	/tmp/portfolio-improvement-c028a893/before-photography-mobile.png	Implement compact introduction
+2026-11-04T20:08:03Z	design	Present experience as chronological rows	Dates and summaries need a clearer reading order than four boxed panels	apps/web/src/routes/index.tsx	Implement responsive rows
