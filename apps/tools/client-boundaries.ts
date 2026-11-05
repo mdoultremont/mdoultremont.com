@@ -19,7 +19,7 @@ export const clientBoundaries = (): Plugin => ({
           this.error(`Server implementation reached the browser bundle: ${id}`)
       }
       if (
-        /(?:\.|\[\s*["'])(?:BETTER_AUTH_SECRET|SPOTIFY_CLIENT_SECRET|SPOTIFY_TOKEN_ENCRYPTION_KEY|GITHUB_CLIENT_SECRET)\b/.test(
+        /(?:\.|\[\s*["'])(?:BETTER_AUTH_SECRET|SPOTIFY_CLIENT_SECRET|SPOTIFY_TOKEN_ENCRYPTION_KEY|GITHUB_CLIENT_SECRET|LASTFM_API_KEY|DISCOGS_TOKEN)\b/.test(
           chunk.code
         )
       )

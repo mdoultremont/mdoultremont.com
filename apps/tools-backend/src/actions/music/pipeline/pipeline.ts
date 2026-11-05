@@ -179,8 +179,12 @@ export class MusicPipeline extends Context.Service<
         ownerId: string
       ) {
         yield* ingestion.scheduled(ownerId)
-        const { pending } = yield* enrichment.status(ownerId)
-        if (pending > 0) yield* enrichment.request(ownerId)
+        const enrichmentStatus = yield* enrichment.status(ownerId)
+        if (
+          enrichmentStatus.pending > 0 ||
+          enrichmentStatus.sources.some((source) => source.pending > 0)
+        )
+          yield* enrichment.request(ownerId)
         const classificationStatus = yield* classification.status(ownerId)
         if (classificationStatus.pending > 0)
           yield* classification.request(ownerId)

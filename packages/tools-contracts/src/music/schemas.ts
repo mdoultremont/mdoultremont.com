@@ -147,14 +147,38 @@ export const IngestionStatusSchema = Schema.Struct({
 })
 export type IngestionStatus = typeof IngestionStatusSchema.Type
 
+export const TagSourceSchema = Schema.Literals([
+  "lastfm",
+  "discogs",
+  "listenbrainz",
+])
+export type TagSource = typeof TagSourceSchema.Type
+
+/** Lookups on one tag source, counted over collected tracks with a MusicBrainz recording. */
+export const TagSourceCoverageSchema = Schema.Struct({
+  source: TagSourceSchema,
+  /** Whether its credentials are set; an unconfigured source is never asked. */
+  configured: Schema.Boolean,
+  found: Schema.Number,
+  notFound: Schema.Number,
+  failed: Schema.Number,
+  /** Not asked yet. */
+  pending: Schema.Number,
+})
+export type TagSourceCoverage = typeof TagSourceCoverageSchema.Type
+
 export const EnrichmentStatusSchema = Schema.Struct({
   /** Collected tracks with recording data from MusicBrainz. */
   enriched: Schema.Number,
   /** Of those, how many also have an AcousticBrainz analysis. */
   withAnalysis: Schema.Number,
-  /** MusicBrainz does not know the ISRC. */
+  /** Of those, how many were matched by title and artist because the ISRC was unknown. */
+  matchedBySearch: Schema.Number,
+  /** Of those, how many have tags from at least one tag source. */
+  withTags: Schema.Number,
+  /** MusicBrainz knows neither the ISRC nor the title and artist. */
   notFound: Schema.Number,
-  /** MusicBrainz lists several recordings for the ISRC. */
+  /** MusicBrainz lists several different recordings for the track. */
   ambiguous: Schema.Number,
   /** The lookup failed in a way retrying does not fix. */
   failed: Schema.Number,
@@ -162,6 +186,7 @@ export const EnrichmentStatusSchema = Schema.Struct({
   pending: Schema.Number,
   /** Spotify gave no ISRC, so there is nothing to look up. */
   withoutIsrc: Schema.Number,
+  sources: Schema.Array(TagSourceCoverageSchema),
 })
 export type EnrichmentStatus = typeof EnrichmentStatusSchema.Type
 

@@ -17,14 +17,29 @@ import {
 } from "#backend/actions/music/ingestion"
 import { MusicPipeline } from "."
 
-const enrichmentStatus = (pending: number): EnrichmentStatus => ({
+const enrichmentStatus = (
+  pending: number,
+  tagsPending = 0
+): EnrichmentStatus => ({
   enriched: 0,
   withAnalysis: 0,
+  matchedBySearch: 0,
+  withTags: 0,
   notFound: 0,
   ambiguous: 0,
   failed: 0,
   pending,
   withoutIsrc: 0,
+  sources: [
+    {
+      source: "lastfm",
+      configured: true,
+      found: 0,
+      notFound: 0,
+      failed: 0,
+      pending: tagsPending,
+    },
+  ],
 })
 
 const classificationStatus = (pending: number): ClassificationStatus => ({
@@ -47,6 +62,7 @@ function setup(
     added?: number
     looked?: number
     enrichmentPending?: number
+    tagsPending?: number
     classificationPending?: number
     decided?: number
     toWrite?: number
@@ -65,7 +81,12 @@ function setup(
       Effect.succeed({ looked: options.looked ?? 0 })
     ),
     status: vi.fn<MusicEnrichment["Service"]["status"]>(() =>
-      Effect.succeed(enrichmentStatus(options.enrichmentPending ?? 0))
+      Effect.succeed(
+        enrichmentStatus(
+          options.enrichmentPending ?? 0,
+          options.tagsPending ?? 0
+        )
+      )
     ),
   }
   const classification = {
@@ -260,5 +281,15 @@ describe("music pipeline", () => {
       expect(idle.delivery.requestIfAutomatic).not.toHaveBeenCalled()
       expect(busy.delivery.requestIfAutomatic).toHaveBeenCalledOnce()
     })
+  })
+
+  it.effect("hourly upkeep resumes enrichment for tag lookups alone", () => {
+    const t = setup({ tagsPending: 3 })
+    return t.run(
+      Effect.gen(function* () {
+        yield* MusicPipeline.use((pipeline) => pipeline.scheduled("owner"))
+        expect(t.enrichment.request).toHaveBeenCalledOnce()
+      })
+    )
   })
 })

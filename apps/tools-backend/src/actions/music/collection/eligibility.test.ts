@@ -28,21 +28,25 @@ test("enrichment, classification, and delivery share eligibility across enabled 
         const enrichment = yield* EnrichmentStore
         const classification = yield* ClassificationStore
         const delivery = yield* DeliveryStore
-        expect(yield* enrichment.pendingIsrcs(10)).toEqual(["ISRC"])
+        expect(
+          (yield* enrichment.pending(10, [])).map((item) => item.isrc)
+        ).toEqual(["ISRC"])
         expect(yield* classification.counts("owner", "f")).toMatchObject({
           waitingForEnrichment: 1,
         })
         d1.sqlite.exec(
           "UPDATE music_source_tracks SET present = 0 WHERE owner_id = 'owner' AND source_id = 'liked'"
         )
-        expect(yield* enrichment.status("owner")).toMatchObject({ pending: 1 })
+        expect(yield* enrichment.status("owner", [])).toMatchObject({
+          pending: 1,
+        })
         expect(yield* classification.counts("owner", "f")).toMatchObject({
           waitingForEnrichment: 1,
         })
         d1.sqlite.exec(
           "UPDATE music_sources SET enabled = 0 WHERE owner_id = 'owner' AND source_id = 'shazam'"
         )
-        expect(yield* enrichment.pendingIsrcs(10)).toEqual([])
+        expect(yield* enrichment.pending(10, [])).toEqual([])
         expect(yield* classification.counts("owner", "f")).toMatchObject({
           waitingForEnrichment: 0,
         })

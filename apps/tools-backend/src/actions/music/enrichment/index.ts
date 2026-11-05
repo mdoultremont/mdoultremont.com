@@ -4,4 +4,5 @@ export {
   EnrichmentMessage,
   EnrichmentPersistenceError,
   type EnrichmentStatus,
+  type TagSourceCoverage,
 } from "./errors"

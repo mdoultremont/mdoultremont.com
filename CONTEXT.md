@@ -141,13 +141,20 @@ Spotify playlists.
 _Avoid_: Un-liked track, deleted track
 
 **Enrichment**:
-Attaching recording data to a collected track from MusicBrainz and AcousticBrainz.
+Attaching recording data to a collected track. MusicBrainz identifies the
+recording by ISRC, or by title and artist when it does not know the ISRC.
+AcousticBrainz and the tag sources then add what they know; none is required.
 Recording data is fetched once per track; re-ingesting does not repeat it.
 _Avoid_: Ingestion (for MusicBrainz lookups)
 
 **Recording data**:
-The CC0 MusicBrainz and AcousticBrainz data stored for a collected track. It is
-the only classification input; Spotify metadata is never used.
+The MusicBrainz, AcousticBrainz, and tag-source data stored for a collected
+track. It is the only classification input; Spotify metadata is never used.
+
+**Tag source**:
+Last.fm, Discogs, or ListenBrainz: a provider asked for tags about a recording
+MusicBrainz identified. Each tag keeps its source, its scope (recording,
+release, or artist), and its weight.
 _Avoid_: Spotify metadata, track metadata
 
 **Classification**:

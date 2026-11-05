@@ -90,6 +90,14 @@ SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/music/spotify/callback
 SPOTIFY_TOKEN_ENCRYPTION_KEY=<base64 encoding of 32 random bytes>
 ```
 
+Enrichment can also read tags from Last.fm and Discogs. Both are optional;
+without a value the source is skipped and Settings shows it as not configured:
+
+```text
+LASTFM_API_KEY=<API key from https://www.last.fm/api/account/create>
+DISCOGS_TOKEN=<personal access token from https://www.discogs.com/settings/developers>
+```
+
 Generate the encryption key with `openssl rand -base64 32`. Keep that key
 stable while the Spotify connection exists; changing it makes the stored
 refresh token unreadable and requires reconnecting. The server stores only an
@@ -106,7 +114,8 @@ real model too.
 ## Music pipeline
 
 The private `/music` area runs four steps: ingestion of Liked Songs,
-enrichment from MusicBrainz and AcousticBrainz, classification with Clef once
+enrichment from MusicBrainz, AcousticBrainz, Last.fm, Discogs, and
+ListenBrainz, classification with Clef once
 you mark your playlists **Ready**, and delivery to Spotify on **Write now** or
 automatically. See [music automation operation](../../docs/music-automation.md).
 

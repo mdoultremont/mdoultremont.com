@@ -90,6 +90,9 @@ each one.
 - `SPOTIFY_REDIRECT_URI`
   (`https://tools.mdoultremont.com/api/music/spotify/callback`)
 
+- `LASTFM_API_KEY` and `DISCOGS_TOKEN`, optional: enrichment skips Last.fm
+  or Discogs without them
+
 Classification needs no secret. The Worker calls Clef through the `AI`
 binding, billed with the Workers plan.
 
