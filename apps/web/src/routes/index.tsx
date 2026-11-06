@@ -93,41 +93,39 @@ function ProfessionalPage() {
           className="relative isolate scroll-mt-20 [background:radial-gradient(ellipse_at_10%_0%,rgb(142_172_203_/_13%),transparent_60%),#171717] text-paper after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:bg-[url('/media/brand/grain.svg')] after:opacity-[0.045]"
           id="experience"
         >
-          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 pb-12 sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:pb-16">
-            <div className="grid items-center gap-6 px-4 pt-12 pb-8 sm:px-6 lg:grid-cols-12 lg:gap-0 lg:px-0 lg:pt-16 lg:pb-12">
-              <div className="lg:col-span-6">
-                <h2 className="mt-4 max-w-[17ch] text-[clamp(2.25rem,4.3vw,4rem)] leading-[1.05] font-medium tracking-[-0.04em] text-balance lg:mx-8">
-                  {professionalCopy.experience.title}
-                </h2>
-              </div>
-              <p className="max-w-[48ch] border-l border-white/20 pl-6 text-[clamp(1.1rem,1.8vw,1.5rem)] leading-[1.65] text-pretty text-[#b9bcc2] lg:mx-8 lg:col-span-6">
+          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 px-4 pt-12 pb-8 sm:w-[calc(100%-4rem)] sm:px-6 lg:grid lg:w-[calc(100%-6rem)] lg:grid-cols-[0.8fr_1.5fr] lg:gap-20 lg:px-8 lg:py-16">
+            <header className="pb-10 lg:pb-0">
+              <h2 className="max-w-[17ch] text-[2.25rem] leading-[1.05] font-medium tracking-[-0.04em] text-balance lg:text-5xl">
+                {professionalCopy.experience.title}
+              </h2>
+              <p className="mt-6 max-w-[48ch] text-lg leading-[1.65] text-pretty text-[#b9bcc2] lg:mt-7 lg:text-[1.1875rem]">
                 {professionalCopy.experience.introduction}
               </p>
-            </div>
-            <div className="px-4 sm:px-6 lg:px-8">
+            </header>
+            <div>
               {experiences.map((experience) => (
                 <article
-                  className="grid gap-4 border-t border-white/20 py-7 sm:grid-cols-[auto_1fr] sm:gap-x-8 lg:grid-cols-[1fr_1.2fr_2fr] lg:items-start lg:py-9"
+                  className="grid gap-3 border-t border-white/20 py-7 sm:grid-cols-[1fr_auto] sm:gap-x-6 sm:gap-y-4 lg:-ml-10 lg:py-8 lg:pl-10"
                   key={experience.company}
                 >
-                  <div className="flex min-h-9 items-center gap-4">
-                    <p className="text-[0.8rem] text-[#b9bcc2]">
-                      {experience.period}
-                    </p>
+                  <div className="flex items-center gap-3 sm:gap-4">
                     {companyLogos[experience.company] && (
                       <img
-                        className="size-7 shrink-0 object-contain"
+                        className="size-7 shrink-0 object-contain sm:size-8"
                         src={`/media/companies/icons/${companyLogos[experience.company]}`}
                         alt=""
-                        width="28"
-                        height="28"
+                        width="32"
+                        height="32"
                       />
                     )}
+                    <h3 className="text-[1.75rem] leading-[1.15] font-medium tracking-[-0.04em] sm:text-[2rem]">
+                      {experience.company}
+                    </h3>
                   </div>
-                  <h3 className="text-[clamp(1.75rem,2.5vw,2.75rem)] leading-[1.1] font-medium tracking-[-0.04em] text-balance">
-                    {experience.company}
-                  </h3>
-                  <p className="max-w-[48ch] text-[1rem] sm:col-span-2 lg:col-span-1 leading-[1.6] text-[#dddeda]">
+                  <p className="ml-10 text-[0.8125rem] leading-[1.6] text-[#b9bcc2] tabular-nums whitespace-nowrap sm:ml-0 sm:pt-2">
+                    {experience.period}
+                  </p>
+                  <p className="mt-1 ml-10 max-w-[48ch] text-base leading-[1.65] text-[#dddeda] sm:col-span-2 sm:mt-0 sm:ml-12 sm:text-[1.0625rem]">
                     {experience.summary}
                   </p>
                 </article>
