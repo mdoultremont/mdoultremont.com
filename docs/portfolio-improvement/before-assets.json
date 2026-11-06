@@ -1,0 +1,65 @@
+{
+  "node": "v22.23.2",
+  "scope": "All emitted client JS/CSS assets, not initial transfer or timing",
+  "rows": [
+    {
+      "file": "_virtual_profile-images-DbniKus1.js",
+      "bytes": 1327,
+      "gzipBytes": 752
+    },
+    {
+      "file": "index-C43oxiA7.js",
+      "bytes": 245241,
+      "gzipBytes": 76588
+    },
+    {
+      "file": "iterations-BrhR84w4.js",
+      "bytes": 21754,
+      "gzipBytes": 7523
+    },
+    {
+      "file": "personal-snHlWVhL.js",
+      "bytes": 10745,
+      "gzipBytes": 4390
+    },
+    {
+      "file": "photography-WuvP6Hxq.js",
+      "bytes": 68870,
+      "gzipBytes": 21882
+    },
+    {
+      "file": "routes-9S3nBQLp.js",
+      "bytes": 6596,
+      "gzipBytes": 2364
+    },
+    {
+      "file": "shared-CUw9zrMz.js",
+      "bytes": 163215,
+      "gzipBytes": 50988
+    },
+    {
+      "file": "site-shell-Bfkq0S41.js",
+      "bytes": 48661,
+      "gzipBytes": 17565
+    },
+    {
+      "file": "site-shell-CkJcnqk_.css",
+      "bytes": 247,
+      "gzipBytes": 177
+    },
+    {
+      "file": "styles-DGziyqCc.css",
+      "bytes": 49414,
+      "gzipBytes": 9839
+    },
+    {
+      "file": "useBaseUiId-CqbGHvJA.js",
+      "bytes": 91,
+      "gzipBytes": 108
+    }
+  ],
+  "totals": {
+    "js": 566500,
+    "css": 49661
+  }
+}

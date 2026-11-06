@@ -32,10 +32,10 @@ const companyLogos: Record<string, string> = {
 function ProfessionalPage() {
   return (
     <SiteShell contactTitle={professionalCopy.contact.title}>
-      <main>
+      <main id="main-content">
         <section className="border-b border-line">
-          <div className="relative isolate mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] overflow-hidden border-x border-line [background:radial-gradient(ellipse_at_90%_20%,#a2badc55,transparent_65%),radial-gradient(ellipse_at_30%_115%,#e7a98c66,transparent_75%),#f8f7f4] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[url('/media/brand/hero-grain.svg')] before:opacity-12 before:mix-blend-multiply sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-12">
-            <div className="px-4 pt-12 pb-8 sm:px-6 lg:col-span-6 lg:px-8 lg:py-20">
+          <div className="relative isolate mx-auto grid w-[calc(100%-2rem)] max-w-[1440px] overflow-hidden border-x border-line [background:radial-gradient(ellipse_at_90%_20%,#a2badc55,transparent_65%),radial-gradient(ellipse_at_30%_115%,#e7a98c66,transparent_75%),#f8f7f4] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[url('/media/brand/hero-grain.svg')] before:opacity-[0.035] before:mix-blend-multiply sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:grid-cols-12">
+            <div className="px-4 pt-12 pb-8 sm:px-6 lg:col-span-6 lg:px-8 lg:py-16">
               {profile.available && (
                 <span className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[#d8d7d3] bg-linear-to-b from-white to-[#eeede9] px-3.5 py-2 text-[0.8rem] text-[#625f59] shadow-[inset_0_1px_1px_#fff,inset_0_-1px_1px_#00000008,0_2px_3px_#00000006]">
                   <span
@@ -48,7 +48,7 @@ function ProfessionalPage() {
               <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted-foreground">
                 {professionalCopy.hero.eyebrow}
               </p>
-              <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.055em]">
+              <h1 className="mt-4 text-[clamp(3.5rem,9vw,9rem)] leading-none font-medium tracking-[-0.04em]">
                 {profile.firstName}
                 <span className="text-brand">.</span>
               </h1>
@@ -70,6 +70,8 @@ function ProfessionalPage() {
             <div className="grid min-w-0 justify-items-center overflow-hidden items-end lg:col-span-6">
               <ResponsiveImage
                 className="block h-auto max-h-[360px] max-w-full object-contain object-bottom lg:h-[90%] lg:max-h-[600px]"
+                sizes="(min-width: 1024px) 46vw, 90vw"
+                fetchPriority="high"
                 src={profile.professionalPortrait}
                 image={metadata[profile.professionalPortrait]}
                 alt="Matthieu d'Oultremont"
@@ -91,41 +93,39 @@ function ProfessionalPage() {
           className="relative isolate scroll-mt-20 [background:radial-gradient(ellipse_at_10%_0%,rgb(142_172_203_/_13%),transparent_60%),#171717] text-paper after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:bg-[url('/media/brand/grain.svg')] after:opacity-[0.045]"
           id="experience"
         >
-          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 pb-12 sm:w-[calc(100%-4rem)] lg:w-[calc(100%-6rem)] lg:pb-16">
-            <div className="grid items-center gap-6 px-4 pt-12 pb-8 sm:px-6 lg:grid-cols-12 lg:gap-0 lg:px-0 lg:pt-16 lg:pb-12">
-              <div className="lg:col-span-6">
-                <h2 className="mt-4 max-w-[17ch] text-[clamp(2.25rem,4.3vw,4rem)] leading-[1.05] font-medium tracking-[-0.04em] text-balance lg:mx-8">
-                  {professionalCopy.experience.title}
-                </h2>
-              </div>
-              <p className="max-w-[48ch] border-l border-white/20 pl-6 text-[clamp(1.1rem,1.8vw,1.5rem)] leading-[1.65] text-pretty text-[#b9bcc2] lg:mx-8 lg:col-span-6">
+          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 px-4 pt-12 pb-8 sm:w-[calc(100%-4rem)] sm:px-6 lg:w-[calc(100%-6rem)] lg:px-8 lg:py-16 xl:grid xl:grid-cols-[0.8fr_1.5fr] xl:gap-20">
+            <header className="pb-10 xl:pb-0">
+              <h2 className="max-w-[17ch] text-[2.25rem] leading-[1.05] font-medium tracking-[-0.04em] text-balance sm:text-5xl xl:text-[2.5rem] 2xl:text-5xl">
+                {professionalCopy.experience.title}
+              </h2>
+              <p className="mt-6 max-w-[48ch] text-lg leading-[1.65] text-pretty text-[#b9bcc2] sm:mt-7 sm:text-[1.1875rem]">
                 {professionalCopy.experience.introduction}
               </p>
-            </div>
-            <div className="-mx-px grid pr-px pb-px sm:grid-cols-2 xl:grid-cols-4">
+            </header>
+            <div>
               {experiences.map((experience) => (
                 <article
-                  className="relative isolate -mr-px -mb-px bg-[linear-gradient(to_bottom_left,#34373b_0%,#25282c_42%,#17191d_90%)] px-4 pt-7 pb-8 before:pointer-events-none before:absolute before:inset-0 before:border before:border-white/12 after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:bg-[url('/media/brand/grain.svg')] after:opacity-12 after:mix-blend-soft-light sm:px-6 xl:px-8"
+                  className="grid gap-3 border-t border-white/20 -mx-4 px-4 py-7 sm:-mx-6 sm:px-6 sm:py-8 lg:-mx-8 lg:px-8 xl:-ml-10 xl:grid-cols-[1fr_auto] xl:gap-x-6 xl:gap-y-4 xl:pl-10"
                   key={experience.company}
                 >
-                  <div className="flex min-h-9 items-center justify-between gap-4">
-                    <p className="text-[0.8rem] text-[#b9bcc2]">
-                      {experience.period}
-                    </p>
+                  <div className="flex items-center gap-3 sm:gap-4">
                     {companyLogos[experience.company] && (
                       <img
-                        className="size-7 shrink-0 object-contain"
+                        className="size-7 shrink-0 object-contain sm:size-8"
                         src={`/media/companies/icons/${companyLogos[experience.company]}`}
                         alt=""
-                        width="28"
-                        height="28"
+                        width="32"
+                        height="32"
                       />
                     )}
+                    <h3 className="text-[1.75rem] leading-[1.15] font-medium tracking-[-0.04em] sm:text-[2rem]">
+                      {experience.company}
+                    </h3>
                   </div>
-                  <h3 className="mt-6 text-[clamp(1.75rem,2.5vw,2.75rem)] leading-[1.1] font-medium tracking-[-0.04em] text-balance">
-                    {experience.company}
-                  </h3>
-                  <p className="mt-6 max-w-[36ch] text-[0.95rem] leading-[1.6] text-[#dddeda]">
+                  <p className="ml-10 text-[0.8125rem] leading-[1.6] text-[#b9bcc2] tabular-nums whitespace-nowrap sm:ml-12 xl:ml-0 xl:pt-2">
+                    {experience.period}
+                  </p>
+                  <p className="mt-1 ml-10 max-w-[48ch] text-base leading-[1.65] text-[#dddeda] sm:ml-12 sm:text-[1.0625rem] xl:col-span-2 xl:mt-0">
                     {experience.summary}
                   </p>
                 </article>

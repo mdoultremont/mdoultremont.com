@@ -1,0 +1,153 @@
+{
+  "generatedAt": "2026-11-04T22:15:49.673Z",
+  "stylesheets": [
+    "/assets/styles-CRNW9MeK.css",
+    "/assets/site-shell-CkJcnqk_.css"
+  ],
+  "browser": "151.0.7922.34",
+  "focusChecks": [
+    {
+      "route": "/",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "See my experience",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "hello@mdoultremont.com",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/",
+      "text": "LinkedIn",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "See the collection",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "Get in touch",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "hello@mdoultremont.com",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    },
+    {
+      "route": "/photography",
+      "text": "LinkedIn",
+      "color": "rgb(18, 18, 18)",
+      "width": "2px"
+    }
+  ],
+  "results": [
+    {
+      "route": "/",
+      "width": 320,
+      "scrollWidth": 320,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 320,
+      "scrollWidth": 320,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 768,
+      "scrollWidth": 768,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 768,
+      "scrollWidth": 768,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "h1": 1,
+      "brokenAnchors": 0
+    },
+    {
+      "route": "/photography",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "h1": 1,
+      "brokenAnchors": 0
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "skip destination, header clearance and keyboard continuation on all shell routes",
+    "ink focus rings on light surfaces and paper rings on toast and gallery",
+    "copy email with clipboard assertion",
+    "navigation",
+    "gallery keyboard next and escape",
+    "320px gallery next and close",
+    "failed image retry focus and successful recovery",
+    "reduced motion scroll behavior"
+  ]
+}

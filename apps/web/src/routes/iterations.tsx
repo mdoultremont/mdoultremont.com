@@ -180,7 +180,10 @@ function IterationsPage() {
   }
   return (
     <SiteShell>
-      <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 sm:py-16">
+      <main
+        id="main-content"
+        className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 sm:py-16"
+      >
         <header className="mb-20 max-w-[780px]">
           <p className="m-0 text-[0.8rem] leading-6 font-medium text-muted-foreground">
             Design workbench
