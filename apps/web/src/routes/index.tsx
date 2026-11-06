@@ -93,19 +93,19 @@ function ProfessionalPage() {
           className="relative isolate scroll-mt-20 [background:radial-gradient(ellipse_at_10%_0%,rgb(142_172_203_/_13%),transparent_60%),#171717] text-paper after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:bg-[url('/media/brand/grain.svg')] after:opacity-[0.045]"
           id="experience"
         >
-          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 px-4 pt-12 pb-8 sm:w-[calc(100%-4rem)] sm:px-6 lg:grid lg:w-[calc(100%-6rem)] lg:grid-cols-[0.8fr_1.5fr] lg:gap-20 lg:px-8 lg:py-16">
-            <header className="pb-10 lg:pb-0">
-              <h2 className="max-w-[17ch] text-[2.25rem] leading-[1.05] font-medium tracking-[-0.04em] text-balance lg:text-5xl">
+          <div className="mx-auto w-[calc(100%-2rem)] max-w-[1440px] border-x border-white/10 px-4 pt-12 pb-8 sm:w-[calc(100%-4rem)] sm:px-6 lg:w-[calc(100%-6rem)] lg:px-8 lg:py-16 xl:grid xl:grid-cols-[0.8fr_1.5fr] xl:gap-20">
+            <header className="pb-10 xl:pb-0">
+              <h2 className="max-w-[17ch] text-[2.25rem] leading-[1.05] font-medium tracking-[-0.04em] text-balance sm:text-5xl xl:text-[2.5rem] 2xl:text-5xl">
                 {professionalCopy.experience.title}
               </h2>
-              <p className="mt-6 max-w-[48ch] text-lg leading-[1.65] text-pretty text-[#b9bcc2] lg:mt-7 lg:text-[1.1875rem]">
+              <p className="mt-6 max-w-[48ch] text-lg leading-[1.65] text-pretty text-[#b9bcc2] sm:mt-7 sm:text-[1.1875rem]">
                 {professionalCopy.experience.introduction}
               </p>
             </header>
             <div>
               {experiences.map((experience) => (
                 <article
-                  className="grid gap-3 border-t border-white/20 py-7 -mx-4 px-4 sm:-mx-6 sm:grid-cols-[1fr_auto] sm:gap-x-6 sm:gap-y-4 sm:px-6 lg:-mr-8 lg:-ml-10 lg:py-8 lg:pr-8 lg:pl-10"
+                  className="grid gap-3 border-t border-white/20 -mx-4 px-4 py-7 sm:-mx-6 sm:px-6 sm:py-8 lg:-mx-8 lg:px-8 xl:-ml-10 xl:grid-cols-[1fr_auto] xl:gap-x-6 xl:gap-y-4 xl:pl-10"
                   key={experience.company}
                 >
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -122,10 +122,10 @@ function ProfessionalPage() {
                       {experience.company}
                     </h3>
                   </div>
-                  <p className="ml-10 text-[0.8125rem] leading-[1.6] text-[#b9bcc2] tabular-nums whitespace-nowrap sm:ml-0 sm:pt-2">
+                  <p className="ml-10 text-[0.8125rem] leading-[1.6] text-[#b9bcc2] tabular-nums whitespace-nowrap sm:ml-12 xl:ml-0 xl:pt-2">
                     {experience.period}
                   </p>
-                  <p className="mt-1 ml-10 max-w-[48ch] text-base leading-[1.65] text-[#dddeda] sm:col-span-2 sm:mt-0 sm:ml-12 sm:text-[1.0625rem]">
+                  <p className="mt-1 ml-10 max-w-[48ch] text-base leading-[1.65] text-[#dddeda] sm:ml-12 sm:text-[1.0625rem] xl:col-span-2 xl:mt-0">
                     {experience.summary}
                   </p>
                 </article>
